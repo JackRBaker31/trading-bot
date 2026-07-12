@@ -55,12 +55,16 @@ def main() -> None:
             market_data.set_price("MSFT", 318.00)
 
         elif cycle_number == 3:
-            market_data.set_price("AAPL", 145.00)
+            market_data.set_price("AAPL", 142.00)
             market_data.set_price("MSFT", 310.00)
 
         elif cycle_number == 4:
-            market_data.set_price("AAPL", 149.00)
-            market_data.set_price("MSFT", 312.00)
+            market_data.set_price("AAPL", 138.00)
+            market_data.set_price("MSFT", 308.00)
+
+        elif cycle_number == 5:
+            market_data.set_price("AAPL", 134.00)
+            market_data.set_price("MSFT", 305.00)
 
     trading_loop = TradingLoop(
         symbols=["AAPL", "MSFT"],
@@ -71,8 +75,8 @@ def main() -> None:
     )
 
     trading_loop.run(
-        cycles=4,
-        before_cycle=simulate_price_changes,
+    cycles=5,
+    before_cycle=simulate_price_changes,
     )
 
     final_prices = market_data.get_prices(
