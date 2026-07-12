@@ -565,3 +565,280 @@ def test_shared_order_parser_accepts_instrument_ticker() -> None:
     assert result.ticker == "AAPL_US_EQ"
     assert result.status == "FILLED"
     assert result.filled_quantity == 1
+
+def historical_order_data(
+    order_id: int,
+    status: str = "FILLED",
+) -> dict[str, object]:
+    return {
+        "id": order_id,
+        "ticker": "AAPL_US_EQ",
+        "quantity": 2,
+        "side": "BUY",
+        "status": status,
+        "type": "MARKET",
+        "filledQuantity": 2,
+        "filledValue": 300,
+        "currency": "GBP",
+    }
+
+
+def test_find_historical_order_on_first_page(
+    monkeypatch,
+) -> None:
+    requested_urls: list[str] = []
+
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        requested_urls.append(url)
+
+        return FakeResponse(
+            {
+                "items": [
+                    historical_order_data(
+                        order_id=987654
+                    )
+                ],
+                "nextPagePath": None,
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    result = client.find_historical_order(
+        order_id=987654
+    )
+
+    assert result is not None
+    assert result.order_id == 987654
+    assert result.status == "FILLED"
+
+    assert requested_urls[0].endswith(
+        "/equity/history/orders?limit=50"
+    )
+
+
+def test_find_historical_order_follows_next_page(
+    monkeypatch,
+) -> None:
+    requested_urls: list[str] = []
+
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        requested_urls.append(url)
+
+        if len(requested_urls) == 1:
+            return FakeResponse(
+                {
+                    "items": [
+                        historical_order_data(
+                            order_id=111
+                        )
+                    ],
+                    "nextPagePath": (
+                        "/api/v0/equity/history/"
+                        "orders?limit=50&cursor=123"
+                    ),
+                }
+            )
+
+        return FakeResponse(
+            {
+                "items": [
+                    historical_order_data(
+                        order_id=987654
+                    )
+                ],
+                "nextPagePath": None,
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+    )
+
+    result = client.find_historical_order(
+        order_id=987654
+    )
+
+    assert result is not None
+    assert result.order_id == 987654
+    assert len(requested_urls) == 2
+
+    assert requested_urls[1].endswith(
+        "/equity/history/"
+        "orders?limit=50&cursor=123"
+    )
+
+    assert "/api/v0/api/v0/" not in (
+        requested_urls[1]
+    )
+
+
+def test_find_historical_order_returns_none_when_missing(
+    monkeypatch,
+) -> None:
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        return FakeResponse(
+            {
+                "items": [
+                    historical_order_data(
+                        order_id=111
+                    )
+                ],
+                "nextPagePath": None,
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+    )
+
+    result = client.find_historical_order(
+        order_id=987654
+    )
+
+    assert result is None
+
+
+def test_find_historical_order_respects_max_pages(
+    monkeypatch,
+) -> None:
+    request_count = 0
+
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        nonlocal request_count
+        request_count += 1
+
+        return FakeResponse(
+            {
+                "items": [],
+                "nextPagePath": (
+                    "/api/v0/equity/history/"
+                    f"orders?limit=50&cursor="
+                    f"{request_count}"
+                ),
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+    )
+
+    result = client.find_historical_order(
+        order_id=987654,
+        max_pages=2,
+    )
+
+    assert result is None
+    assert request_count == 2
+
+
+def test_find_historical_order_rejects_invalid_id() -> None:
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Order ID must be positive",
+    ):
+        client.find_historical_order(
+            order_id=0
+        )
+
+
+def test_find_historical_order_rejects_invalid_page_limit() -> None:
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Maximum pages",
+    ):
+        client.find_historical_order(
+            order_id=1,
+            max_pages=0,
+        )
+
+
+def test_find_historical_order_rejects_invalid_response(
+    monkeypatch,
+) -> None:
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        return FakeResponse(
+            {
+                "unexpected": "response",
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+    )
+
+    with pytest.raises(
+        BrokerError,
+        match="historical-orders response",
+    ):
+        client.find_historical_order(
+            order_id=987654
+        )

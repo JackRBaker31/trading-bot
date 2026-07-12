@@ -280,6 +280,92 @@ class Trading212Client(BrokerClient):
             ),
         )
 
+    def find_historical_order(
+        self,
+        order_id: int,
+        max_pages: int = 5,
+    ) -> BrokerOrderResult | None:
+        if order_id <= 0:
+            raise ValueError(
+                "Order ID must be positive."
+            )
+
+        if max_pages <= 0:
+            raise ValueError(
+                "Maximum pages must be positive."
+            )
+
+        path = "/equity/history/orders?limit=50"
+
+        for _ in range(max_pages):
+            data = self._get(path)
+
+            if not isinstance(data, dict):
+                raise BrokerError(
+                    "Trading 212 returned an invalid "
+                    "historical-orders response."
+                )
+
+            items = data.get("items")
+
+            if not isinstance(items, list):
+                raise BrokerError(
+                    "Trading 212 returned an invalid "
+                    "historical-orders response."
+                )
+
+            for item in items:
+                if not isinstance(item, dict):
+                    raise BrokerError(
+                        "Trading 212 returned an invalid "
+                        "historical order."
+                    )
+
+                try:
+                    item_order_id = int(
+                        item["id"]
+                    )
+                except (
+                    KeyError,
+                    TypeError,
+                    ValueError,
+                ) as error:
+                    raise BrokerError(
+                        "Trading 212 returned an invalid "
+                        "historical order."
+                    ) from error
+
+                if item_order_id == order_id:
+                    return self._parse_order_result(
+                        data=item,
+                        error_message=(
+                            "Trading 212 returned an "
+                            "invalid historical order."
+                        ),
+                    )
+
+            next_page_path = data.get(
+                "nextPagePath"
+            )
+
+            if next_page_path is None:
+                return None
+
+            if not isinstance(
+                next_page_path,
+                str,
+            ):
+                raise BrokerError(
+                    "Trading 212 returned an invalid "
+                    "historical-orders page path."
+                )
+
+            path = self._normalise_api_path(
+                next_page_path
+            )
+
+        return None
+
     @staticmethod
     def _parse_order_result(
         data: object,
@@ -335,6 +421,28 @@ class Trading212Client(BrokerClient):
             raise BrokerError(
                 error_message
             ) from error
+
+    @staticmethod
+    def _normalise_api_path(
+        path: str,
+    ) -> str:
+        cleaned_path = path.strip()
+
+        api_prefix = "/api/v0"
+
+        if cleaned_path.startswith(
+            api_prefix
+        ):
+            cleaned_path = cleaned_path[
+                len(api_prefix):
+            ]
+
+        if not cleaned_path.startswith("/"):
+            cleaned_path = (
+                "/" + cleaned_path
+            )
+
+        return cleaned_path
 
     def _get(
         self,
