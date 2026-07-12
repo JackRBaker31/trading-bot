@@ -6,6 +6,7 @@ from app.broker import (
     BrokerAccountSummary,
     BrokerClient,
     BrokerError,
+    BrokerOrderResult,
     BrokerPosition,
 )
 
@@ -76,6 +77,12 @@ class Trading212Client(BrokerClient):
             "/equity/account/summary"
         )
 
+        if not isinstance(data, dict):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "account summary."
+            )
+
         try:
             cash = data["cash"]
             investments = data["investments"]
@@ -134,6 +141,12 @@ class Trading212Client(BrokerClient):
         positions: list[BrokerPosition] = []
 
         for item in data:
+            if not isinstance(item, dict):
+                raise BrokerError(
+                    "Trading 212 returned an invalid "
+                    "position."
+                )
+
             try:
                 instrument = item["instrument"]
 
@@ -187,6 +200,77 @@ class Trading212Client(BrokerClient):
 
         return positions
 
+    def place_market_order(
+        self,
+        ticker: str,
+        quantity: float,
+        extended_hours: bool = False,
+    ) -> BrokerOrderResult:
+        cleaned_ticker = ticker.upper().strip()
+
+        if self.environment != "DEMO":
+            raise BrokerError(
+                "Market orders are currently restricted "
+                "to the DEMO environment."
+            )
+
+        if not cleaned_ticker:
+            raise ValueError(
+                "A broker ticker is required."
+            )
+
+        if quantity == 0:
+            raise ValueError(
+                "Order quantity cannot be zero."
+            )
+
+        data = self._post(
+            path="/equity/orders/market",
+            payload={
+                "ticker": cleaned_ticker,
+                "quantity": quantity,
+                "extendedHours": extended_hours,
+            },
+        )
+
+        if not isinstance(data, dict):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "market-order response."
+            )
+
+        try:
+            return BrokerOrderResult(
+                order_id=int(data["id"]),
+                ticker=str(data["ticker"]),
+                quantity=float(data["quantity"]),
+                side=str(data["side"]),
+                status=str(data["status"]),
+                order_type=str(data["type"]),
+                filled_quantity=float(
+                    data.get(
+                        "filledQuantity",
+                        0,
+                    )
+                ),
+                filled_value=float(
+                    data.get(
+                        "filledValue",
+                        0,
+                    )
+                ),
+                currency=str(data["currency"]),
+            )
+        except (
+            KeyError,
+            TypeError,
+            ValueError,
+        ) as error:
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "market-order response."
+            ) from error
+
     def _get(
         self,
         path: str,
@@ -225,7 +309,9 @@ class Trading212Client(BrokerClient):
             ) from error
 
         except httpx.HTTPStatusError as error:
-            status_code = error.response.status_code
+            status_code = (
+                error.response.status_code
+            )
 
             logger.error(
                 "broker_http_error "
@@ -237,14 +323,18 @@ class Trading212Client(BrokerClient):
             )
 
             if status_code == 429:
-                reset_at = error.response.headers.get(
-                    "x-ratelimit-reset",
-                    "unknown",
+                reset_at = (
+                    error.response.headers.get(
+                        "x-ratelimit-reset",
+                        "unknown",
+                    )
                 )
 
-                remaining = error.response.headers.get(
-                    "x-ratelimit-remaining",
-                    "0",
+                remaining = (
+                    error.response.headers.get(
+                        "x-ratelimit-remaining",
+                        "0",
+                    )
                 )
 
                 raise BrokerError(
@@ -252,20 +342,6 @@ class Trading212Client(BrokerClient):
                     f"Remaining requests: {remaining}. "
                     f"Reset time: {reset_at}."
                 ) from error
-
-            raise BrokerError(
-                f"Trading 212 returned HTTP "
-                f"{status_code}."
-            ) from error
-
-            logger.error(
-                "broker_http_error "
-                "environment=%s path=%s "
-                "status_code=%s",
-                self.environment,
-                path,
-                status_code,
-            )
 
             raise BrokerError(
                 f"Trading 212 returned HTTP "
@@ -289,4 +365,103 @@ class Trading212Client(BrokerClient):
         except ValueError as error:
             raise BrokerError(
                 "Trading 212 returned invalid JSON."
+            ) from error
+
+    def _post(
+        self,
+        path: str,
+        payload: dict[str, object],
+    ) -> object:
+        url = f"{self.base_url}{path}"
+
+        logger.warning(
+            "broker_order_request environment=%s "
+            "method=POST path=%s payload=%s",
+            self.environment,
+            path,
+            payload,
+        )
+
+        try:
+            response = httpx.post(
+                url,
+                auth=httpx.BasicAuth(
+                    self.api_key,
+                    self.api_secret,
+                ),
+                json=payload,
+                timeout=self.timeout_seconds,
+            )
+
+            response.raise_for_status()
+
+        except httpx.TimeoutException as error:
+            logger.error(
+                "broker_order_timeout "
+                "environment=%s path=%s",
+                self.environment,
+                path,
+            )
+
+            raise BrokerError(
+                "Trading 212 order request timed out. "
+                "Order status must be checked before "
+                "retrying."
+            ) from error
+
+        except httpx.HTTPStatusError as error:
+            status_code = (
+                error.response.status_code
+            )
+
+            logger.error(
+                "broker_order_http_error "
+                "environment=%s path=%s "
+                "status_code=%s",
+                self.environment,
+                path,
+                status_code,
+            )
+
+            if status_code == 429:
+                reset_at = (
+                    error.response.headers.get(
+                        "x-ratelimit-reset",
+                        "unknown",
+                    )
+                )
+
+                raise BrokerError(
+                    "Trading 212 order rate limit "
+                    "reached. "
+                    f"Reset time: {reset_at}. "
+                    "Do not retry until the order "
+                    "status has been checked."
+                ) from error
+
+            raise BrokerError(
+                f"Trading 212 returned HTTP "
+                f"{status_code} for the order request."
+            ) from error
+
+        except httpx.HTTPError as error:
+            logger.exception(
+                "broker_order_connection_error "
+                "environment=%s path=%s",
+                self.environment,
+                path,
+            )
+
+            raise BrokerError(
+                "Trading 212 order connection failed. "
+                "Order status must be checked before "
+                "retrying."
+            ) from error
+
+        try:
+            return response.json()
+        except ValueError as error:
+            raise BrokerError(
+                "Trading 212 returned invalid JSON "
+                "for the market order."
             ) from error

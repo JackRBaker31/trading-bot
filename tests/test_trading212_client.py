@@ -243,3 +243,176 @@ def test_rate_limit_error_includes_reset_information(
         match="rate limit reached",
     ):
         client.get_account_summary()
+
+def test_place_market_buy_order(
+    monkeypatch,
+) -> None:
+    captured_request: dict[str, object] = {}
+
+    def fake_post(
+        url,
+        auth,
+        json,
+        timeout,
+    ):
+        captured_request["url"] = url
+        captured_request["json"] = json
+
+        return FakeResponse(
+            {
+                "id": 987654,
+                "ticker": "AAPL_US_EQ",
+                "quantity": 1,
+                "side": "BUY",
+                "status": "NEW",
+                "type": "MARKET",
+                "filledQuantity": 0,
+                "filledValue": 0,
+                "currency": "GBP",
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        fake_post,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    result = client.place_market_order(
+        ticker="aapl_us_eq",
+        quantity=1,
+    )
+
+    assert result.order_id == 987654
+    assert result.ticker == "AAPL_US_EQ"
+    assert result.side == "BUY"
+    assert result.order_type == "MARKET"
+
+    assert captured_request["json"] == {
+        "ticker": "AAPL_US_EQ",
+        "quantity": 1,
+        "extendedHours": False,
+    }
+
+
+def test_place_market_sell_order_uses_negative_quantity(
+    monkeypatch,
+) -> None:
+    def fake_post(
+        url,
+        auth,
+        json,
+        timeout,
+    ):
+        assert json["quantity"] == -2
+
+        return FakeResponse(
+            {
+                "id": 987655,
+                "ticker": "AAPL_US_EQ",
+                "quantity": -2,
+                "side": "SELL",
+                "status": "NEW",
+                "type": "MARKET",
+                "filledQuantity": 0,
+                "filledValue": 0,
+                "currency": "GBP",
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        fake_post,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    result = client.place_market_order(
+        ticker="AAPL_US_EQ",
+        quantity=-2,
+    )
+
+    assert result.side == "SELL"
+    assert result.quantity == -2
+
+
+def test_market_order_rejects_live_environment() -> None:
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="LIVE",
+    )
+
+    with pytest.raises(
+        BrokerError,
+        match="DEMO",
+    ):
+        client.place_market_order(
+            ticker="AAPL_US_EQ",
+            quantity=1,
+        )
+
+
+def test_market_order_rejects_zero_quantity() -> None:
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="cannot be zero",
+    ):
+        client.place_market_order(
+            ticker="AAPL_US_EQ",
+            quantity=0,
+        )
+
+
+def test_market_order_rejects_invalid_response(
+    monkeypatch,
+) -> None:
+    def fake_post(
+        url,
+        auth,
+        json,
+        timeout,
+    ):
+        return FakeResponse(
+            {
+                "unexpected": "response"
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        fake_post,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerError,
+        match="invalid market-order response",
+    ):
+        client.place_market_order(
+            ticker="AAPL_US_EQ",
+            quantity=1,
+        )

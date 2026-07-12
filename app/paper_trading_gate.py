@@ -15,6 +15,7 @@ class PaperTradingGate:
         reconciliation_passed: bool,
         market_is_open: bool,
         risk_approved: bool,
+        order_execution_permission_confirmed: bool,
     ) -> GateDecision:
         if not paper_trading_enabled:
             return GateDecision(
@@ -32,6 +33,15 @@ class PaperTradingGate:
                 reason=(
                     "Paper trading requires the "
                     "DEMO broker environment."
+                ),
+            )
+
+        if not order_execution_permission_confirmed:
+            return GateDecision(
+                approved=False,
+                reason=(
+                    "Order-execution permission has "
+                    "not been confirmed."
                 ),
             )
 

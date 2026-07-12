@@ -29,7 +29,8 @@
     "trading_weekdays": [0, 1, 2, 3, 4]
   },
   "paper_trading": {
-  "enabled": false,
-  "broker_environment": "DEMO"
-}
+    "enabled": false,
+    "broker_environment": "DEMO",
+    "order_execution_permission_confirmed": false
+  }
 }

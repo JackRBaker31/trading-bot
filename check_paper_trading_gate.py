@@ -132,6 +132,10 @@ def main() -> None:
         ),
         market_is_open=session_status.is_open,
         risk_approved=risk_decision.approved,
+        order_execution_permission_confirmed=(
+            config.paper_trading
+            .order_execution_permission_confirmed
+        ),
     )
 
     print("\n================================")
@@ -175,6 +179,10 @@ def main() -> None:
     )
     print("================================")
     print("\nNo order was submitted.")
+    print(
+    "Execution permission confirmed: "
+    f"{config.paper_trading.order_execution_permission_confirmed}"
+)
 
 
 if __name__ == "__main__":

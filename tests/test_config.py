@@ -53,7 +53,8 @@ def valid_config() -> dict[str, object]:
         "paper_trading": {
             "enabled": False,
             "broker_environment": "DEMO",
-        },
+            "order_execution_permission_confirmed": False,
+        }
     }
 
 
@@ -101,6 +102,12 @@ def test_load_config(
         config.paper_trading.broker_environment
         == "DEMO"
     )
+
+    assert (
+    config.paper_trading
+    .order_execution_permission_confirmed
+    is False
+)
 
 
 def test_symbols_are_cleaned(
@@ -188,6 +195,7 @@ def test_invalid_paper_trading_environment_is_rejected(
     data["paper_trading"] = {
         "enabled": False,
         "broker_environment": "UNKNOWN",
+        "order_execution_permission_confirmed": False,
     }
 
     write_config(
@@ -211,6 +219,7 @@ def test_enabled_paper_trading_rejects_live_environment(
     data["paper_trading"] = {
         "enabled": True,
         "broker_environment": "LIVE",
+        "order_execution_permission_confirmed": False,
     }
 
     write_config(

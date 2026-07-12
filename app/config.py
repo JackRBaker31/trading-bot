@@ -38,6 +38,7 @@ class MarketSessionConfig:
 class PaperTradingConfig:
     enabled: bool
     broker_environment: str
+    order_execution_permission_confirmed: bool
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -192,6 +193,11 @@ def load_config(
         broker_environment=str(
             paper_trading_data["broker_environment"]
         ).upper().strip(),
+        order_execution_permission_confirmed=bool(
+            paper_trading_data[
+                "order_execution_permission_confirmed"
+            ]
+        ),
     )
 
     if paper_trading.broker_environment not in {

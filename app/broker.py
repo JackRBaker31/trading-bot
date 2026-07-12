@@ -41,3 +41,15 @@ class BrokerClient(ABC):
         self,
     ) -> list[BrokerPosition]:
         """Return all open broker positions."""
+
+@dataclass(frozen=True)
+class BrokerOrderResult:
+    order_id: int
+    ticker: str
+    quantity: float
+    side: str
+    status: str
+    order_type: str
+    filled_quantity: float
+    filled_value: float
+    currency: str
