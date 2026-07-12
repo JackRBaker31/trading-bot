@@ -7,6 +7,7 @@ from app.risk import RiskEngine, RiskLimits
 from app.simulated_market_data import SimulatedMarketDataProvider
 from app.trade_log import TradeLog
 from app.trading_loop import TradingLoop
+from app.portfolio_store import PortfolioStore
 
 
 def main() -> None:
@@ -22,7 +23,9 @@ def main() -> None:
         }
     )
 
-    portfolio = Portfolio(
+    portfolio_store = PortfolioStore()
+
+    portfolio = portfolio_store.load_or_create(
         starting_cash=10_000.00
     )
 
@@ -79,6 +82,10 @@ def main() -> None:
     cycles=5,
     before_cycle=simulate_price_changes,
     )
+
+    portfolio_store.save(portfolio)
+
+    print("\nPortfolio saved.")
 
     final_prices = market_data.get_prices(
         ["AAPL", "MSFT"]
