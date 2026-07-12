@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from app.market_data import (
     MarketDataError,
     MarketDataProvider,
@@ -26,12 +28,15 @@ class SimulatedMarketDataProvider(MarketDataProvider):
         return PriceQuote(
             symbol=cleaned_symbol,
             price=self._prices[cleaned_symbol],
+            timestamp=datetime.now(timezone.utc),
+            provider="SIMULATED",
         )
 
     def set_price(self, symbol: str, price: float) -> None:
         quote = PriceQuote(
             symbol=symbol,
             price=price,
+            provider="SIMULATED",
         )
 
         self._prices[quote.symbol] = quote.price
