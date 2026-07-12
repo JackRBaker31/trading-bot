@@ -30,7 +30,7 @@ def valid_config() -> dict[str, object]:
         },
         "strategy": {
             "drop_threshold_percent": 2.0,
-            "quantity": 5,
+            "target_allocation_percent": 10.0,
             "cooldown_cycles": 2,
         },
         "trading_loop": {
@@ -59,7 +59,10 @@ def test_load_config(
     assert config.starting_cash == 10_000.00
     assert config.symbols == ["AAPL", "MSFT"]
     assert config.risk.max_trades_per_session == 3
-    assert config.strategy.quantity == 5
+    assert (
+    config.strategy.target_allocation_percent
+    == 10.0
+)
     assert config.trading_loop.cycles == 5
 
 

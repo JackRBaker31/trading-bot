@@ -17,7 +17,7 @@ class RiskConfig:
 @dataclass(frozen=True)
 class StrategyConfig:
     drop_threshold_percent: float
-    quantity: int
+    target_allocation_percent: float
     cooldown_cycles: int
 
 
@@ -121,8 +121,10 @@ def load_config(
         drop_threshold_percent=float(
             strategy_data["drop_threshold_percent"]
         ),
-        quantity=int(
-            strategy_data["quantity"]
+        target_allocation_percent=float(
+            strategy_data[
+                "target_allocation_percent"
+            ]
         ),
         cooldown_cycles=int(
             strategy_data["cooldown_cycles"]

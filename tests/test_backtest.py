@@ -43,7 +43,7 @@ def create_backtest_engine(
 
     strategy = BuyTheDipStrategy(
         drop_threshold_percent=2.0,
-        quantity=5,
+        target_allocation_percent=10.0,
         cooldown_cycles=2,
     )
 
@@ -84,7 +84,7 @@ def test_backtest_executes_strategy_order(
         historical_prices=prices
     )
 
-    assert portfolio.positions["AAPL"] == 5
+    assert portfolio.positions["AAPL"] == 6
     assert result.executed_trades == 1
     assert result.rejected_orders == 0
     assert len(result.equity_curve) == 3
@@ -118,16 +118,16 @@ def test_backtest_calculates_return(
     )
 
     assert result.starting_cash == 10_000.00
-    assert result.ending_value == 10_050.00
+    assert result.ending_value == 10_060.00
     assert result.total_return_percent == pytest.approx(
-        0.50
+        0.60
     )
     assert result.maximum_drawdown_percent >= 0
     assert result.benchmark_return_percent == pytest.approx(
         4.0
     )
     assert result.excess_return_percent == pytest.approx(
-        -3.5
+        -3.4
     )
     assert result.average_exposure_percent > 0
 
@@ -174,13 +174,15 @@ def test_backtest_records_rejected_orders(
         trade_log=trade_log,
     )
 
+    strategy = BuyTheDipStrategy(
+        drop_threshold_percent=2.0,
+        target_allocation_percent=10.0,
+        cooldown_cycles=2,
+    )
+
     engine = BacktestEngine(
         portfolio=portfolio,
-        strategy=BuyTheDipStrategy(
-            drop_threshold_percent=2.0,
-            quantity=5,
-            cooldown_cycles=2,
-        ),
+        strategy=strategy,
         execution_service=execution_service,
     )
 

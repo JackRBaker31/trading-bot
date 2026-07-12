@@ -53,7 +53,7 @@ def main() -> None:
 
     strategy = BuyTheDipStrategy(
         drop_threshold_percent=2.0,
-        quantity=5,
+        target_allocation_percent=10.0,
         cooldown_cycles=2,
     )
 

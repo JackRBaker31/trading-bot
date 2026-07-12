@@ -52,8 +52,9 @@ class BacktestEngine:
             )
 
             orders = self.strategy.generate_orders(
-                current_prices
-            )
+            prices=current_prices,
+            portfolio=self.portfolio,
+        )
 
             for order in orders:
                 self.execution_service.submit_order(

@@ -87,8 +87,8 @@ def test_loop_executes_strategy_order(
         before_cycle=change_price,
     )
 
-    assert portfolio.positions["AAPL"] == 5
-    assert portfolio.cash == 9_270.00
+    assert portfolio.positions["AAPL"] == 6
+    assert portfolio.cash == 9_124.00
     assert log_file.exists()
 
 

@@ -79,7 +79,9 @@ def main() -> None:
         drop_threshold_percent=(
             config.strategy.drop_threshold_percent
         ),
-        quantity=config.strategy.quantity,
+        target_allocation_percent=(
+            config.strategy.target_allocation_percent
+        ),
         cooldown_cycles=(
             config.strategy.cooldown_cycles
         ),

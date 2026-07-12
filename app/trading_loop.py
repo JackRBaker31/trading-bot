@@ -84,8 +84,9 @@ class TradingLoop:
 
             try:
                 orders = self.strategy.generate_orders(
-                    current_prices
-                )
+                prices=current_prices,
+                portfolio=self.execution_service.portfolio,
+            )
             except Exception:
                 logger.exception(
                     "strategy_error cycle=%s",
