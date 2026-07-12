@@ -1,0 +1,23 @@
+{
+  "mode": "SIMULATION",
+  "starting_cash": 10000.0,
+  "symbols": [
+    "AAPL",
+    "MSFT"
+  ],
+  "risk": {
+    "max_order_value": 2000.0,
+    "max_position_value": 3000.0,
+    "max_portfolio_exposure": 0.5,
+    "max_trades_per_session": 3
+  },
+  "strategy": {
+    "drop_threshold_percent": 2.0,
+    "quantity": 5,
+    "cooldown_cycles": 2
+  },
+  "trading_loop": {
+    "cycles": 5,
+    "interval_seconds": 1.0
+  }
+}
