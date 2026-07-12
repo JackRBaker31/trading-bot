@@ -5,6 +5,7 @@ from collections.abc import Callable
 from app.execution import ExecutionService
 from app.market_data import MarketDataProvider
 from app.strategy import Strategy
+from app.market_session import MarketSession
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,8 @@ class TradingLoop:
         strategy: Strategy,
         execution_service: ExecutionService,
         interval_seconds: float = 1.0,
+        market_session: MarketSession | None = None,
+        enforce_market_hours: bool = False,
     ) -> None:
         if not symbols:
             raise ValueError("At least one symbol is required.")
@@ -34,6 +37,10 @@ class TradingLoop:
         self.strategy = strategy
         self.execution_service = execution_service
         self.interval_seconds = interval_seconds
+        self.market_session = market_session
+        self.enforce_market_hours = (
+            enforce_market_hours
+        )
 
     def run(
         self,
@@ -62,6 +69,47 @@ class TradingLoop:
 
             if before_cycle is not None:
                 before_cycle(cycle_number)
+
+            if self.enforce_market_hours:
+                if self.market_session is None:
+                    raise RuntimeError(
+                        "Market-hours enforcement is enabled "
+                        "but no market session was supplied."
+                    )
+
+                session_status = (
+                    self.market_session.get_status()
+                )
+
+                logger.info(
+                    "market_session_checked "
+                    "cycle=%s is_open=%s reason=%s "
+                    "local_time=%s",
+                    cycle_number,
+                    session_status.is_open,
+                    session_status.reason,
+                    session_status.local_time.isoformat(),
+                )
+
+                if not session_status.is_open:
+                    print(
+                        "Trading skipped: "
+                        f"{session_status.reason}"
+                    )
+
+                    logger.warning(
+                        "trading_cycle_skipped "
+                        "cycle=%s reason=%s",
+                        cycle_number,
+                        session_status.reason,
+                    )
+
+                    if cycle_number < cycles:
+                        time.sleep(
+                            self.interval_seconds
+                        )
+
+                    continue
 
             try:
                 current_prices = self.market_data.get_prices(

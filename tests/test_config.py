@@ -37,6 +37,19 @@ def valid_config() -> dict[str, object]:
             "cycles": 5,
             "interval_seconds": 1.0,
         },
+        "market_session": {
+            "enforce_market_hours": False,
+            "timezone": "America/New_York",
+            "opening_time": "09:30",
+            "closing_time": "16:00",
+            "trading_weekdays": [
+                0,
+                1,
+                2,
+                3,
+                4,
+            ],
+        },
     }
 
 
@@ -64,6 +77,20 @@ def test_load_config(
     == 10.0
 )
     assert config.trading_loop.cycles == 5
+    assert (
+    config.market_session.enforce_market_hours
+    is False
+    )
+
+    assert (
+        config.market_session.timezone
+        == "America/New_York"
+    )
+
+    assert (
+        config.market_session.opening_time
+        == "09:30"
+    )
 
 
 def test_symbols_are_cleaned(

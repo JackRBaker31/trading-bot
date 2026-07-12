@@ -26,6 +26,13 @@ class TradingLoopConfig:
     cycles: int
     interval_seconds: float
 
+@dataclass(frozen=True)
+class MarketSessionConfig:
+    enforce_market_hours: bool
+    timezone: str
+    opening_time: str
+    closing_time: str
+    trading_weekdays: list[int]
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -36,6 +43,7 @@ class AppConfig:
     risk: RiskConfig
     strategy: StrategyConfig
     trading_loop: TradingLoopConfig
+    market_session: MarketSessionConfig
 
 
 def load_config(
@@ -142,6 +150,33 @@ def load_config(
         ),
     )
 
+    market_session_data = raw_data[
+    "market_session"
+]
+
+    market_session = MarketSessionConfig(
+        enforce_market_hours=bool(
+            market_session_data[
+                "enforce_market_hours"
+            ]
+        ),
+        timezone=str(
+            market_session_data["timezone"]
+        ).strip(),
+        opening_time=str(
+            market_session_data["opening_time"]
+        ).strip(),
+        closing_time=str(
+            market_session_data["closing_time"]
+        ).strip(),
+        trading_weekdays=[
+            int(weekday)
+            for weekday in market_session_data[
+                "trading_weekdays"
+            ]
+        ],
+    )
+
     config = AppConfig(
         mode=mode,
         market_data_provider=market_data_provider,
@@ -150,6 +185,7 @@ def load_config(
         risk=risk,
         strategy=strategy,
         trading_loop=trading_loop,
+        market_session=market_session,
     )
 
     logger.info(

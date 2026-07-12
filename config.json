@@ -13,12 +13,19 @@
     "max_trades_per_session": 3
   },
   "strategy": {
-  "drop_threshold_percent": 2.0,
-  "target_allocation_percent": 10.0,
-  "cooldown_cycles": 2
+    "drop_threshold_percent": 2.0,
+    "target_allocation_percent": 10.0,
+    "cooldown_cycles": 2
   },
   "trading_loop": {
     "cycles": 5,
     "interval_seconds": 1.0
+  },
+  "market_session": {
+    "enforce_market_hours": false,
+    "timezone": "America/New_York",
+    "opening_time": "09:30",
+    "closing_time": "16:00",
+    "trading_weekdays": [0, 1, 2, 3, 4]
   }
 }

@@ -13,6 +13,7 @@ from app.risk import RiskEngine, RiskLimits
 from app.simulated_market_data import SimulatedMarketDataProvider
 from app.trade_log import TradeLog
 from app.trading_loop import TradingLoop
+from app.market_session import MarketSession
 
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,21 @@ def main() -> None:
                     "MSFT",
                     305.00,
                 )
+    
+    market_session = MarketSession(
+    timezone_name=(
+        config.market_session.timezone
+    ),
+    opening_time=(
+        config.market_session.opening_time
+    ),
+    closing_time=(
+        config.market_session.closing_time
+    ),
+    trading_weekdays=set(
+        config.market_session.trading_weekdays
+    ),
+)
 
     trading_loop = TradingLoop(
         symbols=config.symbols,
@@ -158,6 +174,11 @@ def main() -> None:
         execution_service=execution_service,
         interval_seconds=(
             config.trading_loop.interval_seconds
+        ),
+        market_session=market_session,
+        enforce_market_hours=(
+            config.market_session
+            .enforce_market_hours
         ),
     )
 
