@@ -1,9 +1,9 @@
-from datetime import date
-
 from app.backtest import BacktestEngine
 from app.buy_the_dip import BuyTheDipStrategy
+from app.csv_historical_data import (
+    load_historical_prices_from_csv,
+)
 from app.execution import ExecutionService
-from app.historical_data import HistoricalPrice
 from app.logging_config import setup_logging
 from app.portfolio import Portfolio
 from app.risk import RiskEngine, RiskLimits
@@ -15,43 +15,15 @@ def main() -> None:
         log_file="data/backtest_application.log"
     )
 
-    historical_prices = [
-        HistoricalPrice(
-            trading_date=date(2026, 1, 2),
-            prices={
-                "AAPL": 150.00,
-                "MSFT": 320.00,
-            },
-        ),
-        HistoricalPrice(
-            trading_date=date(2026, 1, 3),
-            prices={
-                "AAPL": 146.00,
-                "MSFT": 318.00,
-            },
-        ),
-        HistoricalPrice(
-            trading_date=date(2026, 1, 4),
-            prices={
-                "AAPL": 142.00,
-                "MSFT": 310.00,
-            },
-        ),
-        HistoricalPrice(
-            trading_date=date(2026, 1, 5),
-            prices={
-                "AAPL": 145.00,
-                "MSFT": 315.00,
-            },
-        ),
-        HistoricalPrice(
-            trading_date=date(2026, 1, 6),
-            prices={
-                "AAPL": 149.00,
-                "MSFT": 322.00,
-            },
-        ),
-    ]
+    historical_prices = (
+        load_historical_prices_from_csv(
+            file_path="data/sample_prices.csv"
+        )
+    )
+
+    symbols = set(
+        historical_prices[0].prices.keys()
+    )
 
     portfolio = Portfolio(
         starting_cash=10_000.00
@@ -61,8 +33,8 @@ def main() -> None:
         max_order_value=2_000.00,
         max_position_value=3_000.00,
         max_portfolio_exposure=0.50,
-        max_trades_per_session=10,
-        approved_symbols={"AAPL", "MSFT"},
+        max_trades_per_session=100,
+        approved_symbols=symbols,
     )
 
     risk_engine = RiskEngine(
