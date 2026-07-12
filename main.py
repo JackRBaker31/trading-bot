@@ -23,13 +23,15 @@ def main() -> None:
         price=simulated_prices["AAPL"],
     )
 
-    portfolio.buy(
-    symbol="MSFT",
-    quantity=100,
-    price=simulated_prices["MSFT"],
-)
-
     simulated_prices["AAPL"] = 155.00
+    portfolio.display(simulated_prices)
+
+    print("\nSelling 4 simulated shares of AAPL...")
+    portfolio.sell(
+        symbol="AAPL",
+        quantity=4,
+        price=simulated_prices["AAPL"],
+    )
 
     portfolio.display(simulated_prices)
 
