@@ -1,6 +1,9 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -123,7 +126,7 @@ def load_config(
         ),
     )
 
-    return AppConfig(
+    config = AppConfig(
         mode=mode,
         starting_cash=starting_cash,
         symbols=symbols,
@@ -131,3 +134,14 @@ def load_config(
         strategy=strategy,
         trading_loop=trading_loop,
     )
+
+    logger.info(
+        "configuration_loaded file=%s mode=%s symbols=%s "
+        "starting_cash=%.2f",
+        path,
+        config.mode,
+        ",".join(config.symbols),
+        config.starting_cash,
+    )
+
+    return config

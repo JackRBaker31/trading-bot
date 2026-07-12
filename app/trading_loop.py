@@ -1,9 +1,13 @@
+import logging
 import time
 from collections.abc import Callable
 
 from app.execution import ExecutionService
 from app.market_data import MarketDataProvider
 from app.strategy import Strategy
+
+
+logger = logging.getLogger(__name__)
 
 
 class TradingLoop:
@@ -39,22 +43,60 @@ class TradingLoop:
         if cycles <= 0:
             raise ValueError("Cycles must be greater than zero.")
 
+        logger.info(
+            "trading_loop_started cycles=%s interval_seconds=%s symbols=%s",
+            cycles,
+            self.interval_seconds,
+            ",".join(self.symbols),
+        )
+
         print(f"\nStarting trading loop for {cycles} cycles...")
 
         for cycle_number in range(1, cycles + 1):
+            logger.info(
+                "trading_cycle_started cycle=%s",
+                cycle_number,
+            )
+
             print(f"\n--- CYCLE {cycle_number} ---")
 
             if before_cycle is not None:
                 before_cycle(cycle_number)
 
-            current_prices = self.market_data.get_prices(
-                self.symbols
+            try:
+                current_prices = self.market_data.get_prices(
+                    self.symbols
+                )
+            except Exception:
+                logger.exception(
+                    "market_data_error cycle=%s",
+                    cycle_number,
+                )
+                raise
+
+            logger.info(
+                "prices_received cycle=%s prices=%s",
+                cycle_number,
+                current_prices,
             )
 
             self._display_prices(current_prices)
 
-            orders = self.strategy.generate_orders(
-                current_prices
+            try:
+                orders = self.strategy.generate_orders(
+                    current_prices
+                )
+            except Exception:
+                logger.exception(
+                    "strategy_error cycle=%s",
+                    cycle_number,
+                )
+                raise
+
+            logger.info(
+                "strategy_completed cycle=%s order_count=%s",
+                cycle_number,
+                len(orders),
             )
 
             if not orders:
@@ -78,8 +120,18 @@ class TradingLoop:
                 result = "EXECUTED" if executed else "REJECTED"
                 print(f"Result: {result}")
 
+            logger.info(
+                "trading_cycle_completed cycle=%s",
+                cycle_number,
+            )
+
             if cycle_number < cycles:
                 time.sleep(self.interval_seconds)
+
+        logger.info(
+            "trading_loop_finished cycles=%s",
+            cycles,
+        )
 
         print("\nTrading loop finished.")
 

@@ -1,7 +1,11 @@
 import json
+import logging
 from pathlib import Path
 
 from app.portfolio import Portfolio
+
+
+logger = logging.getLogger(__name__)
 
 
 class PortfolioStore:
@@ -32,8 +36,20 @@ class PortfolioStore:
 
         temporary_path.replace(self.file_path)
 
+        logger.info(
+            "portfolio_saved file=%s cash=%.2f positions=%s",
+            self.file_path,
+            portfolio.cash,
+            portfolio.positions,
+        )
+
     def load(self) -> Portfolio:
         if not self.file_path.exists():
+            logger.error(
+                "portfolio_file_missing file=%s",
+                self.file_path,
+            )
+
             raise FileNotFoundError(
                 f"Portfolio file does not exist: {self.file_path}"
             )
@@ -55,6 +71,13 @@ class PortfolioStore:
             for symbol, quantity in data["positions"].items()
         }
 
+        logger.info(
+            "portfolio_loaded file=%s cash=%.2f positions=%s",
+            self.file_path,
+            portfolio.cash,
+            portfolio.positions,
+        )
+
         return portfolio
 
     def load_or_create(
@@ -63,6 +86,12 @@ class PortfolioStore:
     ) -> Portfolio:
         if self.file_path.exists():
             return self.load()
+
+        logger.info(
+            "portfolio_creating file=%s starting_cash=%.2f",
+            self.file_path,
+            starting_cash,
+        )
 
         portfolio = Portfolio(
             starting_cash=starting_cash

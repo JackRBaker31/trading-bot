@@ -1,9 +1,13 @@
+import logging
 from datetime import datetime
 
 from app.orders import Order, OrderSide
 from app.portfolio import Portfolio
 from app.risk import RiskEngine
 from app.trade_log import TradeLog, TradeLogEntry
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionService:
@@ -22,6 +26,15 @@ class ExecutionService:
         order: Order,
         current_prices: dict[str, float],
     ) -> bool:
+        logger.info(
+            "order_received symbol=%s side=%s quantity=%s price=%.2f value=%.2f",
+            order.symbol,
+            order.side.value,
+            order.quantity,
+            order.price,
+            order.value,
+        )
+
         decision = self.risk_engine.evaluate(
             order=order,
             portfolio=self.portfolio,
@@ -46,6 +59,23 @@ class ExecutionService:
 
             self.risk_engine.record_executed_trade()
             executed = True
+
+            logger.info(
+                "order_executed symbol=%s side=%s quantity=%s "
+                "price=%.2f session_trade_count=%s",
+                order.symbol,
+                order.side.value,
+                order.quantity,
+                order.price,
+                self.risk_engine.executed_trade_count,
+            )
+        else:
+            logger.warning(
+                "order_rejected symbol=%s side=%s reason=%s",
+                order.symbol,
+                order.side.value,
+                decision.reason,
+            )
 
         entry = TradeLogEntry(
             timestamp=datetime.now(),

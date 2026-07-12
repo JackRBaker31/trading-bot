@@ -1,8 +1,10 @@
+import logging
 from datetime import datetime
 
 from app.buy_the_dip import BuyTheDipStrategy
 from app.config import load_config
 from app.execution import ExecutionService
+from app.logging_config import setup_logging
 from app.portfolio_store import PortfolioStore
 from app.risk import RiskEngine, RiskLimits
 from app.simulated_market_data import SimulatedMarketDataProvider
@@ -10,13 +12,25 @@ from app.trade_log import TradeLog
 from app.trading_loop import TradingLoop
 
 
+logger = logging.getLogger(__name__)
+
+
 def main() -> None:
+    setup_logging()
+
+    logger.info("application_starting")
+
     config = load_config()
 
     print("Trading system starting...")
     print(f"Current time: {datetime.now()}")
     print(f"Mode: {config.mode}")
     print("Real-money trading: DISABLED")
+
+    logger.info(
+        "safe_mode_confirmed mode=%s real_money_trading=false",
+        config.mode,
+    )
 
     simulated_starting_prices = {
         "AAPL": 150.00,
@@ -30,6 +44,11 @@ def main() -> None:
     ]
 
     if missing_symbols:
+        logger.error(
+            "missing_simulated_prices symbols=%s",
+            ",".join(missing_symbols),
+        )
+
         raise ValueError(
             "No simulated starting price exists for: "
             + ", ".join(missing_symbols)
@@ -139,6 +158,20 @@ def main() -> None:
     portfolio.display(final_prices)
     trade_log.display()
 
+    logger.info(
+        "application_finished cash=%.2f positions=%s "
+        "session_trade_count=%s",
+        portfolio.cash,
+        portfolio.positions,
+        risk_engine.executed_trade_count,
+    )
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        logger.exception(
+            "application_stopped_due_to_unhandled_error"
+        )
+        raise
