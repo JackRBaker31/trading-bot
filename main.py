@@ -1,10 +1,13 @@
 import logging
 from datetime import datetime
 
+from dotenv import load_dotenv
+
 from app.buy_the_dip import BuyTheDipStrategy
 from app.config import load_config
 from app.execution import ExecutionService
 from app.logging_config import setup_logging
+from app.market_data_factory import create_market_data_provider
 from app.portfolio_store import PortfolioStore
 from app.risk import RiskEngine, RiskLimits
 from app.simulated_market_data import SimulatedMarketDataProvider
@@ -17,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     setup_logging()
+    load_dotenv()
 
     logger.info("application_starting")
 
@@ -25,40 +29,20 @@ def main() -> None:
     print("Trading system starting...")
     print(f"Current time: {datetime.now()}")
     print(f"Mode: {config.mode}")
+    print(f"Market data: {config.market_data_provider}")
     print("Real-money trading: DISABLED")
 
     logger.info(
-        "safe_mode_confirmed mode=%s real_money_trading=false",
+        "safe_mode_confirmed mode=%s "
+        "market_data_provider=%s "
+        "real_money_trading=false",
         config.mode,
+        config.market_data_provider,
     )
 
-    simulated_starting_prices = {
-        "AAPL": 150.00,
-        "MSFT": 320.00,
-    }
-
-    missing_symbols = [
-        symbol
-        for symbol in config.symbols
-        if symbol not in simulated_starting_prices
-    ]
-
-    if missing_symbols:
-        logger.error(
-            "missing_simulated_prices symbols=%s",
-            ",".join(missing_symbols),
-        )
-
-        raise ValueError(
-            "No simulated starting price exists for: "
-            + ", ".join(missing_symbols)
-        )
-
-    market_data = SimulatedMarketDataProvider(
-        prices={
-            symbol: simulated_starting_prices[symbol]
-            for symbol in config.symbols
-        }
+    market_data = create_market_data_provider(
+        provider_name=config.market_data_provider,
+        symbols=config.symbols,
     )
 
     portfolio_store = PortfolioStore()
@@ -104,33 +88,66 @@ def main() -> None:
     def simulate_price_changes(
         cycle_number: int,
     ) -> None:
+        if config.market_data_provider != "SIMULATED":
+            return
+
+        if not isinstance(
+            market_data,
+            SimulatedMarketDataProvider,
+        ):
+            return
+
         if cycle_number == 2:
             if "AAPL" in config.symbols:
-                market_data.set_price("AAPL", 146.00)
+                market_data.set_price(
+                    "AAPL",
+                    146.00,
+                )
 
             if "MSFT" in config.symbols:
-                market_data.set_price("MSFT", 318.00)
+                market_data.set_price(
+                    "MSFT",
+                    318.00,
+                )
 
         elif cycle_number == 3:
             if "AAPL" in config.symbols:
-                market_data.set_price("AAPL", 142.00)
+                market_data.set_price(
+                    "AAPL",
+                    142.00,
+                )
 
             if "MSFT" in config.symbols:
-                market_data.set_price("MSFT", 310.00)
+                market_data.set_price(
+                    "MSFT",
+                    310.00,
+                )
 
         elif cycle_number == 4:
             if "AAPL" in config.symbols:
-                market_data.set_price("AAPL", 138.00)
+                market_data.set_price(
+                    "AAPL",
+                    138.00,
+                )
 
             if "MSFT" in config.symbols:
-                market_data.set_price("MSFT", 308.00)
+                market_data.set_price(
+                    "MSFT",
+                    308.00,
+                )
 
         elif cycle_number == 5:
             if "AAPL" in config.symbols:
-                market_data.set_price("AAPL", 134.00)
+                market_data.set_price(
+                    "AAPL",
+                    134.00,
+                )
 
             if "MSFT" in config.symbols:
-                market_data.set_price("MSFT", 305.00)
+                market_data.set_price(
+                    "MSFT",
+                    305.00,
+                )
 
     trading_loop = TradingLoop(
         symbols=config.symbols,

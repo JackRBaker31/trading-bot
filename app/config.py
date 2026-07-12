@@ -30,6 +30,7 @@ class TradingLoopConfig:
 @dataclass(frozen=True)
 class AppConfig:
     mode: str
+    market_data_provider: str
     starting_cash: float
     symbols: list[str]
     risk: RiskConfig
@@ -58,6 +59,19 @@ def load_config(
     if mode not in {"SIMULATION", "PAPER"}:
         raise ValueError(
             "Mode must be SIMULATION or PAPER."
+        )
+    
+    market_data_provider = str(
+        raw_data["market_data_provider"]
+    ).upper().strip()
+
+    if market_data_provider not in {
+        "SIMULATED",
+        "TWELVE_DATA",
+    }:
+        raise ValueError(
+            "Market-data provider must be "
+            "SIMULATED or TWELVE_DATA."
         )
 
     starting_cash = float(
@@ -128,6 +142,7 @@ def load_config(
 
     config = AppConfig(
         mode=mode,
+        market_data_provider=market_data_provider,
         starting_cash=starting_cash,
         symbols=symbols,
         risk=risk,
@@ -136,10 +151,12 @@ def load_config(
     )
 
     logger.info(
-        "configuration_loaded file=%s mode=%s symbols=%s "
+        "configuration_loaded file=%s mode=%s "
+        "market_data_provider=%s symbols=%s "
         "starting_cash=%.2f",
         path,
         config.mode,
+        config.market_data_provider,
         ",".join(config.symbols),
         config.starting_cash,
     )

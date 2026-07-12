@@ -19,6 +19,7 @@ def write_config(
 def valid_config() -> dict[str, object]:
     return {
         "mode": "SIMULATION",
+        "market_data_provider": "SIMULATED",
         "starting_cash": 10_000.00,
         "symbols": ["AAPL", "MSFT"],
         "risk": {
@@ -54,6 +55,7 @@ def test_load_config(
     )
 
     assert config.mode == "SIMULATION"
+    assert config.market_data_provider == "SIMULATED"
     assert config.starting_cash == 10_000.00
     assert config.symbols == ["AAPL", "MSFT"]
     assert config.risk.max_trades_per_session == 3

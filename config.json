@@ -1,5 +1,6 @@
 {
   "mode": "SIMULATION",
+  "market_data_provider": "SIMULATED",
   "starting_cash": 10000.0,
   "symbols": [
     "AAPL",
