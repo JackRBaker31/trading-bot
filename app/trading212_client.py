@@ -87,6 +87,16 @@ class Trading212Client(BrokerClient):
             cash = data["cash"]
             investments = data["investments"]
 
+            if not isinstance(cash, dict):
+                raise TypeError(
+                    "Cash must be an object."
+                )
+
+            if not isinstance(investments, dict):
+                raise TypeError(
+                    "Investments must be an object."
+                )
+
             return BrokerAccountSummary(
                 account_id=int(data["id"]),
                 currency=str(data["currency"]),
@@ -149,6 +159,14 @@ class Trading212Client(BrokerClient):
 
             try:
                 instrument = item["instrument"]
+
+                if not isinstance(
+                    instrument,
+                    dict,
+                ):
+                    raise TypeError(
+                        "Instrument must be an object."
+                    )
 
                 ticker = str(
                     instrument["ticker"]
@@ -233,16 +251,64 @@ class Trading212Client(BrokerClient):
             },
         )
 
-        if not isinstance(data, dict):
-            raise BrokerError(
+        return self._parse_order_result(
+            data=data,
+            error_message=(
                 "Trading 212 returned an invalid "
                 "market-order response."
+            ),
+        )
+
+    def get_pending_order(
+        self,
+        order_id: int,
+    ) -> BrokerOrderResult:
+        if order_id <= 0:
+            raise ValueError(
+                "Order ID must be positive."
+            )
+
+        data = self._get(
+            f"/equity/orders/{order_id}"
+        )
+
+        return self._parse_order_result(
+            data=data,
+            error_message=(
+                "Trading 212 returned an invalid "
+                "pending-order response."
+            ),
+        )
+
+    @staticmethod
+    def _parse_order_result(
+        data: object,
+        error_message: str,
+    ) -> BrokerOrderResult:
+        if not isinstance(data, dict):
+            raise BrokerError(
+                error_message
             )
 
         try:
+            raw_ticker = data.get("ticker")
+
+            if raw_ticker is None:
+                instrument = data["instrument"]
+
+                if not isinstance(
+                    instrument,
+                    dict,
+                ):
+                    raise TypeError(
+                        "Instrument must be an object."
+                    )
+
+                raw_ticker = instrument["ticker"]
+
             return BrokerOrderResult(
                 order_id=int(data["id"]),
-                ticker=str(data["ticker"]),
+                ticker=str(raw_ticker),
                 quantity=float(data["quantity"]),
                 side=str(data["side"]),
                 status=str(data["status"]),
@@ -267,8 +333,7 @@ class Trading212Client(BrokerClient):
             ValueError,
         ) as error:
             raise BrokerError(
-                "Trading 212 returned an invalid "
-                "market-order response."
+                error_message
             ) from error
 
     def _get(

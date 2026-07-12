@@ -416,3 +416,152 @@ def test_market_order_rejects_invalid_response(
             ticker="AAPL_US_EQ",
             quantity=1,
         )
+
+def test_get_pending_order(
+    monkeypatch,
+) -> None:
+    captured_url = ""
+
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        nonlocal captured_url
+        captured_url = url
+
+        return FakeResponse(
+            {
+                "id": 987654,
+                "currency": "GBP",
+                "instrument": {
+                    "ticker": "AAPL_US_EQ",
+                },
+                "quantity": 2,
+                "side": "BUY",
+                "status": "PARTIALLY_FILLED",
+                "type": "MARKET",
+                "filledQuantity": 1,
+                "filledValue": 150,
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    result = client.get_pending_order(
+        order_id=987654
+    )
+
+    assert captured_url.endswith(
+        "/equity/orders/987654"
+    )
+
+    assert result.order_id == 987654
+    assert result.ticker == "AAPL_US_EQ"
+    assert result.status == "PARTIALLY_FILLED"
+    assert result.filled_quantity == 1
+    assert result.filled_value == 150
+
+
+def test_get_pending_order_rejects_invalid_id() -> None:
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Order ID must be positive",
+    ):
+        client.get_pending_order(
+            order_id=0
+        )
+
+
+def test_get_pending_order_rejects_invalid_response(
+    monkeypatch,
+) -> None:
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        return FakeResponse(
+            {
+                "unexpected": "response",
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerError,
+        match="invalid pending-order response",
+    ):
+        client.get_pending_order(
+            order_id=987654
+        )
+
+
+def test_shared_order_parser_accepts_top_level_ticker() -> None:
+    result = Trading212Client._parse_order_result(
+        data={
+            "id": 1,
+            "ticker": "AAPL_US_EQ",
+            "quantity": 1,
+            "side": "BUY",
+            "status": "NEW",
+            "type": "MARKET",
+            "filledQuantity": 0,
+            "filledValue": 0,
+            "currency": "GBP",
+        },
+        error_message="Invalid order.",
+    )
+
+    assert result.ticker == "AAPL_US_EQ"
+    assert result.status == "NEW"
+
+
+def test_shared_order_parser_accepts_instrument_ticker() -> None:
+    result = Trading212Client._parse_order_result(
+        data={
+            "id": 1,
+            "instrument": {
+                "ticker": "AAPL_US_EQ",
+            },
+            "quantity": 1,
+            "side": "BUY",
+            "status": "FILLED",
+            "type": "MARKET",
+            "filledQuantity": 1,
+            "filledValue": 150,
+            "currency": "GBP",
+        },
+        error_message="Invalid order.",
+    )
+
+    assert result.ticker == "AAPL_US_EQ"
+    assert result.status == "FILLED"
+    assert result.filled_quantity == 1
