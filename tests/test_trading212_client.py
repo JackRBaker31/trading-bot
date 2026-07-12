@@ -206,3 +206,40 @@ def test_invalid_summary_response_is_rejected(
         match="invalid account summary",
     ):
         client.get_account_summary()
+
+def test_rate_limit_error_includes_reset_information(
+    monkeypatch,
+) -> None:
+    request = httpx.Request(
+        "GET",
+        "https://example.com",
+    )
+
+    response = httpx.Response(
+        429,
+        request=request,
+        headers={
+            "x-ratelimit-reset": "1760000000",
+            "x-ratelimit-remaining": "0",
+        },
+    )
+
+    def fake_get(*args, **kwargs):
+        return response
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+    )
+
+    with pytest.raises(
+        BrokerError,
+        match="rate limit reached",
+    ):
+        client.get_account_summary()

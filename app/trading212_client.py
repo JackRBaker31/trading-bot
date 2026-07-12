@@ -225,9 +225,38 @@ class Trading212Client(BrokerClient):
             ) from error
 
         except httpx.HTTPStatusError as error:
-            status_code = (
-                error.response.status_code
+            status_code = error.response.status_code
+
+            logger.error(
+                "broker_http_error "
+                "environment=%s path=%s "
+                "status_code=%s",
+                self.environment,
+                path,
+                status_code,
             )
+
+            if status_code == 429:
+                reset_at = error.response.headers.get(
+                    "x-ratelimit-reset",
+                    "unknown",
+                )
+
+                remaining = error.response.headers.get(
+                    "x-ratelimit-remaining",
+                    "0",
+                )
+
+                raise BrokerError(
+                    "Trading 212 rate limit reached. "
+                    f"Remaining requests: {remaining}. "
+                    f"Reset time: {reset_at}."
+                ) from error
+
+            raise BrokerError(
+                f"Trading 212 returned HTTP "
+                f"{status_code}."
+            ) from error
 
             logger.error(
                 "broker_http_error "
