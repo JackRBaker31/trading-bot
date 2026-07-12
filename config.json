@@ -27,5 +27,9 @@
     "opening_time": "09:30",
     "closing_time": "16:00",
     "trading_weekdays": [0, 1, 2, 3, 4]
-  }
+  },
+  "paper_trading": {
+  "enabled": false,
+  "broker_environment": "DEMO"
+}
 }

@@ -50,6 +50,10 @@ def valid_config() -> dict[str, object]:
                 4,
             ],
         },
+        "paper_trading": {
+            "enabled": False,
+            "broker_environment": "DEMO",
+        },
     }
 
 
@@ -90,6 +94,12 @@ def test_load_config(
     assert (
         config.market_session.opening_time
         == "09:30"
+    )
+
+    assert config.paper_trading.enabled is False
+    assert (
+        config.paper_trading.broker_environment
+        == "DEMO"
     )
 
 
@@ -164,6 +174,53 @@ def test_missing_file_raises_error(
 
     with pytest.raises(
         FileNotFoundError,
+    ):
+        load_config(
+            str(file_path)
+        )
+
+def test_invalid_paper_trading_environment_is_rejected(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "config.json"
+
+    data = valid_config()
+    data["paper_trading"] = {
+        "enabled": False,
+        "broker_environment": "UNKNOWN",
+    }
+
+    write_config(
+        file_path,
+        data,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="DEMO or LIVE",
+    ):
+        load_config(
+            str(file_path)
+        )
+def test_enabled_paper_trading_rejects_live_environment(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "config.json"
+
+    data = valid_config()
+    data["paper_trading"] = {
+        "enabled": True,
+        "broker_environment": "LIVE",
+    }
+
+    write_config(
+        file_path,
+        data,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="only be enabled",
     ):
         load_config(
             str(file_path)

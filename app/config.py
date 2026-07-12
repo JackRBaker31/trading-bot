@@ -35,6 +35,11 @@ class MarketSessionConfig:
     trading_weekdays: list[int]
 
 @dataclass(frozen=True)
+class PaperTradingConfig:
+    enabled: bool
+    broker_environment: str
+
+@dataclass(frozen=True)
 class AppConfig:
     mode: str
     market_data_provider: str
@@ -44,6 +49,7 @@ class AppConfig:
     strategy: StrategyConfig
     trading_loop: TradingLoopConfig
     market_session: MarketSessionConfig
+    paper_trading: PaperTradingConfig
 
 
 def load_config(
@@ -177,6 +183,35 @@ def load_config(
         ],
     )
 
+    paper_trading_data = raw_data["paper_trading"]
+
+    paper_trading = PaperTradingConfig(
+        enabled=bool(
+            paper_trading_data["enabled"]
+        ),
+        broker_environment=str(
+            paper_trading_data["broker_environment"]
+        ).upper().strip(),
+    )
+
+    if paper_trading.broker_environment not in {
+        "DEMO",
+        "LIVE",
+    }:
+        raise ValueError(
+            "Paper-trading broker environment must be "
+            "DEMO or LIVE."
+        )
+    
+    if (
+        paper_trading.enabled
+        and paper_trading.broker_environment != "DEMO"
+    ):
+        raise ValueError(
+            "Paper trading can only be enabled "
+            "with the DEMO broker environment."
+        )
+
     config = AppConfig(
         mode=mode,
         market_data_provider=market_data_provider,
@@ -186,6 +221,7 @@ def load_config(
         strategy=strategy,
         trading_loop=trading_loop,
         market_session=market_session,
+        paper_trading=paper_trading,
     )
 
     logger.info(
