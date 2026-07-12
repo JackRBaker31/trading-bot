@@ -1,0 +1,108 @@
+from app.execution import ExecutionService
+from app.orders import Order, OrderSide
+from app.portfolio import Portfolio
+from app.risk import RiskEngine, RiskLimits
+from app.trade_log import TradeLog
+
+
+def create_execution_service() -> tuple[
+    ExecutionService,
+    Portfolio,
+    TradeLog,
+]:
+    portfolio = Portfolio(starting_cash=10_000.00)
+
+    limits = RiskLimits(
+        max_order_value=2_000.00,
+        max_position_value=3_000.00,
+        max_portfolio_exposure=0.50,
+        approved_symbols={"AAPL", "MSFT"},
+    )
+
+    risk_engine = RiskEngine(limits=limits)
+    trade_log = TradeLog()
+
+    service = ExecutionService(
+        portfolio=portfolio,
+        risk_engine=risk_engine,
+        trade_log=trade_log,
+    )
+
+    return service, portfolio, trade_log
+
+
+def test_approved_order_executes_and_is_logged() -> None:
+    service, portfolio, trade_log = create_execution_service()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=10,
+        price=150.00,
+    )
+
+    executed = service.submit_order(
+        order=order,
+        current_prices={"AAPL": 150.00},
+    )
+
+    assert executed is True
+    assert portfolio.positions["AAPL"] == 10
+    assert len(trade_log.entries) == 1
+    assert trade_log.entries[0].executed is True
+    assert trade_log.entries[0].approved is True
+
+
+def test_rejected_order_is_logged_but_not_executed() -> None:
+    service, portfolio, trade_log = create_execution_service()
+
+    order = Order(
+        symbol="TSLA",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=250.00,
+    )
+
+    executed = service.submit_order(
+        order=order,
+        current_prices={"TSLA": 250.00},
+    )
+
+    assert executed is False
+    assert "TSLA" not in portfolio.positions
+    assert len(trade_log.entries) == 1
+    assert trade_log.entries[0].executed is False
+    assert trade_log.entries[0].approved is False
+
+
+def test_sell_order_updates_portfolio_and_log() -> None:
+    service, portfolio, trade_log = create_execution_service()
+
+    buy_order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=5,
+        price=150.00,
+    )
+
+    sell_order = Order(
+        symbol="AAPL",
+        side=OrderSide.SELL,
+        quantity=2,
+        price=155.00,
+    )
+
+    service.submit_order(
+        order=buy_order,
+        current_prices={"AAPL": 150.00},
+    )
+
+    executed = service.submit_order(
+        order=sell_order,
+        current_prices={"AAPL": 155.00},
+    )
+
+    assert executed is True
+    assert portfolio.positions["AAPL"] == 3
+    assert len(trade_log.entries) == 2
+    assert trade_log.entries[1].side == "SELL"

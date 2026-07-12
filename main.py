@@ -1,47 +1,20 @@
 from datetime import datetime
 
+from app.execution import ExecutionService
 from app.orders import Order, OrderSide
 from app.portfolio import Portfolio
 from app.risk import RiskEngine, RiskLimits
+from app.trade_log import TradeLog
 
 
-def execute_order(
-    order: Order,
-    portfolio: Portfolio,
-    risk_engine: RiskEngine,
-    current_prices: dict[str, float],
-) -> None:
-    decision = risk_engine.evaluate(
-        order=order,
-        portfolio=portfolio,
-        current_prices=current_prices,
-    )
-
-    print(f"\nProposed order: {order.side.value}")
+def display_order_result(order: Order, executed: bool) -> None:
+    print("\nProposed order")
+    print(f"Side: {order.side.value}")
     print(f"Symbol: {order.symbol}")
     print(f"Quantity: {order.quantity}")
     print(f"Price: £{order.price:.2f}")
-    print(f"Order value: £{order.value:.2f}")
-    print(f"Risk decision: {decision.reason}")
-
-    if not decision.approved:
-        print("Order rejected.")
-        return
-
-    if order.side == OrderSide.BUY:
-        portfolio.buy(
-            symbol=order.symbol,
-            quantity=order.quantity,
-            price=order.price,
-        )
-    else:
-        portfolio.sell(
-            symbol=order.symbol,
-            quantity=order.quantity,
-            price=order.price,
-        )
-
-    print("Order executed in simulation.")
+    print(f"Value: £{order.value:.2f}")
+    print(f"Result: {'EXECUTED' if executed else 'REJECTED'}")
 
 
 def main() -> None:
@@ -66,36 +39,47 @@ def main() -> None:
     )
 
     risk_engine = RiskEngine(limits=limits)
+    trade_log = TradeLog()
 
-    first_order = Order(
-        symbol="AAPL",
-        side=OrderSide.BUY,
-        quantity=10,
-        price=current_prices["AAPL"],
-    )
-
-    execute_order(
-        order=first_order,
+    execution_service = ExecutionService(
         portfolio=portfolio,
         risk_engine=risk_engine,
-        current_prices=current_prices,
+        trade_log=trade_log,
     )
 
-    rejected_order = Order(
-        symbol="TSLA",
-        side=OrderSide.BUY,
-        quantity=2,
-        price=current_prices["TSLA"],
-    )
+    orders = [
+        Order(
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            quantity=10,
+            price=current_prices["AAPL"],
+        ),
+        Order(
+            symbol="TSLA",
+            side=OrderSide.BUY,
+            quantity=2,
+            price=current_prices["TSLA"],
+        ),
+        Order(
+            symbol="AAPL",
+            side=OrderSide.SELL,
+            quantity=4,
+            price=155.00,
+        ),
+    ]
 
-    execute_order(
-        order=rejected_order,
-        portfolio=portfolio,
-        risk_engine=risk_engine,
-        current_prices=current_prices,
-    )
+    for order in orders:
+        executed = execution_service.submit_order(
+            order=order,
+            current_prices=current_prices,
+        )
+
+        display_order_result(order, executed)
+
+    current_prices["AAPL"] = 155.00
 
     portfolio.display(current_prices)
+    trade_log.display()
 
 
 if __name__ == "__main__":
