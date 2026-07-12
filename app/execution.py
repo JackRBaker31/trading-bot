@@ -44,6 +44,7 @@ class ExecutionService:
                     price=order.price,
                 )
 
+            self.risk_engine.record_executed_trade()
             executed = True
 
         entry = TradeLogEntry(

@@ -20,6 +20,7 @@ def create_execution_service(
         max_order_value=2_000.00,
         max_position_value=3_000.00,
         max_portfolio_exposure=0.50,
+        max_trades_per_session=3,
         approved_symbols={"AAPL", "MSFT"},
     )
 
@@ -179,3 +180,49 @@ def test_trade_log_writes_one_line_per_order(
     ).splitlines()
 
     assert len(lines) == 2
+
+def test_executed_trade_increases_risk_trade_count(
+    tmp_path: Path,
+) -> None:
+    log_file = tmp_path / "trade_log.jsonl"
+
+    service, _, _ = create_execution_service(
+        log_file=log_file,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    service.submit_order(
+        order=order,
+        current_prices={"AAPL": 150.00},
+    )
+
+    assert service.risk_engine.executed_trade_count == 1
+
+def test_rejected_trade_does_not_increase_trade_count(
+    tmp_path: Path,
+) -> None:
+    log_file = tmp_path / "trade_log.jsonl"
+
+    service, _, _ = create_execution_service(
+        log_file=log_file,
+    )
+
+    order = Order(
+        symbol="TSLA",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=250.00,
+    )
+
+    service.submit_order(
+        order=order,
+        current_prices={"TSLA": 250.00},
+    )
+
+    assert service.risk_engine.executed_trade_count == 0

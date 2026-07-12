@@ -8,6 +8,7 @@ def create_risk_engine() -> RiskEngine:
         max_order_value=2_000.00,
         max_position_value=3_000.00,
         max_portfolio_exposure=0.50,
+        max_trades_per_session=3,
         approved_symbols={"AAPL", "MSFT"},
     )
 
@@ -139,6 +140,115 @@ def test_valid_sell_order_passes() -> None:
         order=order,
         portfolio=portfolio,
         current_prices={"AAPL": 155.00},
+    )
+
+    assert decision.approved is True
+
+def test_kill_switch_rejects_order() -> None:
+    portfolio = Portfolio(starting_cash=10_000.00)
+    risk_engine = create_risk_engine()
+
+    risk_engine.enable_kill_switch()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    decision = risk_engine.evaluate(
+        order=order,
+        portfolio=portfolio,
+        current_prices={"AAPL": 150.00},
+    )
+
+    assert decision.approved is False
+    assert "kill switch" in decision.reason.lower()
+
+
+def test_disabling_kill_switch_allows_valid_order() -> None:
+    portfolio = Portfolio(starting_cash=10_000.00)
+    risk_engine = create_risk_engine()
+
+    risk_engine.enable_kill_switch()
+    risk_engine.disable_kill_switch()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    decision = risk_engine.evaluate(
+        order=order,
+        portfolio=portfolio,
+        current_prices={"AAPL": 150.00},
+    )
+
+    assert decision.approved is True
+
+
+def test_trade_limit_rejects_additional_order() -> None:
+    portfolio = Portfolio(starting_cash=10_000.00)
+
+    limits = RiskLimits(
+        max_order_value=2_000.00,
+        max_position_value=3_000.00,
+        max_portfolio_exposure=0.50,
+        max_trades_per_session=1,
+        approved_symbols={"AAPL"},
+    )
+
+    risk_engine = RiskEngine(limits=limits)
+
+    risk_engine.record_executed_trade()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    decision = risk_engine.evaluate(
+        order=order,
+        portfolio=portfolio,
+        current_prices={"AAPL": 150.00},
+    )
+
+    assert decision.approved is False
+    assert "maximum number of trades" in decision.reason.lower()
+
+
+def test_reset_session_resets_trade_count() -> None:
+    portfolio = Portfolio(starting_cash=10_000.00)
+
+    limits = RiskLimits(
+        max_order_value=2_000.00,
+        max_position_value=3_000.00,
+        max_portfolio_exposure=0.50,
+        max_trades_per_session=3,
+        approved_symbols={"AAPL"},
+    )
+
+    risk_engine = RiskEngine(limits=limits)
+
+    risk_engine.record_executed_trade()
+    risk_engine.reset_session()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    decision = risk_engine.evaluate(
+        order=order,
+        portfolio=portfolio,
+        current_prices={"AAPL": 150.00},
     )
 
     assert decision.approved is True

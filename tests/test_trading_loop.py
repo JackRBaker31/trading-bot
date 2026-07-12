@@ -35,6 +35,7 @@ def create_trading_loop(
         max_order_value=2_000.00,
         max_position_value=3_000.00,
         max_portfolio_exposure=0.50,
+        max_trades_per_session=3,
         approved_symbols={"AAPL", "MSFT"},
     )
 
@@ -140,6 +141,7 @@ def test_loop_rejects_empty_symbol_list(
         max_order_value=2_000.00,
         max_position_value=3_000.00,
         max_portfolio_exposure=0.50,
+        max_trades_per_session=3,
         approved_symbols={"AAPL"},
     )
 
