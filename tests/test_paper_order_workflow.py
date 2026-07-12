@@ -14,22 +14,36 @@ from app.paper_order_workflow import (
 )
 from app.paper_trading_gate import GateDecision
 from app.portfolio import Portfolio
-
+from app.broker import (
+    BrokerOrderResult,
+    BrokerResourceNotFoundError,
+)
 
 class FakeBroker:
     def __init__(
         self,
         verification_order: BrokerOrderResult,
+        pending_order_not_found: bool = False,
+        historical_order: (
+            BrokerOrderResult | None
+        ) = None,
     ) -> None:
         self.verification_order = (
             verification_order
         )
+
+        self.pending_order_not_found = (
+            pending_order_not_found
+        )
+
+        self.historical_order = historical_order
 
         self.submission_calls: list[
             dict[str, object]
         ] = []
 
         self.status_calls: list[int] = []
+        self.history_calls: list[int] = []
 
     def place_market_order(
         self,
@@ -69,7 +83,23 @@ class FakeBroker:
             order_id
         )
 
+        if self.pending_order_not_found:
+            raise BrokerResourceNotFoundError(
+                "Pending order was not found."
+            )
+
         return self.verification_order
+    
+    def find_historical_order(
+        self,
+        order_id: int,
+        max_pages: int = 5,
+    ) -> BrokerOrderResult | None:
+        self.history_calls.append(
+            order_id
+        )
+
+        return self.historical_order
 
 
 def create_broker_order(
@@ -458,3 +488,121 @@ def test_negative_quantity_tolerance_is_rejected() -> None:
             ),
             quantity_tolerance=-1,
         )
+
+def test_historical_filled_order_updates_portfolio() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    historical_order = create_broker_order(
+        status="FILLED",
+        filled_quantity=2.0,
+        filled_value=300.0,
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        ),
+        pending_order_not_found=True,
+        historical_order=historical_order,
+    )
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+    )
+
+    result = workflow.execute(
+        order=Order(
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            quantity=2,
+            price=150.00,
+        ),
+        gate_decision=approved_gate(),
+    )
+
+    assert result.submitted is True
+    assert result.portfolio_updated is True
+    assert portfolio.positions == {
+        "AAPL": 2,
+    }
+    assert portfolio.cash == 4_700.00
+    assert broker.status_calls == [
+        123456,
+    ]
+    assert broker.history_calls == [
+        123456,
+    ]
+
+
+def test_missing_pending_and_historical_order_is_unknown() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        ),
+        pending_order_not_found=True,
+        historical_order=None,
+    )
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+    )
+
+    result = workflow.execute(
+        order=Order(
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            quantity=2,
+            price=150.00,
+        ),
+        gate_decision=approved_gate(),
+    )
+
+    assert result.submitted is True
+    assert result.portfolio_updated is False
+    assert "state is unknown" in result.reason
+    assert portfolio.positions == {}
+    assert portfolio.cash == 5_000.00
+    assert broker.history_calls == [
+        123456,
+    ]
+
+
+def test_pending_order_does_not_search_history() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        ),
+    )
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+    )
+
+    result = workflow.execute(
+        order=Order(
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            quantity=2,
+            price=150.00,
+        ),
+        gate_decision=approved_gate(),
+    )
+
+    assert result.portfolio_updated is False
+    assert broker.status_calls == [
+        123456,
+    ]
+    assert broker.history_calls == []

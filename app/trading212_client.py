@@ -8,6 +8,7 @@ from app.broker import (
     BrokerError,
     BrokerOrderResult,
     BrokerPosition,
+    BrokerResourceNotFoundError,
 )
 
 
@@ -514,6 +515,12 @@ class Trading212Client(BrokerClient):
                     "Trading 212 rate limit reached. "
                     f"Remaining requests: {remaining}. "
                     f"Reset time: {reset_at}."
+                ) from error
+
+            if status_code == 404:
+                raise BrokerResourceNotFoundError(
+                    f"Trading 212 resource was not found: "
+                    f"{path}"
                 ) from error
 
             raise BrokerError(

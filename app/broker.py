@@ -5,6 +5,9 @@ from dataclasses import dataclass
 class BrokerError(Exception):
     """Raised when broker communication fails."""
 
+class BrokerResourceNotFoundError(BrokerError):
+    """Raised when a requested broker resource does not exist."""
+
 
 @dataclass(frozen=True)
 class BrokerAccountSummary:

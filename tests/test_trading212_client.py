@@ -5,6 +5,10 @@ from app.broker import BrokerError
 from app.trading212_client import (
     Trading212Client,
 )
+from app.broker import (
+    BrokerError,
+    BrokerResourceNotFoundError,
+)
 
 
 class FakeResponse:
@@ -842,3 +846,75 @@ def test_find_historical_order_rejects_invalid_response(
         client.find_historical_order(
             order_id=987654
         )
+
+def test_get_pending_order_raises_not_found_error(
+    monkeypatch,
+) -> None:
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        return FakeResponse(
+            {},
+            status_code=404,
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerResourceNotFoundError,
+        match="resource was not found",
+    ):
+        client.get_pending_order(
+            order_id=987654
+        )
+
+
+def test_non_404_get_error_remains_generic_broker_error(
+    monkeypatch,
+) -> None:
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        return FakeResponse(
+            {},
+            status_code=500,
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerError,
+        match="HTTP 500",
+    ) as error_info:
+        client.get_pending_order(
+            order_id=987654
+        )
+
+    assert not isinstance(
+        error_info.value,
+        BrokerResourceNotFoundError,
+    )

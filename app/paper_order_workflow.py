@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 from typing import Protocol
-
-from app.broker import BrokerOrderResult
 from app.order_verification import (
     OrderVerificationResult,
     OrderVerificationService,
@@ -14,6 +12,10 @@ from app.paper_order_execution import (
 )
 from app.paper_trading_gate import GateDecision
 from app.portfolio import Portfolio
+from app.broker import (
+    BrokerOrderResult,
+    BrokerResourceNotFoundError,
+)
 
 
 class OrderStatusBroker(Protocol):
@@ -21,7 +23,14 @@ class OrderStatusBroker(Protocol):
         self,
         order_id: int,
     ) -> BrokerOrderResult:
-        """Retrieve the latest broker order state."""
+        """Retrieve the pending broker order state."""
+
+    def find_historical_order(
+        self,
+        order_id: int,
+        max_pages: int = 5,
+    ) -> BrokerOrderResult | None:
+        """Find an order in broker history."""
 
 
 @dataclass(frozen=True)
@@ -96,12 +105,33 @@ class PaperOrderWorkflow:
                 execution_result=execution_result,
             )
 
-        current_order = (
-            self.status_broker.get_pending_order(
-                order_id=submitted_order.order_id
+        try:
+            current_order = (
+                self.status_broker.get_pending_order(
+                    order_id=submitted_order.order_id
+                )
             )
-        )
 
+        except BrokerResourceNotFoundError:
+            current_order = (
+                self.status_broker.find_historical_order(
+                    order_id=(
+                        submitted_order.order_id
+                    )
+                )
+            )
+
+            if current_order is None:
+                return PaperOrderWorkflowResult(
+                    submitted=True,
+                    portfolio_updated=False,
+                    reason=(
+                        "The order was not found in "
+                        "pending orders or historical "
+                        "orders. Its state is unknown."
+                    ),
+                    execution_result=execution_result,
+                )
         verification_result = (
             self.verification_service.verify(
                 current_order
