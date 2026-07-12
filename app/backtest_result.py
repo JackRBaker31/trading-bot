@@ -12,6 +12,10 @@ class BacktestResult:
     starting_cash: float
     ending_value: float
     total_return_percent: float
+    maximum_drawdown_percent: float
+    benchmark_return_percent: float
+    excess_return_percent: float
+    average_exposure_percent: float
     executed_trades: int
     rejected_orders: int
     final_cash: float
@@ -35,6 +39,22 @@ class BacktestResult:
         print(
             f"Total return: "
             f"{self.total_return_percent:.2f}%"
+        )
+        print(
+            f"Maximum drawdown: "
+            f"{self.maximum_drawdown_percent:.2f}%"
+        )
+        print(
+            f"Benchmark return: "
+            f"{self.benchmark_return_percent:.2f}%"
+        )
+        print(
+            f"Excess return: "
+            f"{self.excess_return_percent:.2f}%"
+        )
+        print(
+            f"Average exposure: "
+            f"{self.average_exposure_percent:.2f}%"
         )
         print(
             f"Executed trades: "
