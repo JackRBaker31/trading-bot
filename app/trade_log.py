@@ -1,5 +1,7 @@
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -14,13 +16,33 @@ class TradeLogEntry:
     reason: str
     executed: bool
 
+    def to_dictionary(self) -> dict[str, object]:
+        data = asdict(self)
+        data["timestamp"] = self.timestamp.isoformat()
+        return data
+
 
 class TradeLog:
-    def __init__(self) -> None:
+    def __init__(self, file_path: str = "data/trade_log.jsonl") -> None:
         self.entries: list[TradeLogEntry] = []
+        self.file_path = Path(file_path)
 
     def add(self, entry: TradeLogEntry) -> None:
         self.entries.append(entry)
+        self._save_entry(entry)
+
+    def _save_entry(self, entry: TradeLogEntry) -> None:
+        self.file_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        with self.file_path.open(
+            mode="a",
+            encoding="utf-8",
+        ) as file:
+            json.dump(entry.to_dictionary(), file)
+            file.write("\n")
 
     def display(self) -> None:
         print("\n--- TRADE LOG ---")
