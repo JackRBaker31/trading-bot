@@ -1,7 +1,7 @@
 from datetime import datetime
 
+from app.buy_the_dip import BuyTheDipStrategy
 from app.execution import ExecutionService
-from app.orders import Order, OrderSide
 from app.portfolio import Portfolio
 from app.risk import RiskEngine, RiskLimits
 from app.simulated_market_data import SimulatedMarketDataProvider
@@ -18,7 +18,6 @@ def main() -> None:
         prices={
             "AAPL": 150.00,
             "MSFT": 320.00,
-            "TSLA": 250.00,
         }
     )
 
@@ -40,33 +39,51 @@ def main() -> None:
         trade_log=trade_log,
     )
 
-    current_prices = market_data.get_prices(
-        ["AAPL", "MSFT", "TSLA"]
+    strategy = BuyTheDipStrategy()
+
+    print("\nReading initial prices...")
+
+    initial_prices = market_data.get_prices(
+        ["AAPL", "MSFT"]
     )
 
-    buy_order = Order(
-        symbol="AAPL",
-        side=OrderSide.BUY,
-        quantity=10,
-        price=current_prices["AAPL"],
-    )
-
-    buy_executed = execution_service.submit_order(
-        order=buy_order,
-        current_prices=current_prices,
-    )
+    initial_orders = strategy.generate_orders(initial_prices)
 
     print(
-        f"\nAAPL buy result: "
-        f"{'EXECUTED' if buy_executed else 'REJECTED'}"
+        f"Orders generated from initial prices: "
+        f"{len(initial_orders)}"
     )
 
-    print("\nSimulating an AAPL price increase...")
-    market_data.set_price("AAPL", 155.00)
+    print("\nSimulating price changes...")
+
+    market_data.set_price("AAPL", 146.00)
+    market_data.set_price("MSFT", 315.00)
 
     updated_prices = market_data.get_prices(
-        ["AAPL", "MSFT", "TSLA"]
+        ["AAPL", "MSFT"]
     )
+
+    orders = strategy.generate_orders(updated_prices)
+
+    print(f"Orders generated after price changes: {len(orders)}")
+
+    for order in orders:
+        print(
+            f"\nStrategy proposed: "
+            f"{order.side.value} "
+            f"{order.quantity} {order.symbol} "
+            f"at £{order.price:.2f}"
+        )
+
+        executed = execution_service.submit_order(
+            order=order,
+            current_prices=updated_prices,
+        )
+
+        print(
+            f"Result: "
+            f"{'EXECUTED' if executed else 'REJECTED'}"
+        )
 
     portfolio.display(updated_prices)
     trade_log.display()
