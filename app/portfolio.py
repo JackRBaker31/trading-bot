@@ -6,6 +6,9 @@ class Portfolio:
     starting_cash: float
     cash: float = field(init=False)
     positions: dict[str, int] = field(default_factory=dict)
+    applied_broker_order_ids: set[int] = field(
+        default_factory=set
+    )
 
     def __post_init__(self) -> None:
         if self.starting_cash < 0:
@@ -47,6 +50,41 @@ class Portfolio:
             del self.positions[symbol]
         else:
             self.positions[symbol] = remaining_quantity
+
+    def has_applied_broker_order(
+        self,
+        broker_order_id: int,
+    ) -> bool:
+        if broker_order_id <= 0:
+            raise ValueError(
+                "Broker order ID must be positive."
+            )
+
+        return (
+            broker_order_id
+            in self.applied_broker_order_ids
+        )
+
+
+    def mark_broker_order_applied(
+        self,
+        broker_order_id: int,
+    ) -> None:
+        if broker_order_id <= 0:
+            raise ValueError(
+                "Broker order ID must be positive."
+            )
+
+        if self.has_applied_broker_order(
+            broker_order_id
+        ):
+            raise ValueError(
+                "Broker order has already been applied."
+            )
+
+        self.applied_broker_order_ids.add(
+            broker_order_id
+        )
 
     def portfolio_value(self, current_prices: dict[str, float]) -> float:
         positions_value = 0.0

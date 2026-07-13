@@ -25,6 +25,9 @@ class PortfolioStore:
             "starting_cash": portfolio.starting_cash,
             "cash": portfolio.cash,
             "positions": portfolio.positions,
+            "applied_broker_order_ids": sorted(
+                portfolio.applied_broker_order_ids
+            ),
         }
 
         temporary_path = self.file_path.with_suffix(".tmp")
@@ -69,6 +72,14 @@ class PortfolioStore:
         portfolio.positions = {
             str(symbol): int(quantity)
             for symbol, quantity in data["positions"].items()
+        }
+
+        portfolio.applied_broker_order_ids = {
+            int(broker_order_id)
+            for broker_order_id in data.get(
+                "applied_broker_order_ids",
+                [],
+            )
         }
 
         logger.info(
