@@ -37,7 +37,6 @@ def create_paper_execution_adapter(
     paper_trading_enabled: bool,
     broker_environment: str,
     order_execution_permission_confirmed: bool,
-    reconciliation_passed: bool,
     market_session: MarketSession | None = None,
     enforce_market_hours: bool = False,
     max_poll_attempts: int = 5,
@@ -94,9 +93,6 @@ def create_paper_execution_adapter(
         broker_environment=broker_environment,
         order_execution_permission_confirmed=(
             order_execution_permission_confirmed
-        ),
-        reconciliation_passed=(
-            reconciliation_passed
         ),
         market_session=market_session,
         enforce_market_hours=(

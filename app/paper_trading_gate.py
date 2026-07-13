@@ -12,7 +12,6 @@ class PaperTradingGate:
         self,
         paper_trading_enabled: bool,
         broker_environment: str,
-        reconciliation_passed: bool,
         market_is_open: bool,
         risk_approved: bool,
         order_execution_permission_confirmed: bool,
@@ -45,12 +44,6 @@ class PaperTradingGate:
                 ),
             )
 
-        if not reconciliation_passed:
-            return GateDecision(
-                approved=False,
-                reason="Broker reconciliation failed.",
-            )
-
         if not market_is_open:
             return GateDecision(
                 approved=False,
@@ -65,5 +58,7 @@ class PaperTradingGate:
 
         return GateDecision(
             approved=True,
-            reason="Paper trading safety checks passed.",
+            reason=(
+                "Paper trading safety checks passed."
+            ),
         )

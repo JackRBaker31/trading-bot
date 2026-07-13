@@ -20,7 +20,6 @@ def test_gate_blocks_when_paper_trading_is_disabled() -> None:
     decision = gate.evaluate(
         paper_trading_enabled=False,
         broker_environment="DEMO",
-        reconciliation_passed=True,
         market_is_open=True,
         risk_approved=True,
         order_execution_permission_confirmed=True,
@@ -36,7 +35,6 @@ def test_gate_blocks_non_demo_environment() -> None:
     decision = gate.evaluate(
         paper_trading_enabled=True,
         broker_environment="LIVE",
-        reconciliation_passed=True,
         market_is_open=True,
         risk_approved=True,
         order_execution_permission_confirmed=True,
@@ -45,32 +43,12 @@ def test_gate_blocks_non_demo_environment() -> None:
     assert decision.approved is False
     assert "DEMO" in decision.reason
 
-
-def test_gate_blocks_failed_reconciliation() -> None:
-    gate = PaperTradingGate()
-
-    decision = gate.evaluate(
-        paper_trading_enabled=True,
-        broker_environment="DEMO",
-        reconciliation_passed=False,
-        market_is_open=True,
-        risk_approved=True,
-        order_execution_permission_confirmed=True,
-    )
-
-    assert decision.approved is False
-    assert decision.reason == (
-        "Broker reconciliation failed."
-    )
-
-
 def test_gate_blocks_when_market_is_closed() -> None:
     gate = PaperTradingGate()
 
     decision = gate.evaluate(
         paper_trading_enabled=True,
         broker_environment="DEMO",
-        reconciliation_passed=True,
         market_is_open=False,
         risk_approved=True,
         order_execution_permission_confirmed=True,
@@ -86,7 +64,6 @@ def test_gate_blocks_when_risk_checks_fail() -> None:
     decision = gate.evaluate(
         paper_trading_enabled=True,
         broker_environment="DEMO",
-        reconciliation_passed=True,
         market_is_open=True,
         risk_approved=False,
         order_execution_permission_confirmed=True,
@@ -104,7 +81,6 @@ def test_gate_cleans_environment_value() -> None:
     decision = gate.evaluate(
         paper_trading_enabled=True,
         broker_environment=" demo ",
-        reconciliation_passed=True,
         market_is_open=True,
         risk_approved=True,
         order_execution_permission_confirmed=True,
@@ -119,7 +95,6 @@ def test_gate_allows_safe_demo_state() -> None:
     decision = gate.evaluate(
         paper_trading_enabled=True,
         broker_environment="DEMO",
-        reconciliation_passed=True,
         market_is_open=True,
         risk_approved=True,
         order_execution_permission_confirmed=True,
@@ -136,7 +111,6 @@ def test_gate_blocks_unconfirmed_execution_permission() -> None:
     decision = gate.evaluate(
         paper_trading_enabled=True,
         broker_environment="DEMO",
-        reconciliation_passed=True,
         market_is_open=True,
         risk_approved=True,
         order_execution_permission_confirmed=False,

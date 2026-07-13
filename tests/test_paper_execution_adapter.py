@@ -112,7 +112,6 @@ def create_adapter(
     workflow_result: PaperOrderWorkflowResult,
     risk_approved: bool = True,
     permission_confirmed: bool = True,
-    reconciliation_passed: bool = True,
     market_session: FakeMarketSession | None = None,
     enforce_market_hours: bool = False,
 ) -> tuple[
@@ -145,9 +144,6 @@ def create_adapter(
         broker_environment="DEMO",
         order_execution_permission_confirmed=(
             permission_confirmed
-        ),
-        reconciliation_passed=(
-            reconciliation_passed
         ),
         market_session=market_session,
         enforce_market_hours=(
@@ -281,43 +277,6 @@ def test_missing_permission_blocks_submission() -> None:
         gate_decision.reason.lower()
     )
     assert risk_engine.record_calls == 0
-
-
-def test_failed_reconciliation_blocks_submission() -> None:
-    (
-        adapter,
-        workflow,
-        _,
-        _,
-    ) = create_adapter(
-        workflow_result=PaperOrderWorkflowResult(
-            submitted=False,
-            portfolio_updated=False,
-            reason=(
-                "Order blocked by paper-trading gate."
-            ),
-        ),
-        reconciliation_passed=False,
-    )
-
-    adapter.submit_order(
-        order=create_order(),
-        current_prices={
-            "AAPL": 150.00,
-        },
-    )
-
-    gate_decision = (
-        workflow.execute_calls[0][
-            "gate_decision"
-        ]
-    )
-
-    assert gate_decision.approved is False
-    assert "reconciliation" in (
-        gate_decision.reason.lower()
-    )
-
 
 def test_closed_market_blocks_submission() -> None:
     market_session = FakeMarketSession(

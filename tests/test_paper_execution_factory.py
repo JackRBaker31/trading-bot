@@ -63,7 +63,6 @@ def test_factory_builds_demo_paper_execution_stack(
         paper_trading_enabled=True,
         broker_environment="DEMO",
         order_execution_permission_confirmed=False,
-        reconciliation_passed=True,
         market_session=market_session,
         enforce_market_hours=False,
         max_poll_attempts=3,

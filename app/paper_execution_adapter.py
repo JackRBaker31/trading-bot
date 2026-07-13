@@ -28,7 +28,6 @@ class PaperExecutionAdapter:
         paper_trading_enabled: bool,
         broker_environment: str,
         order_execution_permission_confirmed: bool,
-        reconciliation_passed: bool,
         market_session: MarketSession | None = None,
         enforce_market_hours: bool = False,
     ) -> None:
@@ -45,9 +44,6 @@ class PaperExecutionAdapter:
         )
         self.order_execution_permission_confirmed = (
             order_execution_permission_confirmed
-        )
-        self.reconciliation_passed = (
-            reconciliation_passed
         )
         self.market_session = market_session
         self.enforce_market_hours = (
@@ -98,9 +94,6 @@ class PaperExecutionAdapter:
             ),
             broker_environment=(
                 self.broker_environment
-            ),
-            reconciliation_passed=(
-                self.reconciliation_passed
             ),
             market_is_open=market_is_open,
             risk_approved=risk_decision.approved,
