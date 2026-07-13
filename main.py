@@ -7,19 +7,34 @@ from dotenv import load_dotenv
 
 from app.buy_the_dip import BuyTheDipStrategy
 from app.config import load_config
-from app.execution import ExecutionService
-from app.logging_config import setup_logging
-from app.market_data_factory import create_market_data_provider
-from app.portfolio_store import PortfolioStore
-from app.risk import RiskEngine, RiskLimits
-from app.simulated_market_data import SimulatedMarketDataProvider
-from app.trade_log import TradeLog
-from app.trading_loop import TradingLoop
-from app.market_session import MarketSession
 from app.demo_recovery_factory import (
     create_demo_recovery_startup_service,
 )
+from app.execution import ExecutionService
+from app.logging_config import setup_logging
+from app.market_data_factory import (
+    create_market_data_provider,
+)
+from app.market_session import MarketSession
 from app.order_journal import OrderJournal
+from app.paper_application_startup import (
+    PaperApplicationStartupService,
+)
+from app.paper_execution_factory import (
+    create_paper_execution_adapter,
+)
+from app.paper_startup_reconciliation import (
+    PaperStartupReconciliationService,
+)
+from app.portfolio_store import PortfolioStore
+from app.reconciliation import BrokerReconciler
+from app.risk import RiskEngine, RiskLimits
+from app.simulated_market_data import (
+    SimulatedMarketDataProvider,
+)
+from app.trade_log import TradeLog
+from app.trading212_client import Trading212Client
+from app.trading_loop import TradingLoop
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +51,10 @@ def main() -> None:
     print("Trading system starting...")
     print(f"Current time: {datetime.now()}")
     print(f"Mode: {config.mode}")
-    print(f"Market data: {config.market_data_provider}")
+    print(
+        "Market data: "
+        f"{config.market_data_provider}"
+    )
     print("Real-money trading: DISABLED")
 
     logger.info(
@@ -47,8 +65,15 @@ def main() -> None:
         config.market_data_provider,
     )
 
+    symbol_mapping = {
+        "AAPL": "AAPL_US_EQ",
+        "MSFT": "MSFT_US_EQ",
+    }
+
     market_data = create_market_data_provider(
-        provider_name=config.market_data_provider,
+        provider_name=(
+            config.market_data_provider
+        ),
         symbols=config.symbols,
     )
 
@@ -59,15 +84,21 @@ def main() -> None:
     )
 
     risk_limits = RiskLimits(
-        max_order_value=config.risk.max_order_value,
-        max_position_value=config.risk.max_position_value,
+        max_order_value=(
+            config.risk.max_order_value
+        ),
+        max_position_value=(
+            config.risk.max_position_value
+        ),
         max_portfolio_exposure=(
             config.risk.max_portfolio_exposure
         ),
         max_trades_per_session=(
             config.risk.max_trades_per_session
         ),
-        approved_symbols=set(config.symbols),
+        approved_symbols=set(
+            config.symbols
+        ),
     )
 
     risk_engine = RiskEngine(
@@ -76,18 +107,14 @@ def main() -> None:
 
     trade_log = TradeLog()
 
-    execution_service = ExecutionService(
-        portfolio=portfolio,
-        risk_engine=risk_engine,
-        trade_log=trade_log,
-    )
-
     strategy = BuyTheDipStrategy(
         drop_threshold_percent=(
-            config.strategy.drop_threshold_percent
+            config.strategy
+            .drop_threshold_percent
         ),
         target_allocation_percent=(
-            config.strategy.target_allocation_percent
+            config.strategy
+            .target_allocation_percent
         ),
         cooldown_cycles=(
             config.strategy.cooldown_cycles
@@ -97,7 +124,10 @@ def main() -> None:
     def simulate_price_changes(
         cycle_number: int,
     ) -> None:
-        if config.market_data_provider != "SIMULATED":
+        if (
+            config.market_data_provider
+            != "SIMULATED"
+        ):
             return
 
         if not isinstance(
@@ -157,58 +187,42 @@ def main() -> None:
                     "MSFT",
                     305.00,
                 )
-    
-    market_session = MarketSession(
-    timezone_name=(
-        config.market_session.timezone
-    ),
-    opening_time=(
-        config.market_session.opening_time
-    ),
-    closing_time=(
-        config.market_session.closing_time
-    ),
-    trading_weekdays=set(
-        config.market_session.trading_weekdays
-    ),
-)
 
-    trading_loop = TradingLoop(
-        symbols=config.symbols,
-        market_data=market_data,
-        strategy=strategy,
-        execution_service=execution_service,
-        interval_seconds=(
-            config.trading_loop.interval_seconds
+    market_session = MarketSession(
+        timezone_name=(
+            config.market_session.timezone
         ),
-        market_session=market_session,
-        enforce_market_hours=(
+        opening_time=(
+            config.market_session.opening_time
+        ),
+        closing_time=(
+            config.market_session.closing_time
+        ),
+        trading_weekdays=set(
             config.market_session
-            .enforce_market_hours
+            .trading_weekdays
         ),
     )
 
-    def start_trading() -> None:
-        trading_loop.run(
-            cycles=config.trading_loop.cycles,
-            before_cycle=simulate_price_changes,
-        )
-
+    order_journal: OrderJournal | None = None
+    api_key = ""
+    api_secret = ""
 
     if config.mode == "PAPER":
         if not config.paper_trading.enabled:
             raise ValueError(
-                "PAPER mode requires paper trading "
-                "to be enabled."
+                "PAPER mode requires paper "
+                "trading to be enabled."
             )
 
         if (
-            config.paper_trading.broker_environment
+            config.paper_trading
+            .broker_environment
             != "DEMO"
         ):
             raise ValueError(
-                "PAPER mode requires the Trading 212 "
-                "DEMO environment."
+                "PAPER mode requires the "
+                "Trading 212 DEMO environment."
             )
 
         api_key = os.getenv(
@@ -223,12 +237,90 @@ def main() -> None:
 
         if not api_key or not api_secret:
             raise ValueError(
-                "Trading 212 Demo credentials are "
-                "required for startup recovery."
+                "Trading 212 Demo credentials "
+                "are required for PAPER mode."
             )
 
         order_journal = OrderJournal(
-            path=Path("order_journal.jsonl")
+            path=Path(
+                "order_journal.jsonl"
+            )
+        )
+
+        execution_service = (
+            create_paper_execution_adapter(
+                api_key=api_key,
+                api_secret=api_secret,
+                symbol_mapping=symbol_mapping,
+                portfolio=portfolio,
+                risk_engine=risk_engine,
+                trade_log=trade_log,
+                order_journal=order_journal,
+                paper_trading_enabled=(
+                    config.paper_trading.enabled
+                ),
+                broker_environment=(
+                    config.paper_trading
+                    .broker_environment
+                ),
+                order_execution_permission_confirmed=(
+                    config.paper_trading
+                    .order_execution_permission_confirmed
+                ),
+                market_session=market_session,
+                enforce_market_hours=(
+                    config.market_session
+                    .enforce_market_hours
+                ),
+            )
+        )
+    else:
+        execution_service = ExecutionService(
+            portfolio=portfolio,
+            risk_engine=risk_engine,
+            trade_log=trade_log,
+        )
+
+    trading_loop = TradingLoop(
+        symbols=config.symbols,
+        market_data=market_data,
+        strategy=strategy,
+        execution_service=execution_service,
+        interval_seconds=(
+            config.trading_loop
+            .interval_seconds
+        ),
+        market_session=market_session,
+        enforce_market_hours=(
+            config.market_session
+            .enforce_market_hours
+        ),
+    )
+
+    def start_trading() -> None:
+        trading_loop.run(
+            cycles=(
+                config.trading_loop.cycles
+            ),
+            before_cycle=(
+                simulate_price_changes
+            ),
+        )
+
+    if config.mode == "PAPER":
+        if order_journal is None:
+            raise RuntimeError(
+                "PAPER mode order journal "
+                "was not initialized."
+            )
+
+        broker = Trading212Client(
+            api_key=api_key,
+            api_secret=api_secret,
+            environment=(
+                config.paper_trading
+                .broker_environment
+            ),
         )
 
         recovery_startup_service = (
@@ -237,37 +329,73 @@ def main() -> None:
                 api_secret=api_secret,
                 order_journal=order_journal,
                 portfolio=portfolio,
-                portfolio_store=portfolio_store,
+                portfolio_store=(
+                    portfolio_store
+                ),
+            )
+        )
+
+        reconciler = BrokerReconciler(
+            symbol_mapping=symbol_mapping
+        )
+
+        reconciliation_service = (
+            PaperStartupReconciliationService(
+                broker=broker,
+                reconciler=reconciler,
+                portfolio=portfolio,
+            )
+        )
+
+        paper_startup_service = (
+            PaperApplicationStartupService(
+                recovery_startup_service=(
+                    recovery_startup_service
+                ),
+                reconciliation_service=(
+                    reconciliation_service
+                ),
             )
         )
 
         startup_result = (
-            recovery_startup_service.start(
+            paper_startup_service.start(
                 start_trading=start_trading
             )
         )
 
         if not startup_result.trading_started:
             logger.error(
-                "trading_refused_by_startup_recovery "
-                "reason=%s incomplete_items=%s",
-                startup_result.decision.reason,
-                (
-                    startup_result
-                    .recovery_report
-                    .incomplete_items
-                ),
+                "paper_trading_refused "
+                "reason=%s",
+                startup_result.reason,
             )
 
             print(
                 "Trading refused: "
-                f"{startup_result.decision.reason}"
+                f"{startup_result.reason}"
             )
+
+            if (
+                startup_result
+                .reconciliation_result
+                is not None
+            ):
+                reconciliation_report = (
+                    startup_result
+                    .reconciliation_result
+                    .report
+                )
+
+                reconciliation_report.display()
+
             return
     else:
         start_trading()
 
-    portfolio_store.save(portfolio)
+    portfolio_store.save(
+        portfolio
+    )
 
     print("\nPortfolio saved.")
 
@@ -275,11 +403,15 @@ def main() -> None:
         config.symbols
     )
 
-    portfolio.display(final_prices)
+    portfolio.display(
+        final_prices
+    )
+
     trade_log.display()
 
     logger.info(
-        "application_finished cash=%.2f positions=%s "
+        "application_finished "
+        "cash=%.2f positions=%s "
         "session_trade_count=%s",
         portfolio.cash,
         portfolio.positions,
@@ -292,6 +424,7 @@ if __name__ == "__main__":
         main()
     except Exception:
         logger.exception(
-            "application_stopped_due_to_unhandled_error"
+            "application_stopped_due_to_"
+            "unhandled_error"
         )
         raise
