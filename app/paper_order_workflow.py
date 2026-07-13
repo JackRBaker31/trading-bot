@@ -56,6 +56,34 @@ class PaperOrderWorkflow:
         self.portfolio = portfolio
         self.quantity_tolerance = quantity_tolerance
 
+    def _record_non_terminal_verification_event(
+        self,
+        order: Order,
+        verification_result: OrderVerificationResult,
+    ) -> None:
+        event_by_status = {
+            OrderVerificationStatus.PENDING: "PENDING",
+            OrderVerificationStatus.PARTIALLY_FILLED: (
+                "PARTIALLY_FILLED"
+            ),
+        }
+
+        event = event_by_status.get(
+            verification_result.status
+        )
+
+        if event is None:
+            return
+
+        self.order_journal.record(
+            order=order,
+            event=event,
+            broker_order_id=(
+                verification_result.broker_order.order_id
+            ),
+            reason=verification_result.reason,
+        )
+
     def execute(
         self,
         order: Order,
@@ -134,27 +162,10 @@ class PaperOrderWorkflow:
                 reason=polling_result.reason,
             )
 
-            if (
-                verification_result.status
-                == OrderVerificationStatus.PENDING
-            ):
-                self.order_journal.record(
-                    order=order,
-                    event="PENDING",
-                    broker_order_id=current_order.order_id,
-                    reason=verification_result.reason,
-                )
-
-            if (
-                verification_result.status
-                == OrderVerificationStatus.PARTIALLY_FILLED
-            ):
-                self.order_journal.record(
-                    order=order,
-                    event="PARTIALLY_FILLED",
-                    broker_order_id=current_order.order_id,
-                    reason=verification_result.reason,
-                )
+            self._record_non_terminal_verification_event(
+                order=order,
+                verification_result=verification_result,
+            )
 
             if (
                 verification_result.status
