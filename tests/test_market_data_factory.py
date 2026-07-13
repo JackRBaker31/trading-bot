@@ -80,3 +80,20 @@ def test_factory_rejects_missing_simulated_price() -> None:
             provider_name="SIMULATED",
             symbols=["NVDA"],
         )
+
+def test_factory_rejects_blank_twelve_data_api_key(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(
+        "TWELVE_DATA_API_KEY",
+        "   ",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="TWELVE_DATA_API_KEY",
+    ):
+        create_market_data_provider(
+            "TWELVE_DATA",
+            ["AAPL"],
+        )

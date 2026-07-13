@@ -45,7 +45,7 @@ def create_market_data_provider(
             "TWELVE_DATA_API_KEY"
         )
 
-        if api_key is None:
+        if api_key is None or not api_key.strip():
             raise RuntimeError(
                 "TWELVE_DATA_API_KEY was not found "
                 "in the environment."

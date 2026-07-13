@@ -36,7 +36,29 @@ class FakeResponse:
 
     def json(self) -> dict[str, object]:
         return self._data
+class FakeHttpClient:
+    def __init__(self) -> None:
+        self.requested_url: str | None = None
+        self.requested_params: dict[str, object] | None = None
+        self.requested_timeout: float | None = None
 
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, object],
+        timeout: float,
+    ) -> FakeResponse:
+        self.requested_url = url
+        self.requested_params = params
+        self.requested_timeout = timeout
+
+        return FakeResponse(
+            {
+                "symbol": "AAPL",
+                "close": "210.50",
+            }
+        )
 
 def test_provider_returns_valid_quote(
     monkeypatch,
