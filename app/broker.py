@@ -55,6 +55,28 @@ class BrokerClient(ABC):
     ) -> list[BrokerPosition]:
         """Return all open broker positions."""
 
+    @abstractmethod
+    def get_active_orders(
+        self,
+    ) -> list["BrokerOrderResult"]:
+        """Return all active broker orders."""
+
+    @abstractmethod
+    def get_pending_order(
+        self,
+        order_id: int,
+    ) -> "BrokerOrderResult":
+        """Return a pending broker order."""
+
+    @abstractmethod
+    def find_historical_order(
+        self,
+        order_id: int,
+        max_pages: int = 5,
+    ) -> "BrokerOrderResult | None":
+        """Search broker order history."""
+
+
 @dataclass(frozen=True)
 class BrokerOrderResult:
     order_id: int

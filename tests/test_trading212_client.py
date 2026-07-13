@@ -649,6 +649,102 @@ def test_get_pending_order(
     assert result.filled_quantity == 1
     assert result.filled_value == 150
 
+def test_get_active_orders(
+    monkeypatch,
+) -> None:
+    captured_url = ""
+
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        nonlocal captured_url
+        captured_url = url
+
+        return FakeResponse(
+            [
+                {
+                    "id": 987654,
+                    "currency": "GBP",
+                    "instrument": {
+                        "ticker": "AAPL_US_EQ",
+                    },
+                    "quantity": 2,
+                    "side": "BUY",
+                    "status": "NEW",
+                    "type": "MARKET",
+                    "filledQuantity": 0,
+                    "filledValue": 0,
+                },
+                {
+                    "id": 987655,
+                    "currency": "GBP",
+                    "instrument": {
+                        "ticker": "MSFT_US_EQ",
+                    },
+                    "quantity": -1,
+                    "side": "SELL",
+                    "status": "PARTIALLY_FILLED",
+                    "type": "MARKET",
+                    "filledQuantity": 0.5,
+                    "filledValue": 210,
+                },
+            ]
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    results = client.get_active_orders()
+
+    assert captured_url.endswith(
+        "/equity/orders"
+    )
+
+    assert len(results) == 2
+
+    assert results[0].order_id == 987654
+    assert results[0].ticker == "AAPL_US_EQ"
+
+    assert results[1].order_id == 987655
+    assert results[1].ticker == "MSFT_US_EQ"
+    assert results[1].status == "PARTIALLY_FILLED"
+
+def test_get_active_orders_returns_empty_list(
+    monkeypatch,
+) -> None:
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        return FakeResponse([])
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    results = client.get_active_orders()
+
+    assert results == []
 
 def test_get_pending_order_rejects_invalid_id() -> None:
     client = Trading212Client(

@@ -3,6 +3,7 @@ from typing import Protocol
 
 from app.broker import (
     BrokerAccountSummary,
+    BrokerOrderResult,
     BrokerPosition,
 )
 from app.portfolio import Portfolio
@@ -23,6 +24,10 @@ class ReadOnlyBroker(Protocol):
     ) -> list[BrokerPosition]:
         """Return the broker positions."""
 
+    def get_active_orders(
+        self,
+    ) -> list[BrokerOrderResult]:
+        """Return all active broker orders."""
 
 @dataclass(frozen=True)
 class PaperStartupReconciliationResult:
@@ -58,6 +63,20 @@ class PaperStartupReconciliationService:
             account_summary=account_summary,
             broker_positions=broker_positions,
         )
+
+        active_orders = (
+            self.broker.get_active_orders()
+        )
+
+        if active_orders:
+            return PaperStartupReconciliationResult(
+                report=report,
+                approved=False,
+                reason=(
+                    "PAPER startup reconciliation "
+                    "blocked by active broker orders."
+                ),
+            )
 
         if not report.safe_to_trade:
             return PaperStartupReconciliationResult(

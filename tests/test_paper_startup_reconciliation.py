@@ -19,6 +19,7 @@ class FakeBroker:
         self.positions = positions
         self.account_calls = 0
         self.position_calls = 0
+        self.active_order_calls = 0
 
     def get_account_summary(
         self,
@@ -32,6 +33,16 @@ class FakeBroker:
         self.position_calls += 1
         return self.positions
 
+    def get_active_orders(
+        self,
+    ) -> list[object]:
+        self.active_order_calls += 1
+
+        return getattr(
+            self,
+            "active_orders",
+            [],
+        )
 
 def create_account_summary(
     available_to_trade: float,
@@ -88,6 +99,34 @@ def test_matching_account_is_approved() -> None:
         "completed safely."
     )
 
+def test_active_broker_orders_block_startup() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        account_summary=create_account_summary(
+            available_to_trade=5_000.00
+        ),
+        positions=[],
+    )
+
+    broker.active_orders = [object()]
+
+    service = PaperStartupReconciliationService(
+        broker=broker,
+        reconciler=create_reconciler(),
+        portfolio=portfolio,
+    )
+
+    result = service.reconcile()
+
+    assert result.approved is False
+    assert broker.active_order_calls == 1
+    assert result.reason == (
+        "PAPER startup reconciliation "
+        "blocked by active broker orders."
+    )
 
 def test_cash_mismatch_is_refused() -> None:
     portfolio = Portfolio(

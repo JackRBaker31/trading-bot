@@ -221,7 +221,6 @@ class Trading212Client(BrokerClient):
                 ) from error
 
         return positions
-
     def place_market_order(
         self,
         ticker: str,
@@ -263,6 +262,34 @@ class Trading212Client(BrokerClient):
             ),
         )
 
+    def get_active_orders(
+        self,
+    ) -> list[BrokerOrderResult]:
+        data = self._get(
+            "/equity/orders"
+        )
+
+        if not isinstance(data, list):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "active-orders response."
+            )
+
+        orders: list[BrokerOrderResult] = []
+
+        for item in data:
+            orders.append(
+                self._parse_order_result(
+                    data=item,
+                    error_message=(
+                        "Trading 212 returned an invalid "
+                        "active order."
+                    ),
+                )
+            )
+
+        return orders
+
     def get_pending_order(
         self,
         order_id: int,
@@ -283,6 +310,7 @@ class Trading212Client(BrokerClient):
                 "pending-order response."
             ),
         )
+
 
     def find_historical_order(
         self,
