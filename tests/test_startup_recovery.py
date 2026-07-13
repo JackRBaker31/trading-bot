@@ -6,6 +6,7 @@ from app.order_verification import (
 )
 from app.startup_recovery import (
     StartupRecoveryService,
+    StartupRecoveryState,
 )
 
 
@@ -249,3 +250,94 @@ def test_empty_journal_returns_empty_report() -> None:
     assert report.successful_orders == 0
     assert report.failed_orders == 0
     assert recovery_service.recover_calls == []
+
+def test_pending_result_is_classified() -> None:
+    entry = create_journal_entry(
+        order_id=111
+    )
+
+    polling_result = create_polling_result(
+        order_id=111,
+        status=OrderVerificationStatus.PENDING,
+    )
+
+    journal = FakeOrderJournal(
+        entries=[entry]
+    )
+
+    recovery_service = FakeRecoveryService(
+        results_by_order_id={
+            111: polling_result,
+        }
+    )
+
+    service = StartupRecoveryService(
+        order_journal=journal,
+        recovery_service=recovery_service,
+    )
+
+    report = service.recover_unfinished_orders()
+
+    assert report.items[0].state == (
+        StartupRecoveryState.PENDING
+    )
+
+def test_filled_result_is_classified() -> None:
+    entry = create_journal_entry(
+        order_id=111
+    )
+
+    polling_result = create_polling_result(
+        order_id=111,
+        status=OrderVerificationStatus.FILLED,
+    )
+
+    journal = FakeOrderJournal(
+        entries=[entry]
+    )
+
+    recovery_service = FakeRecoveryService(
+        results_by_order_id={
+            111: polling_result,
+        }
+    )
+
+    service = StartupRecoveryService(
+        order_journal=journal,
+        recovery_service=recovery_service,
+    )
+
+    report = service.recover_unfinished_orders()
+
+    assert report.items[0].state == (
+        StartupRecoveryState.FILLED
+    )
+
+def test_recovery_exception_is_classified() -> None:
+    entry = create_journal_entry(
+        order_id=111
+    )
+
+    journal = FakeOrderJournal(
+        entries=[entry]
+    )
+
+    recovery_service = FakeRecoveryService(
+        results_by_order_id={
+            111: RuntimeError(
+                "Broker is unavailable."
+            ),
+        }
+    )
+
+    service = StartupRecoveryService(
+        order_journal=journal,
+        recovery_service=recovery_service,
+    )
+
+    report = service.recover_unfinished_orders()
+
+    assert report.items[0].state == (
+        StartupRecoveryState.RECOVERY_ERROR
+    )
+

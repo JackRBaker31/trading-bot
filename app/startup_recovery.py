@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 from app.order_journal import (
     OrderJournal,
@@ -6,6 +7,17 @@ from app.order_journal import (
 )
 from app.order_polling import OrderPollingResult
 from app.order_recovery import OrderRecoveryService
+from app.order_verification import (
+    OrderVerificationStatus,
+)
+
+class StartupRecoveryState(str, Enum):
+    PENDING = "PENDING"
+    PARTIALLY_FILLED = "PARTIALLY_FILLED"
+    FILLED = "FILLED"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+    RECOVERY_ERROR = "RECOVERY_ERROR"
 
 
 @dataclass(frozen=True)
@@ -19,6 +31,39 @@ class StartupRecoveryItem:
         return (
             self.polling_result is not None
             and self.error is None
+        )
+
+    @property
+    def state(self) -> StartupRecoveryState:
+        if self.error is not None:
+            return (
+                StartupRecoveryState.RECOVERY_ERROR
+            )
+
+        if self.polling_result is None:
+            return StartupRecoveryState.UNKNOWN
+
+        state_by_status = {
+            OrderVerificationStatus.PENDING: (
+                StartupRecoveryState.PENDING
+            ),
+            OrderVerificationStatus.PARTIALLY_FILLED: (
+                StartupRecoveryState.PARTIALLY_FILLED
+            ),
+            OrderVerificationStatus.FILLED: (
+                StartupRecoveryState.FILLED
+            ),
+            OrderVerificationStatus.FAILED: (
+                StartupRecoveryState.FAILED
+            ),
+            OrderVerificationStatus.UNKNOWN: (
+                StartupRecoveryState.UNKNOWN
+            ),
+        }
+
+        return state_by_status.get(
+            self.polling_result.status,
+            StartupRecoveryState.UNKNOWN,
         )
 
 
