@@ -19,6 +19,8 @@ from app.broker import (
     BrokerResourceNotFoundError,
 )
 from app.order_polling import OrderPollingService
+from app.duplicate_order_guard import (DuplicateOrderGuard,
+)
 
 class FakeBroker:
     def __init__(
@@ -162,6 +164,7 @@ def create_workflow(
         execution_service=execution_service,
         polling_service=polling_service,
         verification_service=verification_service,
+        duplicate_order_guard=DuplicateOrderGuard(),
         portfolio=portfolio,
     )
 
@@ -503,6 +506,7 @@ def test_negative_quantity_tolerance_is_rejected() -> None:
             execution_service=execution_service,
             polling_service=polling_service,
             verification_service=verification_service,
+            duplicate_order_guard=DuplicateOrderGuard(),
             portfolio=Portfolio(
                 starting_cash=5_000.00
             ),
@@ -626,3 +630,107 @@ def test_pending_order_does_not_search_history() -> None:
         123456,
     ]
     assert broker.history_calls == []
+
+def test_duplicate_order_is_blocked() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW"
+        )
+    )
+
+    guard = DuplicateOrderGuard()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    guard.reserve(order)
+
+    verification_service = (
+        OrderVerificationService()
+    )
+
+    workflow = PaperOrderWorkflow(
+        execution_service=PaperOrderExecutionService(
+            broker=broker,
+            symbol_mapping={
+                "AAPL": "AAPL_US_EQ",
+            },
+        ),
+        polling_service=OrderPollingService(
+            broker=broker,
+            verification_service=verification_service,
+            max_attempts=1,
+            poll_interval_seconds=0,
+            sleep_function=lambda _: None,
+        ),
+        verification_service=verification_service,
+        duplicate_order_guard=guard,
+        portfolio=portfolio,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert result.submitted is False
+    assert "already being processed" in result.reason
+    assert broker.submission_calls == []
+
+def test_order_reservation_is_released_after_workflow() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="REJECTED"
+        )
+    )
+
+    guard = DuplicateOrderGuard()
+
+    verification_service = (
+        OrderVerificationService()
+    )
+
+    workflow = PaperOrderWorkflow(
+        execution_service=PaperOrderExecutionService(
+            broker=broker,
+            symbol_mapping={
+                "AAPL": "AAPL_US_EQ",
+            },
+        ),
+        polling_service=OrderPollingService(
+            broker=broker,
+            verification_service=verification_service,
+            max_attempts=1,
+            poll_interval_seconds=0,
+            sleep_function=lambda _: None,
+        ),
+        verification_service=verification_service,
+        duplicate_order_guard=guard,
+        portfolio=portfolio,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert guard.is_reserved(order) is False
