@@ -404,3 +404,86 @@ def test_only_recoverable_orders_are_returned(
         ].event
         == "UNKNOWN"
     )
+
+def test_record_from_entry_preserves_order_identity(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+
+    source_entry = journal.record(
+        order=create_order(),
+        event="PENDING",
+        broker_order_id=123456,
+    )
+
+    recovered_entry = journal.record_from_entry(
+        source_entry=source_entry,
+        event="FAILED",
+        broker_order_id=123456,
+        reason="Recovered terminal failure.",
+        metadata={
+            "recovered_on_startup": True,
+        },
+    )
+
+    assert recovered_entry.reservation_key == (
+        source_entry.reservation_key
+    )
+    assert recovered_entry.symbol == (
+        source_entry.symbol
+    )
+    assert recovered_entry.side == source_entry.side
+    assert recovered_entry.quantity == (
+        source_entry.quantity
+    )
+    assert recovered_entry.event == "FAILED"
+    assert recovered_entry.broker_order_id == 123456
+    assert recovered_entry.metadata == {
+        "recovered_on_startup": True,
+    }
+
+def test_record_from_entry_is_persisted(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+
+    source_entry = journal.record(
+        order=create_order(),
+        event="SUBMITTED",
+        broker_order_id=123456,
+    )
+
+    journal.record_from_entry(
+        source_entry=source_entry,
+        event="REJECTED",
+        broker_order_id=123456,
+        reason="Broker rejected the order.",
+    )
+
+    entries = journal.load_entries()
+
+    assert len(entries) == 2
+    assert entries[-1].event == "REJECTED"
+    assert entries[-1].reservation_key == (
+        source_entry.reservation_key
+    )
+
+def test_record_from_entry_rejects_empty_event(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+
+    source_entry = journal.record(
+        order=create_order(),
+        event="PENDING",
+        broker_order_id=123456,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="cannot be empty",
+    ):
+        journal.record_from_entry(
+            source_entry=source_entry,
+            event=" ",
+        )

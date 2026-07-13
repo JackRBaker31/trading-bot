@@ -126,6 +126,68 @@ class OrderJournal:
             journal_file.flush()
 
         return entry
+    def record_from_entry(
+        self,
+        source_entry: OrderJournalEntry,
+        event: str,
+        broker_order_id: int | None = None,
+        reason: str = "",
+        metadata: dict[str, object] | None = None,
+    ) -> OrderJournalEntry:
+        normalized_event = event.strip().upper()
+
+        if not normalized_event:
+            raise ValueError(
+                "Journal event cannot be empty."
+            )
+
+        if broker_order_id is not None:
+            if broker_order_id <= 0:
+                raise ValueError(
+                    "Broker order ID must be positive."
+                )
+
+        timestamp = (
+            self.clock()
+            .astimezone(timezone.utc)
+            .isoformat()
+        )
+
+        entry = OrderJournalEntry(
+            timestamp=timestamp,
+            reservation_key=(
+                source_entry.reservation_key
+            ),
+            event=normalized_event,
+            symbol=source_entry.symbol,
+            side=source_entry.side,
+            quantity=source_entry.quantity,
+            broker_order_id=broker_order_id,
+            reason=reason,
+            metadata=metadata,
+        )
+
+        self.path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        with self.path.open(
+            "a",
+            encoding="utf-8",
+            newline="\n",
+        ) as journal_file:
+            journal_file.write(
+                json.dumps(
+                    asdict(entry),
+                    separators=(",", ":"),
+                )
+            )
+            journal_file.write("\n")
+            journal_file.flush()
+
+        return entry
+
 
     def load_entries(
         self,
