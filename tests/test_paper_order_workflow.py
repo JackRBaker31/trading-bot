@@ -104,6 +104,30 @@ class FakeBroker:
 
         return self.historical_order
 
+class FakeOrderJournal:
+    def __init__(self) -> None:
+        self.record_calls: list[
+            dict[str, object]
+        ] = []
+
+    def record(
+        self,
+        order: Order,
+        event: str,
+        broker_order_id: int | None = None,
+        reason: str = "",
+    ) -> None:
+        self.record_calls.append(
+            {
+                "order": order,
+                "event": event,
+                "broker_order_id": (
+                    broker_order_id
+                ),
+                "reason": reason,
+            }
+        )
+
 
 def create_broker_order(
     status: str,
@@ -138,6 +162,7 @@ def create_workflow(
     broker: FakeBroker,
     portfolio: Portfolio,
     max_attempts: int = 1,
+    order_journal: FakeOrderJournal | None = None,
 ) -> PaperOrderWorkflow:
     verification_service = (
         OrderVerificationService()
@@ -160,11 +185,18 @@ def create_workflow(
         sleep_function=lambda _: None,
     )
 
+    journal = (
+        order_journal
+        if order_journal is not None
+        else FakeOrderJournal()
+    )
+
     return PaperOrderWorkflow(
         execution_service=execution_service,
         polling_service=polling_service,
         verification_service=verification_service,
         duplicate_order_guard=DuplicateOrderGuard(),
+        order_journal=journal,
         portfolio=portfolio,
     )
 
@@ -507,6 +539,7 @@ def test_negative_quantity_tolerance_is_rejected() -> None:
             polling_service=polling_service,
             verification_service=verification_service,
             duplicate_order_guard=DuplicateOrderGuard(),
+            order_journal=FakeOrderJournal(),
             portfolio=Portfolio(
                 starting_cash=5_000.00
             ),
@@ -673,6 +706,7 @@ def test_duplicate_order_is_blocked() -> None:
         ),
         verification_service=verification_service,
         duplicate_order_guard=guard,
+        order_journal=FakeOrderJournal(),
         portfolio=portfolio,
     )
 
@@ -718,6 +752,7 @@ def test_order_reservation_is_released_after_workflow() -> None:
         ),
         verification_service=verification_service,
         duplicate_order_guard=guard,
+        order_journal=FakeOrderJournal(),
         portfolio=portfolio,
     )
 
@@ -734,3 +769,102 @@ def test_order_reservation_is_released_after_workflow() -> None:
     )
 
     assert guard.is_reserved(order) is False
+
+def test_approved_reservation_is_recorded() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert journal.record_calls == [
+        {
+            "order": order,
+            "event": "RESERVED",
+            "broker_order_id": None,
+            "reason": (
+                "Order reservation created."
+            ),
+        }
+    ]
+
+
+def test_duplicate_reservation_is_not_recorded() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        )
+    )
+
+    guard = DuplicateOrderGuard()
+    journal = FakeOrderJournal()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    guard.reserve(order)
+
+    verification_service = (
+        OrderVerificationService()
+    )
+
+    workflow = PaperOrderWorkflow(
+        execution_service=PaperOrderExecutionService(
+            broker=broker,
+            symbol_mapping={
+                "AAPL": "AAPL_US_EQ",
+            },
+        ),
+        polling_service=OrderPollingService(
+            broker=broker,
+            verification_service=verification_service,
+            max_attempts=1,
+            poll_interval_seconds=0,
+            sleep_function=lambda _: None,
+        ),
+        verification_service=verification_service,
+        duplicate_order_guard=guard,
+        order_journal=journal,
+        portfolio=portfolio,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert result.submitted is False
+    assert journal.record_calls == []
+    assert broker.submission_calls == []

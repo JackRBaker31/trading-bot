@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from app.order_journal import OrderJournal
 from app.order_polling import OrderPollingService
 from app.order_verification import (
     OrderVerificationResult,
@@ -38,6 +39,7 @@ class PaperOrderWorkflow:
         polling_service: OrderPollingService,
         verification_service: OrderVerificationService,
         duplicate_order_guard: DuplicateOrderGuard,
+        order_journal: OrderJournal,
         portfolio: Portfolio,
         quantity_tolerance: float = 0.000001,
     ) -> None:
@@ -50,6 +52,7 @@ class PaperOrderWorkflow:
         self.polling_service = polling_service
         self.verification_service = verification_service
         self.duplicate_order_guard = duplicate_order_guard
+        self.order_journal = order_journal
         self.portfolio = portfolio
         self.quantity_tolerance = quantity_tolerance
 
@@ -68,6 +71,12 @@ class PaperOrderWorkflow:
                 portfolio_updated=False,
                 reason=reservation_result.reason,
             )
+        
+        self.order_journal.record(
+            order=order,
+            event="RESERVED",
+            reason=reservation_result.reason,
+        )
 
         try:
             execution_result = (
