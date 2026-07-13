@@ -19,6 +19,20 @@ from app.market_session import (
     MarketSessionStatus,
 )
 
+class RecordingMarketDataProvider:
+    def __init__(self) -> None:
+        self.requested_symbols: list[str] | None = None
+
+    def get_prices(
+        self,
+        symbols: list[str],
+    ) -> dict[str, float]:
+        self.requested_symbols = symbols
+
+        return {
+            "AAPL": 150.00,
+            "MSFT": 320.00,
+        }
 
 def create_trading_loop(
     log_file: Path,
@@ -234,3 +248,69 @@ def test_loop_skips_trading_when_market_is_closed(
     assert portfolio.positions == {}
     assert portfolio.cash == 10_000.00
     assert not log_file.exists()
+
+    def test_loop_uses_provider_through_market_data_interface(
+    tmp_path: Path,
+) -> None:
+        log_file = tmp_path / "trade_log.jsonl"
+
+    provider = RecordingMarketDataProvider()
+
+    portfolio = Portfolio(
+        starting_cash=10_000.00
+    )
+
+    limits = RiskLimits(
+        max_order_value=2_000.00,
+        max_position_value=3_000.00,
+        max_portfolio_exposure=0.50,
+        max_trades_per_session=3,
+        approved_symbols={"AAPL", "MSFT"},
+    )
+
+    execution_service = ExecutionService(
+        portfolio=portfolio,
+        risk_engine=RiskEngine(limits),
+        trade_log=TradeLog(
+            file_path=str(log_file)
+        ),
+    )
+
+    trading_loop = TradingLoop(
+        symbols=["aapl", "msft"],
+        market_data=provider,  # type: ignore[arg-type]
+        strategy=BuyTheDipStrategy(),
+        execution_service=execution_service,
+        interval_seconds=0,
+    )
+
+    trading_loop.run(cycles=1)
+
+    assert provider.requested_symbols == [
+        "AAPL",
+        "MSFT",
+    ]
+    assert portfolio.positions == {}
+
+def test_loop_logs_session_summary(
+    tmp_path: Path,
+    caplog,
+) -> None:
+    log_file = tmp_path / "trade_log.jsonl"
+
+    trading_loop, _, _ = create_trading_loop(
+        log_file
+    )
+
+    with caplog.at_level(
+        "INFO",
+        logger="app.trading_loop",
+    ):
+        trading_loop.run(cycles=2)
+
+    assert (
+        "trading_session_finished "
+        "cycles_completed=2 "
+        "symbol_count=2"
+        in caplog.text
+    )

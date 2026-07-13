@@ -178,8 +178,11 @@ class TradingLoop:
                 time.sleep(self.interval_seconds)
 
         logger.info(
-            "trading_loop_finished cycles=%s",
+            "trading_session_finished "
+            "cycles_completed=%s "
+            "symbol_count=%s",
             cycles,
+            len(self.symbols),
         )
 
         print("\nTrading loop finished.")
