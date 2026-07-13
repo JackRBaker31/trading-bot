@@ -1,5 +1,7 @@
 import logging
+import os
 from datetime import datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -14,6 +16,10 @@ from app.simulated_market_data import SimulatedMarketDataProvider
 from app.trade_log import TradeLog
 from app.trading_loop import TradingLoop
 from app.market_session import MarketSession
+from app.demo_recovery_factory import (
+    create_demo_recovery_startup_service,
+)
+from app.order_journal import OrderJournal
 
 
 logger = logging.getLogger(__name__)
@@ -182,10 +188,84 @@ def main() -> None:
         ),
     )
 
-    trading_loop.run(
-        cycles=config.trading_loop.cycles,
-        before_cycle=simulate_price_changes,
-    )
+    def start_trading() -> None:
+        trading_loop.run(
+            cycles=config.trading_loop.cycles,
+            before_cycle=simulate_price_changes,
+        )
+
+
+    if config.mode == "PAPER":
+        if not config.paper_trading.enabled:
+            raise ValueError(
+                "PAPER mode requires paper trading "
+                "to be enabled."
+            )
+
+        if (
+            config.paper_trading.broker_environment
+            != "DEMO"
+        ):
+            raise ValueError(
+                "PAPER mode requires the Trading 212 "
+                "DEMO environment."
+            )
+
+        api_key = os.getenv(
+            "TRADING212_API_KEY",
+            "",
+        ).strip()
+
+        api_secret = os.getenv(
+            "TRADING212_API_SECRET",
+            "",
+        ).strip()
+
+        if not api_key or not api_secret:
+            raise ValueError(
+                "Trading 212 Demo credentials are "
+                "required for startup recovery."
+            )
+
+        order_journal = OrderJournal(
+            path=Path("order_journal.jsonl")
+        )
+
+        recovery_startup_service = (
+            create_demo_recovery_startup_service(
+                api_key=api_key,
+                api_secret=api_secret,
+                order_journal=order_journal,
+                portfolio=portfolio,
+                portfolio_store=portfolio_store,
+            )
+        )
+
+        startup_result = (
+            recovery_startup_service.start(
+                start_trading=start_trading
+            )
+        )
+
+        if not startup_result.trading_started:
+            logger.error(
+                "trading_refused_by_startup_recovery "
+                "reason=%s incomplete_items=%s",
+                startup_result.decision.reason,
+                (
+                    startup_result
+                    .recovery_report
+                    .incomplete_items
+                ),
+            )
+
+            print(
+                "Trading refused: "
+                f"{startup_result.decision.reason}"
+            )
+            return
+    else:
+        start_trading()
 
     portfolio_store.save(portfolio)
 
