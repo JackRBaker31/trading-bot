@@ -14,19 +14,25 @@ from app.paper_order_workflow import (
 )
 from app.paper_trading_gate import GateDecision
 from app.portfolio import Portfolio
+
 from app.broker import (
+    BrokerOrderRejectedError,
     BrokerOrderResult,
+    BrokerOrderSubmissionUnknownError,
     BrokerResourceNotFoundError,
 )
+
 from app.order_polling import OrderPollingService
 from app.duplicate_order_guard import (DuplicateOrderGuard,
 )
+
 
 class FakeBroker:
     def __init__(
         self,
         verification_order: BrokerOrderResult,
         pending_order_not_found: bool = False,
+        submission_error: Exception | None = None,
         historical_order: (
             BrokerOrderResult | None
         ) = None,
@@ -39,6 +45,7 @@ class FakeBroker:
             pending_order_not_found
         )
 
+        self.submission_error = submission_error
         self.historical_order = historical_order
 
         self.submission_calls: list[
@@ -54,6 +61,9 @@ class FakeBroker:
         quantity: float,
         extended_hours: bool = False,
     ) -> BrokerOrderResult:
+        if self.submission_error is not None:
+            raise self.submission_error
+
         self.submission_calls.append(
             {
                 "ticker": ticker,
@@ -77,6 +87,7 @@ class FakeBroker:
             filled_value=0.0,
             currency="GBP",
         )
+
 
     def get_pending_order(
         self,
@@ -116,18 +127,21 @@ class FakeOrderJournal:
         event: str,
         broker_order_id: int | None = None,
         reason: str = "",
+        metadata: (
+            dict[str, object] | None
+        ) = None,
     ) -> None:
-        self.record_calls.append(
-            {
-                "order": order,
-                "event": event,
-                "broker_order_id": (
-                    broker_order_id
-                ),
-                "reason": reason,
-            }
-        )
+        call: dict[str, object] = {
+            "order": order,
+            "event": event,
+            "broker_order_id": broker_order_id,
+            "reason": reason,
+        }
 
+        if metadata is not None:
+            call["metadata"] = metadata
+
+        self.record_calls.append(call)
 
 def create_broker_order(
     status: str,
@@ -1528,3 +1542,118 @@ def test_blocked_gate_does_not_create_reservation_event() -> None:
     assert result.portfolio_updated is False
     assert journal.record_calls == []
     assert broker.submission_calls == []
+
+def test_definitive_submission_rejection_is_recorded() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        ),
+        submission_error=BrokerOrderRejectedError(
+            "Trading 212 rejected the order."
+        ),
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert result.submitted is False
+    assert result.portfolio_updated is False
+
+    assert journal.record_calls == [
+        {
+            "order": order,
+            "event": "RESERVED",
+            "broker_order_id": None,
+            "reason": (
+                "Order reservation created."
+            ),
+        },
+        {
+            "order": order,
+            "event": "FAILED",
+            "broker_order_id": None,
+            "reason": (
+                "Trading 212 rejected the order."
+            ),
+            "metadata": {
+                "submission_outcome": (
+                    "definitively_rejected"
+                ),
+            },
+        },
+    ]
+
+def test_unknown_submission_is_recorded_and_raised() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        ),
+        submission_error=(
+            BrokerOrderSubmissionUnknownError(
+                "Order confirmation was not received."
+            )
+        ),
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    with pytest.raises(
+        BrokerOrderSubmissionUnknownError,
+        match="confirmation was not received",
+    ):
+        workflow.execute(
+            order=order,
+            gate_decision=approved_gate(),
+        )
+
+    assert journal.record_calls[-1] == {
+        "order": order,
+        "event": "UNKNOWN",
+        "broker_order_id": None,
+        "reason": (
+            "Order confirmation was not received."
+        ),
+        "metadata": {
+            "submission_outcome": "unknown",
+            "requires_recovery": True,
+        },
+    }
+

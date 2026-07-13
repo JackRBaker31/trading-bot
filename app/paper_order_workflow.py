@@ -1,5 +1,12 @@
 from dataclasses import dataclass
 
+from app.broker import (
+    BrokerOrderRejectedError,
+    BrokerOrderSubmissionUnknownError,
+)
+from app.duplicate_order_guard import (
+    DuplicateOrderGuard,
+)
 from app.order_journal import OrderJournal
 from app.order_polling import OrderPollingService
 from app.order_verification import (
@@ -14,9 +21,6 @@ from app.paper_order_execution import (
 )
 from app.paper_trading_gate import GateDecision
 from app.portfolio import Portfolio
-from app.duplicate_order_guard import (
-    DuplicateOrderGuard,
-)
 
 
 @dataclass(frozen=True)
@@ -79,7 +83,9 @@ class PaperOrderWorkflow:
             order=order,
             event=event,
             broker_order_id=(
-                verification_result.broker_order.order_id
+                verification_result
+                .broker_order
+                .order_id
             ),
             reason=verification_result.reason,
         )
@@ -96,7 +102,9 @@ class PaperOrderWorkflow:
             return
 
         raw_status = (
-            verification_result.broker_order.status
+            verification_result
+            .broker_order
+            .status
         ).strip().upper()
 
         if raw_status != "REJECTED":
@@ -106,7 +114,9 @@ class PaperOrderWorkflow:
             order=order,
             event="REJECTED",
             broker_order_id=(
-                verification_result.broker_order.order_id
+                verification_result
+                .broker_order
+                .order_id
             ),
             reason=verification_result.reason,
         )
@@ -123,7 +133,9 @@ class PaperOrderWorkflow:
             return
 
         raw_status = (
-            verification_result.broker_order.status
+            verification_result
+            .broker_order
+            .status
         ).strip().upper()
 
         if raw_status == "REJECTED":
@@ -133,7 +145,9 @@ class PaperOrderWorkflow:
             order=order,
             event="FAILED",
             broker_order_id=(
-                verification_result.broker_order.order_id
+                verification_result
+                .broker_order
+                .order_id
             ),
             reason=verification_result.reason,
         )
@@ -152,8 +166,11 @@ class PaperOrderWorkflow:
                     f"gate: {gate_decision.reason}"
                 ),
             )
+
         reservation_result = (
-            self.duplicate_order_guard.reserve(order)
+            self.duplicate_order_guard.reserve(
+                order
+            )
         )
 
         if not reservation_result.approved:
@@ -162,7 +179,7 @@ class PaperOrderWorkflow:
                 portfolio_updated=False,
                 reason=reservation_result.reason,
             )
-        
+
         self.order_journal.record(
             order=order,
             event="RESERVED",
@@ -170,22 +187,62 @@ class PaperOrderWorkflow:
         )
 
         try:
-            execution_result = (
-                self.execution_service.submit(
-                    order=order,
-                    gate_decision=gate_decision,
+            try:
+                execution_result = (
+                    self.execution_service.submit(
+                        order=order,
+                        gate_decision=gate_decision,
+                    )
                 )
-            )
+            except BrokerOrderRejectedError as error:
+                self.order_journal.record(
+                    order=order,
+                    event="FAILED",
+                    broker_order_id=None,
+                    reason=str(error),
+                    metadata={
+                        "submission_outcome": (
+                            "definitively_rejected"
+                        ),
+                    },
+                )
+
+                return PaperOrderWorkflowResult(
+                    submitted=False,
+                    portfolio_updated=False,
+                    reason=str(error),
+                )
+            except (
+                BrokerOrderSubmissionUnknownError
+            ) as error:
+                self.order_journal.record(
+                    order=order,
+                    event="UNKNOWN",
+                    broker_order_id=None,
+                    reason=str(error),
+                    metadata={
+                        "submission_outcome": (
+                            "unknown"
+                        ),
+                        "requires_recovery": True,
+                    },
+                )
+
+                raise
 
             if not execution_result.submitted:
                 return PaperOrderWorkflowResult(
                     submitted=False,
                     portfolio_updated=False,
                     reason=execution_result.reason,
-                    execution_result=execution_result,
+                    execution_result=(
+                        execution_result
+                    ),
                 )
 
-            submitted_order = execution_result.broker_order
+            submitted_order = (
+                execution_result.broker_order
+            )
 
             if submitted_order is None:
                 return PaperOrderWorkflowResult(
@@ -195,18 +252,26 @@ class PaperOrderWorkflow:
                         "Broker submission returned no "
                         "order information."
                     ),
-                    execution_result=execution_result,
+                    execution_result=(
+                        execution_result
+                    ),
                 )
 
             self.order_journal.record(
                 order=order,
                 event="SUBMITTED",
-                broker_order_id=submitted_order.order_id,
+                broker_order_id=(
+                    submitted_order.order_id
+                ),
                 reason=execution_result.reason,
             )
 
-            polling_result = self.polling_service.poll(
-                order_id=submitted_order.order_id
+            polling_result = (
+                self.polling_service.poll(
+                    order_id=(
+                        submitted_order.order_id
+                    )
+                )
             )
 
             current_order = polling_result.order
@@ -215,7 +280,9 @@ class PaperOrderWorkflow:
                 self.order_journal.record(
                     order=order,
                     event="UNKNOWN",
-                    broker_order_id=submitted_order.order_id,
+                    broker_order_id=(
+                        submitted_order.order_id
+                    ),
                     reason=polling_result.reason,
                 )
 
@@ -223,28 +290,38 @@ class PaperOrderWorkflow:
                     submitted=True,
                     portfolio_updated=False,
                     reason=polling_result.reason,
-                    execution_result=execution_result,
+                    execution_result=(
+                        execution_result
+                    ),
                 )
 
-            verification_result = OrderVerificationResult(
-                broker_order=current_order,
-                status=polling_result.status,
-                reason=polling_result.reason,
+            verification_result = (
+                OrderVerificationResult(
+                    broker_order=current_order,
+                    status=polling_result.status,
+                    reason=polling_result.reason,
+                )
             )
 
             self._record_non_terminal_verification_event(
                 order=order,
-                verification_result=verification_result,
+                verification_result=(
+                    verification_result
+                ),
             )
 
             self._record_rejected_verification_event(
                 order=order,
-                verification_result=verification_result,
+                verification_result=(
+                    verification_result
+                ),
             )
 
             self._record_failed_verification_event(
                 order=order,
-                verification_result=verification_result,
+                verification_result=(
+                    verification_result
+                ),
             )
 
             if (
@@ -254,9 +331,15 @@ class PaperOrderWorkflow:
                 return PaperOrderWorkflowResult(
                     submitted=True,
                     portfolio_updated=False,
-                    reason=verification_result.reason,
-                    execution_result=execution_result,
-                    verification_result=verification_result,
+                    reason=(
+                        verification_result.reason
+                    ),
+                    execution_result=(
+                        execution_result
+                    ),
+                    verification_result=(
+                        verification_result
+                    ),
                 )
 
             filled_quantity = abs(
@@ -264,19 +347,26 @@ class PaperOrderWorkflow:
             )
 
             if (
-                abs(filled_quantity - order.quantity)
+                abs(
+                    filled_quantity
+                    - order.quantity
+                )
                 > self.quantity_tolerance
             ):
                 return PaperOrderWorkflowResult(
                     submitted=True,
                     portfolio_updated=False,
                     reason=(
-                        "Broker reported FILLED, but the "
-                        "filled quantity does not match "
-                        "the submitted order."
+                        "Broker reported FILLED, but "
+                        "the filled quantity does not "
+                        "match the submitted order."
                     ),
-                    execution_result=execution_result,
-                    verification_result=verification_result,
+                    execution_result=(
+                        execution_result
+                    ),
+                    verification_result=(
+                        verification_result
+                    ),
                 )
 
             if not filled_quantity.is_integer():
@@ -284,11 +374,16 @@ class PaperOrderWorkflow:
                     submitted=True,
                     portfolio_updated=False,
                     reason=(
-                        "Fractional broker fills are not "
-                        "supported by the local portfolio."
+                        "Fractional broker fills are "
+                        "not supported by the local "
+                        "portfolio."
                     ),
-                    execution_result=execution_result,
-                    verification_result=verification_result,
+                    execution_result=(
+                        execution_result
+                    ),
+                    verification_result=(
+                        verification_result
+                    ),
                 )
 
             if current_order.filled_value <= 0:
@@ -299,8 +394,12 @@ class PaperOrderWorkflow:
                         "Broker reported an invalid "
                         "filled value."
                     ),
-                    execution_result=execution_result,
-                    verification_result=verification_result,
+                    execution_result=(
+                        execution_result
+                    ),
+                    verification_result=(
+                        verification_result
+                    ),
                 )
 
             fill_price = (
@@ -328,20 +427,31 @@ class PaperOrderWorkflow:
             self.order_journal.record(
                 order=order,
                 event="FILLED",
-                broker_order_id=current_order.order_id,
-                reason=verification_result.reason,
+                broker_order_id=(
+                    current_order.order_id
+                ),
+                reason=(
+                    verification_result.reason
+                ),
             )
 
             return PaperOrderWorkflowResult(
                 submitted=True,
                 portfolio_updated=True,
                 reason=(
-                    "Broker order was fully filled and "
-                    "the local portfolio was updated."
+                    "Broker order was fully filled "
+                    "and the local portfolio was "
+                    "updated."
                 ),
-                execution_result=execution_result,
-                verification_result=verification_result,
+                execution_result=(
+                    execution_result
+                ),
+                verification_result=(
+                    verification_result
+                ),
             )
 
         finally:
-            self.duplicate_order_guard.release(order)
+            self.duplicate_order_guard.release(
+                order
+            )
