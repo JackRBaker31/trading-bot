@@ -107,6 +107,13 @@ class PaperOrderWorkflow:
                     execution_result=execution_result,
                 )
 
+            self.order_journal.record(
+                order=order,
+                event="SUBMITTED",
+                broker_order_id=submitted_order.order_id,
+                reason=execution_result.reason,
+            )
+
             polling_result = self.polling_service.poll(
                 order_id=submitted_order.order_id
             )

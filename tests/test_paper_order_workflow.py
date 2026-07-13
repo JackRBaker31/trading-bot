@@ -719,6 +719,7 @@ def test_duplicate_order_is_blocked() -> None:
     assert "already being processed" in result.reason
     assert broker.submission_calls == []
 
+
 def test_order_reservation_is_released_after_workflow() -> None:
     portfolio = Portfolio(
         starting_cash=5_000.00
@@ -801,17 +802,14 @@ def test_approved_reservation_is_recorded() -> None:
         gate_decision=approved_gate(),
     )
 
-    assert journal.record_calls == [
-        {
-            "order": order,
-            "event": "RESERVED",
-            "broker_order_id": None,
-            "reason": (
-                "Order reservation created."
-            ),
-        }
-    ]
-
+    assert journal.record_calls[0] == {
+        "order": order,
+        "event": "RESERVED",
+        "broker_order_id": None,
+        "reason": (
+            "Order reservation created."
+        ),
+    }
 
 def test_duplicate_reservation_is_not_recorded() -> None:
     portfolio = Portfolio(
@@ -867,4 +865,102 @@ def test_duplicate_reservation_is_not_recorded() -> None:
 
     assert result.submitted is False
     assert journal.record_calls == []
+    assert broker.submission_calls == []
+
+
+def test_successful_submission_is_recorded() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert journal.record_calls == [
+        {
+            "order": order,
+            "event": "RESERVED",
+            "broker_order_id": None,
+            "reason": (
+                "Order reservation created."
+            ),
+        },
+        {
+            "order": order,
+            "event": "SUBMITTED",
+            "broker_order_id": 123456,
+            "reason": (
+                "Order submitted to the Trading 212 "
+                "demo environment."
+            ),
+        },
+    ]
+
+def test_rejected_submission_is_not_recorded_as_submitted() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="MSFT",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert result.submitted is False
+
+    assert journal.record_calls == [
+        {
+            "order": order,
+            "event": "RESERVED",
+            "broker_order_id": None,
+            "reason": (
+                "Order reservation created."
+            ),
+        }
+    ]
+
     assert broker.submission_calls == []
