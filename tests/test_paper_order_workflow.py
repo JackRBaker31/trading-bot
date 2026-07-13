@@ -1059,3 +1059,96 @@ def test_filled_order_is_not_recorded_as_pending() -> None:
         "RESERVED",
         "SUBMITTED",
     ]
+
+def test_partially_filled_order_is_recorded() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="PARTIALLY_FILLED",
+            filled_quantity=1.0,
+            filled_value=150.0,
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert (
+        result.verification_result is not None
+    )
+
+    assert (
+        result.verification_result.status
+        == OrderVerificationStatus.PARTIALLY_FILLED
+    )
+
+    assert journal.record_calls[-1] == {
+        "order": order,
+        "event": "PARTIALLY_FILLED",
+        "broker_order_id": 123456,
+        "reason": (
+            "The broker order did not reach a "
+    "terminal state before polling timed out."
+        ),
+    }
+
+def test_pending_order_is_not_recorded_as_partially_filled() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    workflow.execute(
+        order=Order(
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            quantity=2,
+            price=150.00,
+        ),
+        gate_decision=approved_gate(),
+    )
+
+    recorded_events = [
+        call["event"]
+        for call in journal.record_calls
+    ]
+
+    assert recorded_events == [
+        "RESERVED",
+        "SUBMITTED",
+        "PENDING",
+    ]
+

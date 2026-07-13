@@ -147,6 +147,17 @@ class PaperOrderWorkflow:
 
             if (
                 verification_result.status
+                == OrderVerificationStatus.PARTIALLY_FILLED
+            ):
+                self.order_journal.record(
+                    order=order,
+                    event="PARTIALLY_FILLED",
+                    broker_order_id=current_order.order_id,
+                    reason=verification_result.reason,
+                )
+
+            if (
+                verification_result.status
                 != OrderVerificationStatus.FILLED
             ):
                 return PaperOrderWorkflowResult(
