@@ -54,3 +54,7 @@ def setup_logging(
     root_logger.addHandler(file_handler)
 
     logging.captureWarnings(True)
+
+    logging.getLogger("httpx").setLevel(
+    logging.WARNING
+    )

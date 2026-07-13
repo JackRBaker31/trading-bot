@@ -23,7 +23,12 @@ def main() -> None:
         api_key=api_key
     )
 
-    quote = provider.get_price("AAPL")
+    symbol = os.getenv(
+        "MARKET_DATA_TEST_SYMBOL",
+        "AAPL",
+    ).upper().strip()
+
+    quote = provider.get_price(symbol)
 
     print("\nRead-only market-data connection successful.")
     print(f"Provider: {quote.provider}")
