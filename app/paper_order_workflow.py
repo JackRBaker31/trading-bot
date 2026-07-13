@@ -136,6 +136,17 @@ class PaperOrderWorkflow:
 
             if (
                 verification_result.status
+                == OrderVerificationStatus.PENDING
+            ):
+                self.order_journal.record(
+                    order=order,
+                    event="PENDING",
+                    broker_order_id=current_order.order_id,
+                    reason=verification_result.reason,
+                )
+
+            if (
+                verification_result.status
                 != OrderVerificationStatus.FILLED
             ):
                 return PaperOrderWorkflowResult(
