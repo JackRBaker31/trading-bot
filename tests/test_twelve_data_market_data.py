@@ -177,3 +177,57 @@ def test_provider_rejects_non_object_json(
         match="invalid response",
     ):
         provider.get_price("AAPL")
+
+def test_provider_rejects_non_numeric_price(
+    monkeypatch,
+) -> None:
+    def fake_get(*args, **kwargs) -> FakeResponse:
+        return FakeResponse(
+            {
+                "symbol": "AAPL",
+                "close": "not-a-number",
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    provider = TwelveDataMarketDataProvider(
+        api_key="test-key"
+    )
+
+    with pytest.raises(
+        MarketDataError,
+        match="Invalid price",
+    ):
+        provider.get_price("AAPL")
+
+def test_provider_rejects_symbol_mismatch(
+    monkeypatch,
+) -> None:
+    def fake_get(*args, **kwargs) -> FakeResponse:
+        return FakeResponse(
+            {
+                "symbol": "MSFT",
+                "close": "210.50",
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    provider = TwelveDataMarketDataProvider(
+        api_key="test-key"
+    )
+
+    with pytest.raises(
+        MarketDataError,
+        match="symbol",
+    ):
+        provider.get_price("AAPL")

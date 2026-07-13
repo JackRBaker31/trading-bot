@@ -113,6 +113,20 @@ class TwelveDataMarketDataProvider(MarketDataProvider):
 
             raise MarketDataError(message)
 
+        returned_symbol = data.get("symbol")
+
+        if not isinstance(returned_symbol, str):
+            raise MarketDataError(
+                f"Twelve Data returned an invalid symbol for "
+                f"{cleaned_symbol}."
+            )
+
+        if returned_symbol.upper().strip() != cleaned_symbol:
+            raise MarketDataError(
+                f"Twelve Data returned symbol "
+                f"{returned_symbol!r} for {cleaned_symbol}."
+            )
+
         raw_price = data.get("close")
 
         if raw_price is None:
