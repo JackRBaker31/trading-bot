@@ -206,3 +206,103 @@ def test_recovery_runs_before_trading() -> None:
         "recovery",
         "trading",
     ]
+
+def test_approved_recovery_is_logged(
+    caplog,
+) -> None:
+    report = create_report()
+
+    coordinator = FakeRecoveryCoordinator(
+        report=report
+    )
+
+    gate = FakeRecoveryStartupGate(
+        decision=RecoveryStartupDecision(
+            approved=True,
+            reason=(
+                "Startup recovery completed safely."
+            ),
+        )
+    )
+
+    service = RecoveryStartupService(
+        recovery_coordinator=coordinator,
+        recovery_gate=gate,
+    )
+
+    with caplog.at_level("INFO"):
+        service.start(
+            start_trading=lambda: None
+        )
+
+    messages = [
+        record.getMessage()
+        for record in caplog.records
+    ]
+
+    assert "startup_recovery_started" in messages
+
+    assert any(
+        message.startswith(
+            "startup_recovery_report"
+        )
+        for message in messages
+    )
+
+    assert any(
+        message.startswith(
+            "startup_recovery_approved"
+        )
+        for message in messages
+    )
+
+    assert (
+        "trading_started_after_recovery"
+        in messages
+    )
+
+def test_refused_recovery_is_logged(
+    caplog,
+) -> None:
+    report = create_report()
+
+    coordinator = FakeRecoveryCoordinator(
+        report=report
+    )
+
+    gate = FakeRecoveryStartupGate(
+        decision=RecoveryStartupDecision(
+            approved=False,
+            reason=(
+                "Trading refused because startup "
+                "recovery remains blocked."
+            ),
+        )
+    )
+
+    service = RecoveryStartupService(
+        recovery_coordinator=coordinator,
+        recovery_gate=gate,
+    )
+
+    with caplog.at_level("INFO"):
+        service.start(
+            start_trading=lambda: None
+        )
+
+    messages = [
+        record.getMessage()
+        for record in caplog.records
+    ]
+
+    assert any(
+        message.startswith(
+            "startup_recovery_refused"
+        )
+        for message in messages
+    )
+
+    assert (
+        "trading_started_after_recovery"
+        not in messages
+    )
