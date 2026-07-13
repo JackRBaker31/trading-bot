@@ -91,6 +91,11 @@ class TwelveDataMarketDataProvider(MarketDataProvider):
                 "Twelve Data returned invalid JSON."
             ) from error
 
+        if not isinstance(data, dict):
+            raise MarketDataError(
+                "Twelve Data returned an invalid response."
+            )
+
         if data.get("status") == "error":
             message = str(
                 data.get(

@@ -155,3 +155,25 @@ def test_provider_requires_api_key() -> None:
         TwelveDataMarketDataProvider(
             api_key=""
         )
+
+def test_provider_rejects_non_object_json(
+    monkeypatch,
+) -> None:
+    def fake_get(*args, **kwargs) -> FakeResponse:
+        return FakeResponse([])  # type: ignore[arg-type]
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    provider = TwelveDataMarketDataProvider(
+        api_key="test-key"
+    )
+
+    with pytest.raises(
+        MarketDataError,
+        match="invalid response",
+    ):
+        provider.get_price("AAPL")
