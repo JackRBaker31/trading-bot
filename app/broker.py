@@ -5,6 +5,16 @@ from dataclasses import dataclass
 class BrokerError(Exception):
     """Raised when broker communication fails."""
 
+class BrokerOrderRejectedError(BrokerError):
+    """Raised when the broker definitively rejects an order."""
+
+
+class BrokerOrderSubmissionUnknownError(BrokerError):
+    """
+    Raised when order submission may have reached
+    the broker but confirmation was not received.
+    """
+
 class BrokerResourceNotFoundError(BrokerError):
     """Raised when a requested broker resource does not exist."""
 

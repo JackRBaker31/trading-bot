@@ -7,9 +7,10 @@ from app.trading212_client import (
 )
 from app.broker import (
     BrokerError,
+    BrokerOrderRejectedError,
+    BrokerOrderSubmissionUnknownError,
     BrokerResourceNotFoundError,
 )
-
 
 class FakeResponse:
     def __init__(
@@ -156,6 +157,124 @@ def test_invalid_environment_is_rejected() -> None:
             environment="UNKNOWN",
         )
 
+def test_market_order_http_rejection_has_specific_type(
+    monkeypatch,
+) -> None:
+    request = httpx.Request(
+        "POST",
+        "https://example.com",
+    )
+
+    response = httpx.Response(
+        403,
+        request=request,
+        json={
+            "error": "Order permission denied.",
+        },
+    )
+
+    def fake_post(
+        url,
+        auth,
+        json,
+        timeout,
+    ):
+        return response
+
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        fake_post,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerOrderRejectedError,
+        match="Order permission denied",
+    ):
+        client.place_market_order(
+            ticker="AAPL_US_EQ",
+            quantity=1,
+        )
+
+def test_market_order_timeout_is_submission_unknown(
+    monkeypatch,
+) -> None:
+    def fake_post(
+        url,
+        auth,
+        json,
+        timeout,
+    ):
+        raise httpx.ReadTimeout(
+            "Request timed out."
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        fake_post,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerOrderSubmissionUnknownError,
+        match="timed out",
+    ):
+        client.place_market_order(
+            ticker="AAPL_US_EQ",
+            quantity=1,
+        )
+
+def test_invalid_market_order_json_is_submission_unknown(
+    monkeypatch,
+) -> None:
+    class InvalidJsonResponse(FakeResponse):
+        def json(self) -> object:
+            raise ValueError(
+                "Invalid JSON."
+            )
+
+    def fake_post(
+        url,
+        auth,
+        json,
+        timeout,
+    ):
+        return InvalidJsonResponse(
+            data=None
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        fake_post,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerOrderSubmissionUnknownError,
+        match="invalid JSON",
+    ):
+        client.place_market_order(
+            ticker="AAPL_US_EQ",
+            quantity=1,
+        )
 
 def test_http_error_becomes_broker_error(
     monkeypatch,

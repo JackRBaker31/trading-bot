@@ -7,7 +7,9 @@ from app.broker import (
     BrokerAccountSummary,
     BrokerClient,
     BrokerError,
+    BrokerOrderRejectedError,
     BrokerOrderResult,
+    BrokerOrderSubmissionUnknownError,
     BrokerPosition,
     BrokerResourceNotFoundError,
 )
@@ -473,14 +475,16 @@ class Trading212Client(BrokerClient):
 
         except httpx.TimeoutException as error:
             logger.error(
-                "broker_timeout environment=%s "
-                "path=%s",
+                "broker_order_timeout "
+                "environment=%s path=%s",
                 self.environment,
                 path,
             )
 
-            raise BrokerError(
-                "Trading 212 request timed out."
+            raise BrokerOrderSubmissionUnknownError(
+                "Trading 212 order request timed out. "
+                "Order status must be checked before "
+                "retrying."
             ) from error
 
         except httpx.HTTPStatusError as error:
@@ -631,7 +635,7 @@ class Trading212Client(BrokerClient):
                 path,
             )
 
-            raise BrokerError(
+            raise BrokerOrderSubmissionUnknownError(
                 "Trading 212 order request timed out. "
                 "Order status must be checked before "
                 "retrying."
@@ -676,7 +680,7 @@ class Trading212Client(BrokerClient):
                     f"{response_detail}"
                 ) from error
 
-            raise BrokerError(
+            raise BrokerOrderRejectedError(
                 f"Trading 212 returned HTTP "
                 f"{status_code} for the order request. "
                 "Broker response: "
@@ -691,7 +695,7 @@ class Trading212Client(BrokerClient):
                 path,
             )
 
-            raise BrokerError(
+            raise BrokerOrderSubmissionUnknownError(
                 "Trading 212 order connection failed. "
                 "Order status must be checked before "
                 "retrying."
@@ -700,7 +704,8 @@ class Trading212Client(BrokerClient):
         try:
             return response.json()
         except ValueError as error:
-            raise BrokerError(
+            raise BrokerOrderSubmissionUnknownError(
                 "Trading 212 returned invalid JSON "
-                "for the market order."
+                "for the market order. Order status "
+                "must be checked before retrying."
             ) from error
