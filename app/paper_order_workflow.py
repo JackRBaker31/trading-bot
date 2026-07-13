@@ -84,6 +84,33 @@ class PaperOrderWorkflow:
             reason=verification_result.reason,
         )
 
+    def _record_rejected_verification_event(
+        self,
+        order: Order,
+        verification_result: OrderVerificationResult,
+    ) -> None:
+        if (
+            verification_result.status
+            != OrderVerificationStatus.FAILED
+        ):
+            return
+
+        raw_status = (
+            verification_result.broker_order.status
+        ).strip().upper()
+
+        if raw_status != "REJECTED":
+            return
+
+        self.order_journal.record(
+            order=order,
+            event="REJECTED",
+            broker_order_id=(
+                verification_result.broker_order.order_id
+            ),
+            reason=verification_result.reason,
+        )
+
     def execute(
         self,
         order: Order,
@@ -163,6 +190,11 @@ class PaperOrderWorkflow:
             )
 
             self._record_non_terminal_verification_event(
+                order=order,
+                verification_result=verification_result,
+            )
+
+            self._record_rejected_verification_event(
                 order=order,
                 verification_result=verification_result,
             )

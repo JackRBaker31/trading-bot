@@ -1230,3 +1230,95 @@ def test_pending_order_is_not_recorded_as_filled() -> None:
     ]
 
     assert "FILLED" not in recorded_events
+
+def test_rejected_order_is_recorded() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="REJECTED",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert (
+        result.verification_result is not None
+    )
+
+    assert (
+        result.verification_result.status
+        == OrderVerificationStatus.FAILED
+    )
+
+    assert journal.record_calls[-1] == {
+        "order": order,
+        "event": "REJECTED",
+        "broker_order_id": 123456,
+        "reason": result.verification_result.reason,
+    }
+
+def test_cancelled_order_is_not_recorded_as_rejected() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="CANCELLED",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    result = workflow.execute(
+        order=Order(
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            quantity=2,
+            price=150.00,
+        ),
+        gate_decision=approved_gate(),
+    )
+
+    assert (
+        result.verification_result is not None
+    )
+
+    assert (
+        result.verification_result.status
+        == OrderVerificationStatus.FAILED
+    )
+
+    recorded_events = [
+        call["event"]
+        for call in journal.record_calls
+    ]
+
+    assert "REJECTED" not in recorded_events
