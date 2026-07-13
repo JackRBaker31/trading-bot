@@ -47,6 +47,8 @@ def test_unknown_active_order_blocks_startup() -> None:
         "PAPER startup blocked by unknown "
         "active broker orders."
     )
+    assert result.known_order_count == 0
+    assert result.unknown_order_count == 1
 
 class KnownJournal:
     def find_unfinished_order_by_broker_order_id(
@@ -73,3 +75,5 @@ def test_known_active_order_is_approved() -> None:
     assert result.known_order_ids == (
         987654,
     )
+    assert result.known_order_count == 1
+    assert result.unknown_order_count == 0

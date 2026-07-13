@@ -376,6 +376,23 @@ def main() -> None:
             )
         )
 
+        discovery_result = (
+            startup_result.discovery_result
+        )
+
+        if discovery_result is not None:
+            logger.info(
+                "paper_startup_order_discovery "
+                "known_order_count=%s "
+                "unknown_order_count=%s "
+                "known_order_ids=%s "
+                "unknown_order_ids=%s",
+                discovery_result.known_order_count,
+                discovery_result.unknown_order_count,
+                discovery_result.known_order_ids,
+                discovery_result.unknown_order_ids,
+            )
+
         if not startup_result.trading_started:
             logger.error(
                 "paper_trading_refused "

@@ -27,6 +27,21 @@ class StartupOrderDiscoveryResult:
     unknown_order_ids: tuple[int, ...]
     reason: str
 
+    @property
+    def known_order_count(
+        self,
+    ) -> int:
+        return len(
+            self.known_order_ids
+        )
+
+    @property
+    def unknown_order_count(
+        self,
+    ) -> int:
+        return len(
+            self.unknown_order_ids
+        )
 
 class StartupOrderDiscoveryService:
     def __init__(
