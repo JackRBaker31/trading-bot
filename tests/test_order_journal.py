@@ -405,6 +405,29 @@ def test_only_recoverable_orders_are_returned(
         == "UNKNOWN"
     )
 
+def test_find_unfinished_order_by_broker_order_id(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+
+    order = create_order()
+
+    journal.record(
+        order=order,
+        event="PENDING",
+        broker_order_id=123456,
+    )
+
+    entry = (
+        journal.find_unfinished_order_by_broker_order_id(
+            123456
+        )
+    )
+
+    assert entry is not None
+    assert entry.event == "PENDING"
+    assert entry.broker_order_id == 123456
+
 def test_record_from_entry_preserves_order_identity(
     tmp_path,
 ) -> None:

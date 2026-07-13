@@ -265,3 +265,17 @@ class OrderJournal:
                 unfinished_entries.append(entry)
 
         return unfinished_entries
+    def find_unfinished_order_by_broker_order_id(
+        self,
+        broker_order_id: int,
+    ) -> OrderJournalEntry | None:
+        if broker_order_id <= 0:
+            raise ValueError(
+                "Broker order ID must be positive."
+            )
+
+        for entry in self.load_unfinished_orders():
+            if entry.broker_order_id == broker_order_id:
+                return entry
+
+        return None

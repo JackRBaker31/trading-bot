@@ -35,7 +35,9 @@ from app.simulated_market_data import (
 from app.trade_log import TradeLog
 from app.trading212_client import Trading212Client
 from app.trading_loop import TradingLoop
-
+from app.startup_order_discovery import (
+    StartupOrderDiscoveryService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -347,10 +349,20 @@ def main() -> None:
             )
         )
 
+        order_discovery_service = (
+            StartupOrderDiscoveryService(
+                broker=broker,
+                journal=order_journal,
+            )
+        )
+
         paper_startup_service = (
             PaperApplicationStartupService(
                 recovery_startup_service=(
                     recovery_startup_service
+                ),
+                order_discovery_service=(
+                    order_discovery_service
                 ),
                 reconciliation_service=(
                     reconciliation_service

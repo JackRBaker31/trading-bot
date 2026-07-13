@@ -9,11 +9,18 @@ from app.recovery_startup import (
     RecoveryStartupResult,
     RecoveryStartupService,
 )
+from app.startup_order_discovery import (
+    StartupOrderDiscoveryResult,
+    StartupOrderDiscoveryService,
+)
 
 
 @dataclass(frozen=True)
 class PaperApplicationStartupResult:
     recovery_result: RecoveryStartupResult
+    discovery_result: (
+        StartupOrderDiscoveryResult | None
+    )
     reconciliation_result: (
         PaperStartupReconciliationResult | None
     )
@@ -27,12 +34,18 @@ class PaperApplicationStartupService:
         recovery_startup_service: (
             RecoveryStartupService
         ),
+        order_discovery_service: (
+            StartupOrderDiscoveryService
+        ),
         reconciliation_service: (
             PaperStartupReconciliationService
         ),
     ) -> None:
         self.recovery_startup_service = (
             recovery_startup_service
+        )
+        self.order_discovery_service = (
+            order_discovery_service
         )
         self.reconciliation_service = (
             reconciliation_service
@@ -42,15 +55,28 @@ class PaperApplicationStartupService:
         self,
         start_trading: Callable[[], None],
     ) -> PaperApplicationStartupResult:
+        discovery_result: (
+            StartupOrderDiscoveryResult | None
+        ) = None
+
         reconciliation_result: (
             PaperStartupReconciliationResult | None
         ) = None
 
         trading_started = False
 
-        def reconcile_then_trade() -> None:
+        def discover_reconcile_then_trade() -> None:
+            nonlocal discovery_result
             nonlocal reconciliation_result
             nonlocal trading_started
+
+            discovery_result = (
+                self.order_discovery_service
+                .discover()
+            )
+
+            if not discovery_result.approved:
+                return
 
             reconciliation_result = (
                 self.reconciliation_service
@@ -65,16 +91,36 @@ class PaperApplicationStartupService:
 
         recovery_result = (
             self.recovery_startup_service.start(
-                start_trading=reconcile_then_trade
+                start_trading=(
+                    discover_reconcile_then_trade
+                )
             )
         )
 
         if not recovery_result.decision.approved:
             return PaperApplicationStartupResult(
                 recovery_result=recovery_result,
+                discovery_result=None,
                 reconciliation_result=None,
                 trading_started=False,
-                reason=recovery_result.decision.reason,
+                reason=(
+                    recovery_result.decision.reason
+                ),
+            )
+
+        if discovery_result is None:
+            raise RuntimeError(
+                "PAPER startup order discovery did "
+                "not run."
+            )
+
+        if not discovery_result.approved:
+            return PaperApplicationStartupResult(
+                recovery_result=recovery_result,
+                discovery_result=discovery_result,
+                reconciliation_result=None,
+                trading_started=False,
+                reason=discovery_result.reason,
             )
 
         if reconciliation_result is None:
@@ -86,6 +132,7 @@ class PaperApplicationStartupService:
         if not reconciliation_result.approved:
             return PaperApplicationStartupResult(
                 recovery_result=recovery_result,
+                discovery_result=discovery_result,
                 reconciliation_result=(
                     reconciliation_result
                 ),
@@ -97,6 +144,7 @@ class PaperApplicationStartupService:
 
         return PaperApplicationStartupResult(
             recovery_result=recovery_result,
+            discovery_result=discovery_result,
             reconciliation_result=(
                 reconciliation_result
             ),
