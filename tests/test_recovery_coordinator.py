@@ -102,6 +102,30 @@ class FakeFillRecoveryService:
         return FakeFillRecoveryResult()
 
 
+class FakeActiveOrderRecoveryResult:
+    def __init__(self) -> None:
+        self.completed = False
+        self.startup_blocked = True
+        self.reason = (
+            "Broker order remains active."
+        )
+
+
+class FakeActiveOrderRecoveryService:
+    def __init__(self) -> None:
+        self.recover_calls: list[
+            RecoveryPlanItem
+        ] = []
+
+    def recover(
+        self,
+        plan_item: RecoveryPlanItem,
+    ) -> FakeActiveOrderRecoveryResult:
+        self.recover_calls.append(
+            plan_item
+        )
+        return FakeActiveOrderRecoveryResult()
+
 def create_journal_entry() -> OrderJournalEntry:
     return OrderJournalEntry(
         timestamp="2026-07-13T10:00:00+00:00",
@@ -141,6 +165,7 @@ def create_coordinator(
     FakeRecoveryPlanner,
     FakeRecoveryExecutor,
     FakeFillRecoveryService,
+    FakeActiveOrderRecoveryService,
 ]:
     recovery_items = tuple(
         plan_item.recovery_item
@@ -163,6 +188,9 @@ def create_coordinator(
 
     executor = FakeRecoveryExecutor()
     fill_service = FakeFillRecoveryService()
+    active_service = (
+        FakeActiveOrderRecoveryService()
+    )
 
     coordinator = RecoveryCoordinator(
         startup_recovery_service=(
@@ -171,6 +199,9 @@ def create_coordinator(
         recovery_planner=planner,
         recovery_executor=executor,
         fill_recovery_service=fill_service,
+        active_order_recovery_service=(
+            active_service
+        ),
     )
 
     return (
@@ -179,6 +210,7 @@ def create_coordinator(
         planner,
         executor,
         fill_service,
+        active_service,
     )
 
 
@@ -188,14 +220,15 @@ def test_record_failure_is_executed() -> None:
     )
 
     (
-        coordinator,
-        startup_service,
-        planner,
-        executor,
-        fill_service,
-    ) = create_coordinator(
-        plan=(plan_item,)
-    )
+    coordinator,
+    startup_service,
+    planner,
+    executor,
+    fill_service,
+    _,
+) = create_coordinator(
+    plan=(plan_item,)
+)
 
     report = coordinator.recover()
 
@@ -219,14 +252,15 @@ def test_update_portfolio_is_executed() -> None:
     )
 
     (
-        coordinator,
-        _,
-        _,
-        executor,
-        fill_service,
-    ) = create_coordinator(
-        plan=(plan_item,)
-    )
+    coordinator,
+    startup_service,
+    planner,
+    executor,
+    fill_service,
+    _,
+) = create_coordinator(
+    plan=(plan_item,)
+)
 
     report = coordinator.recover()
 
@@ -256,14 +290,15 @@ def test_blocking_action_blocks_startup(
     )
 
     (
-        coordinator,
-        _,
-        _,
-        executor,
-        fill_service,
-    ) = create_coordinator(
-        plan=(plan_item,)
-    )
+    coordinator,
+    startup_service,
+    planner,
+    executor,
+    fill_service,
+    _,
+) = create_coordinator(
+    plan=(plan_item,)
+)
 
     report = coordinator.recover()
 
@@ -274,7 +309,7 @@ def test_blocking_action_blocks_startup(
     assert report.startup_blocked is True
 
 
-def test_resume_polling_is_not_implemented() -> None:
+def test_resume_polling_is_executed() -> None:
     plan_item = create_plan_item(
         action=RecoveryAction.RESUME_POLLING
     )
@@ -283,29 +318,38 @@ def test_resume_polling_is_not_implemented() -> None:
         coordinator,
         _,
         _,
-        _,
-        _,
+        executor,
+        fill_service,
+        active_service,
     ) = create_coordinator(
         plan=(plan_item,)
     )
 
-    with pytest.raises(
-        NotImplementedError,
-        match="Resume-polling",
-    ):
-        coordinator.recover()
+    report = coordinator.recover()
+
+    assert executor.execute_calls == []
+    assert fill_service.recover_calls == []
+
+    assert active_service.recover_calls == [
+        plan_item
+    ]
+
+    assert report.completed_items == 0
+    assert report.incomplete_items == 1
+    assert report.startup_blocked is True
 
 
 def test_empty_recovery_returns_empty_report() -> None:
     (
-        coordinator,
-        startup_service,
-        planner,
-        executor,
-        fill_service,
-    ) = create_coordinator(
-        plan=()
-    )
+    coordinator,
+    startup_service,
+    planner,
+    executor,
+    fill_service,
+    _,
+) = create_coordinator(
+    plan=()
+)
 
     report = coordinator.recover()
 

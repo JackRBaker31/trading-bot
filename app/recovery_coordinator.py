@@ -17,6 +17,10 @@ from app.startup_recovery import (
     StartupRecoveryReport,
     StartupRecoveryService,
 )
+from app.active_order_recovery import (
+    ActiveOrderRecoveryResult,
+    ActiveOrderRecoveryService,
+)
 
 
 @dataclass(frozen=True)
@@ -29,6 +33,9 @@ class RecoveryCoordinatorItem:
     ) = None
     fill_recovery_result: (
         RecoveredFillRecoveryResult | None
+    ) = None
+    active_order_result: (
+        ActiveOrderRecoveryResult | None
     ) = None
 
 
@@ -65,6 +72,9 @@ class RecoveryCoordinator:
         fill_recovery_service: (
             RecoveredFillRecoveryService
         ),
+        active_order_recovery_service: (
+        ActiveOrderRecoveryService
+    ),
     ) -> None:
         self.startup_recovery_service = (
             startup_recovery_service
@@ -73,6 +83,9 @@ class RecoveryCoordinator:
         self.recovery_executor = recovery_executor
         self.fill_recovery_service = (
             fill_recovery_service
+        )
+        self.active_order_recovery_service = (
+            active_order_recovery_service
         )
 
     def recover(self) -> RecoveryCoordinatorReport:
@@ -176,10 +189,27 @@ class RecoveryCoordinator:
                 plan_item.action
                 == RecoveryAction.RESUME_POLLING
             ):
-                raise NotImplementedError(
-                    "Resume-polling recovery is not "
-                    "implemented."
+                active_result = (
+                    self.active_order_recovery_service
+                    .recover(
+                        plan_item=plan_item
+                    )
                 )
+
+                startup_blocked = (
+                    startup_blocked
+                    or active_result.startup_blocked
+                )
+
+                items.append(
+                    RecoveryCoordinatorItem(
+                        plan_item=plan_item,
+                        completed=active_result.completed,
+                        reason=active_result.reason,
+                        active_order_result=active_result,
+                    )
+                )
+                continue
 
             raise ValueError(
                 "Unknown recovery action."
