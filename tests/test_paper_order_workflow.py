@@ -18,6 +18,7 @@ from app.broker import (
     BrokerOrderResult,
     BrokerResourceNotFoundError,
 )
+from app.order_polling import OrderPollingService
 
 class FakeBroker:
     def __init__(
@@ -134,7 +135,12 @@ def approved_gate() -> GateDecision:
 def create_workflow(
     broker: FakeBroker,
     portfolio: Portfolio,
+    max_attempts: int = 1,
 ) -> PaperOrderWorkflow:
+    verification_service = (
+        OrderVerificationService()
+    )
+
     execution_service = (
         PaperOrderExecutionService(
             broker=broker,
@@ -144,15 +150,20 @@ def create_workflow(
         )
     )
 
-    return PaperOrderWorkflow(
-        execution_service=execution_service,
-        status_broker=broker,
-        verification_service=(
-            OrderVerificationService()
-        ),
-        portfolio=portfolio,
+    polling_service = OrderPollingService(
+        broker=broker,
+        verification_service=verification_service,
+        max_attempts=max_attempts,
+        poll_interval_seconds=0,
+        sleep_function=lambda _: None,
     )
 
+    return PaperOrderWorkflow(
+        execution_service=execution_service,
+        polling_service=polling_service,
+        verification_service=verification_service,
+        portfolio=portfolio,
+    )
 
 def test_filled_buy_updates_portfolio() -> None:
     portfolio = Portfolio(
@@ -456,7 +467,6 @@ def test_filled_sell_updates_portfolio() -> None:
     assert portfolio.positions == {}
     assert portfolio.cash == 5_020.00
 
-
 def test_negative_quantity_tolerance_is_rejected() -> None:
     broker = FakeBroker(
         verification_order=create_broker_order(
@@ -473,16 +483,26 @@ def test_negative_quantity_tolerance_is_rejected() -> None:
         )
     )
 
+    verification_service = (
+        OrderVerificationService()
+    )
+
+    polling_service = OrderPollingService(
+        broker=broker,
+        verification_service=verification_service,
+        max_attempts=1,
+        poll_interval_seconds=0,
+        sleep_function=lambda _: None,
+    )
+
     with pytest.raises(
         ValueError,
         match="Quantity tolerance",
     ):
         PaperOrderWorkflow(
             execution_service=execution_service,
-            status_broker=broker,
-            verification_service=(
-                OrderVerificationService()
-            ),
+            polling_service=polling_service,
+            verification_service=verification_service,
             portfolio=Portfolio(
                 starting_cash=5_000.00
             ),
@@ -567,7 +587,7 @@ def test_missing_pending_and_historical_order_is_unknown() -> None:
 
     assert result.submitted is True
     assert result.portfolio_updated is False
-    assert "state is unknown" in result.reason
+    assert "not found" in result.reason
     assert portfolio.positions == {}
     assert portfolio.cash == 5_000.00
     assert broker.history_calls == [

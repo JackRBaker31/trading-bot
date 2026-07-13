@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Protocol
+
+from app.order_polling import OrderPollingService
 from app.order_verification import (
     OrderVerificationResult,
     OrderVerificationService,
@@ -12,25 +13,6 @@ from app.paper_order_execution import (
 )
 from app.paper_trading_gate import GateDecision
 from app.portfolio import Portfolio
-from app.broker import (
-    BrokerOrderResult,
-    BrokerResourceNotFoundError,
-)
-
-
-class OrderStatusBroker(Protocol):
-    def get_pending_order(
-        self,
-        order_id: int,
-    ) -> BrokerOrderResult:
-        """Retrieve the pending broker order state."""
-
-    def find_historical_order(
-        self,
-        order_id: int,
-        max_pages: int = 5,
-    ) -> BrokerOrderResult | None:
-        """Find an order in broker history."""
 
 
 @dataclass(frozen=True)
@@ -50,7 +32,7 @@ class PaperOrderWorkflow:
     def __init__(
         self,
         execution_service: PaperOrderExecutionService,
-        status_broker: OrderStatusBroker,
+        polling_service: OrderPollingService,
         verification_service: OrderVerificationService,
         portfolio: Portfolio,
         quantity_tolerance: float = 0.000001,
@@ -61,7 +43,7 @@ class PaperOrderWorkflow:
             )
 
         self.execution_service = execution_service
-        self.status_broker = status_broker
+        self.polling_service = polling_service
         self.verification_service = (
             verification_service
         )
@@ -105,37 +87,24 @@ class PaperOrderWorkflow:
                 execution_result=execution_result,
             )
 
-        try:
-            current_order = (
-                self.status_broker.get_pending_order(
-                    order_id=submitted_order.order_id
-                )
+        polling_result = self.polling_service.poll(
+            order_id=submitted_order.order_id
+        )
+
+        current_order = polling_result.order
+
+        if current_order is None:
+            return PaperOrderWorkflowResult(
+                submitted=True,
+                portfolio_updated=False,
+                reason=polling_result.reason,
+                execution_result=execution_result,
             )
 
-        except BrokerResourceNotFoundError:
-            current_order = (
-                self.status_broker.find_historical_order(
-                    order_id=(
-                        submitted_order.order_id
-                    )
-                )
-            )
-
-            if current_order is None:
-                return PaperOrderWorkflowResult(
-                    submitted=True,
-                    portfolio_updated=False,
-                    reason=(
-                        "The order was not found in "
-                        "pending orders or historical "
-                        "orders. Its state is unknown."
-                    ),
-                    execution_result=execution_result,
-                )
-        verification_result = (
-            self.verification_service.verify(
-                current_order
-            )
+        verification_result = OrderVerificationResult(
+            broker_order=current_order,
+            status=polling_result.status,
+            reason=polling_result.reason,
         )
 
         if (
