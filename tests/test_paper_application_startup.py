@@ -130,6 +130,11 @@ class FakeOrderDiscoveryService:
 
         return StartupOrderDiscoveryResult(
             approved=self.approved,
+            known_order_ids=(
+                (987654,)
+                if self.approved
+                else ()
+            ),
             unknown_order_ids=(
                 ()
                 if self.approved

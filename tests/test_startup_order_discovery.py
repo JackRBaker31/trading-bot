@@ -70,3 +70,6 @@ def test_known_active_order_is_approved() -> None:
         "PAPER startup order discovery "
         "completed safely."
     )
+    assert result.known_order_ids == (
+        987654,
+    )

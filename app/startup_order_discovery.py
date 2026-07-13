@@ -23,6 +23,7 @@ class UnfinishedOrderJournal(Protocol):
 @dataclass(frozen=True)
 class StartupOrderDiscoveryResult:
     approved: bool
+    known_order_ids: tuple[int, ...]
     unknown_order_ids: tuple[int, ...]
     reason: str
 
@@ -39,6 +40,7 @@ class StartupOrderDiscoveryService:
     def discover(
         self,
     ) -> StartupOrderDiscoveryResult:
+        known_order_ids: list[int] = []
         unknown_order_ids: list[int] = []
 
         for order in self.broker.get_active_orders():
@@ -53,10 +55,17 @@ class StartupOrderDiscoveryService:
                 unknown_order_ids.append(
                     order.order_id
                 )
+            else:
+                known_order_ids.append(
+                    order.order_id
+                )
 
         if unknown_order_ids:
             return StartupOrderDiscoveryResult(
                 approved=False,
+                known_order_ids=tuple(
+                    known_order_ids
+                ),
                 unknown_order_ids=tuple(
                     unknown_order_ids
                 ),
@@ -68,6 +77,9 @@ class StartupOrderDiscoveryService:
 
         return StartupOrderDiscoveryResult(
             approved=True,
+            known_order_ids=tuple(
+                known_order_ids
+            ),
             unknown_order_ids=(),
             reason=(
                 "PAPER startup order discovery "
