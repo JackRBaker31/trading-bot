@@ -421,6 +421,60 @@ def test_market_order_rejects_invalid_response(
             quantity=1,
         )
 
+def test_market_order_http_error_includes_response(
+    monkeypatch,
+) -> None:
+    request = httpx.Request(
+        "POST",
+        (
+            "https://demo.trading212.com/"
+            "api/v0/equity/orders/market"
+        ),
+    )
+
+    response = httpx.Response(
+        403,
+        request=request,
+        json={
+            "error": (
+                "API key does not have order "
+                "permissions."
+            ),
+        },
+    )
+
+    def fake_post(
+        url,
+        auth,
+        json,
+        timeout,
+    ):
+        return response
+
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        fake_post,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    with pytest.raises(
+        BrokerError,
+        match=(
+            "API key does not have order "
+            "permissions"
+        ),
+    ):
+        client.place_market_order(
+            ticker="AAPL_US_EQ",
+            quantity=1,
+        )
+
 def test_get_pending_order(
     monkeypatch,
 ) -> None:

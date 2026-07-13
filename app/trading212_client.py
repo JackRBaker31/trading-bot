@@ -1,3 +1,4 @@
+import json
 import logging
 
 import httpx
@@ -547,6 +548,53 @@ class Trading212Client(BrokerClient):
                 "Trading 212 returned invalid JSON."
             ) from error
 
+    @staticmethod
+    def _format_error_response(
+        response: httpx.Response,
+    ) -> str:
+        try:
+            data = response.json()
+        except ValueError:
+            detail = response.text
+        else:
+            detail = ""
+
+            if isinstance(data, dict):
+                for key in (
+                    "message",
+                    "error",
+                    "detail",
+                ):
+                    value = data.get(key)
+
+                    if isinstance(value, str):
+                        detail = value
+                        break
+
+                if not detail:
+                    detail = json.dumps(
+                        data,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    )
+            elif isinstance(data, list):
+                detail = json.dumps(
+                    data,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                )
+            else:
+                detail = str(data)
+
+        cleaned_detail = " ".join(
+            detail.split()
+        )
+
+        if not cleaned_detail:
+            return "No response details provided."
+
+        return cleaned_detail[:500]
+
     def _post(
         self,
         path: str,
@@ -594,13 +642,20 @@ class Trading212Client(BrokerClient):
                 error.response.status_code
             )
 
+            response_detail = (
+                self._format_error_response(
+                    error.response
+                )
+            )
+
             logger.error(
                 "broker_order_http_error "
                 "environment=%s path=%s "
-                "status_code=%s",
+                "status_code=%s detail=%s",
                 self.environment,
                 path,
                 status_code,
+                response_detail,
             )
 
             if status_code == 429:
@@ -616,12 +671,16 @@ class Trading212Client(BrokerClient):
                     "reached. "
                     f"Reset time: {reset_at}. "
                     "Do not retry until the order "
-                    "status has been checked."
+                    "status has been checked. "
+                    "Broker response: "
+                    f"{response_detail}"
                 ) from error
 
             raise BrokerError(
                 f"Trading 212 returned HTTP "
-                f"{status_code} for the order request."
+                f"{status_code} for the order request. "
+                "Broker response: "
+                f"{response_detail}"
             ) from error
 
         except httpx.HTTPError as error:
