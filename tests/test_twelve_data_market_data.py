@@ -253,3 +253,40 @@ def test_provider_rejects_symbol_mismatch(
         match="symbol",
     ):
         provider.get_price("AAPL")
+
+def test_provider_retries_timeout_once(
+    monkeypatch,
+) -> None:
+    call_count = 0
+
+    def fake_get(*args, **kwargs) -> FakeResponse:
+        nonlocal call_count
+        call_count += 1
+
+        if call_count == 1:
+            raise httpx.TimeoutException(
+                "Timed out."
+            )
+
+        return FakeResponse(
+            {
+                "symbol": "AAPL",
+                "close": "210.50",
+            }
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    provider = TwelveDataMarketDataProvider(
+        api_key="test-key",
+        max_attempts=2,
+    )
+
+    quote = provider.get_price("AAPL")
+
+    assert quote.price == 210.50
+    assert call_count == 2

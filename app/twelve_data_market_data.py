@@ -17,10 +17,11 @@ class TwelveDataMarketDataProvider(MarketDataProvider):
     BASE_URL = "https://api.twelvedata.com/quote"
 
     def __init__(
-        self,
-        api_key: str,
-        timeout_seconds: float = 10.0,
-    ) -> None:
+    self,
+    api_key: str,
+    timeout_seconds: float = 10.0,
+    max_attempts: int = 1,
+) -> None:
         cleaned_api_key = api_key.strip()
 
         if not cleaned_api_key:
@@ -32,9 +33,15 @@ class TwelveDataMarketDataProvider(MarketDataProvider):
             raise ValueError(
                 "Timeout must be greater than zero."
             )
+        
+        if max_attempts <= 0:
+            raise ValueError(
+                "Maximum attempts must be greater than zero."
+            )
 
         self.api_key = cleaned_api_key
         self.timeout_seconds = timeout_seconds
+        self.max_attempts = max_attempts
 
     def get_price(self, symbol: str) -> PriceQuote:
         cleaned_symbol = symbol.upper().strip()
@@ -49,40 +56,58 @@ class TwelveDataMarketDataProvider(MarketDataProvider):
             cleaned_symbol,
         )
 
-        try:
-            response = httpx.get(
-                self.BASE_URL,
-                params={
-                    "symbol": cleaned_symbol,
-                    "apikey": self.api_key,
-                },
-                timeout=self.timeout_seconds,
-            )
+        response: httpx.Response | None = None
 
-            response.raise_for_status()
+        for attempt_number in range(
+            1,
+            self.max_attempts + 1,
+        ):
+            try:
+                response = httpx.get(
+                    self.BASE_URL,
+                    params={
+                        "symbol": cleaned_symbol,
+                        "apikey": self.api_key,
+                    },
+                    timeout=self.timeout_seconds,
+                )
 
-        except httpx.TimeoutException as error:
-            logger.error(
-                "market_data_timeout provider=TWELVE_DATA symbol=%s",
-                cleaned_symbol,
-            )
+                response.raise_for_status()
+                break
 
-            raise MarketDataError(
-                f"Market-data request timed out for "
-                f"{cleaned_symbol}."
-            ) from error
+            except httpx.TimeoutException as error:
+                logger.warning(
+                    "market_data_timeout "
+                    "provider=TWELVE_DATA symbol=%s "
+                    "attempt=%s max_attempts=%s",
+                    cleaned_symbol,
+                    attempt_number,
+                    self.max_attempts,
+                )
 
-        except httpx.HTTPError as error:
-            logger.exception(
-                "market_data_http_error "
-                "provider=TWELVE_DATA symbol=%s",
-                cleaned_symbol,
-            )
+                if attempt_number == self.max_attempts:
+                    raise MarketDataError(
+                        f"Market-data request timed out for "
+                        f"{cleaned_symbol}."
+                    ) from error
 
+            except httpx.HTTPError as error:
+                logger.exception(
+                    "market_data_http_error "
+                    "provider=TWELVE_DATA symbol=%s",
+                    cleaned_symbol,
+                )
+
+                raise MarketDataError(
+                    f"Market-data request failed for "
+                    f"{cleaned_symbol}."
+                ) from error
+
+        if response is None:
             raise MarketDataError(
                 f"Market-data request failed for "
                 f"{cleaned_symbol}."
-            ) from error
+            )
 
         try:
             data = response.json()
