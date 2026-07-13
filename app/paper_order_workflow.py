@@ -143,6 +143,15 @@ class PaperOrderWorkflow:
         order: Order,
         gate_decision: GateDecision,
     ) -> PaperOrderWorkflowResult:
+        if not gate_decision.approved:
+            return PaperOrderWorkflowResult(
+                submitted=False,
+                portfolio_updated=False,
+                reason=(
+                    "Order blocked by paper-trading "
+                    f"gate: {gate_decision.reason}"
+                ),
+            )
         reservation_result = (
             self.duplicate_order_guard.reserve(order)
         )

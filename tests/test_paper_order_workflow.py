@@ -1487,3 +1487,44 @@ def test_pending_order_is_not_recorded_as_unknown() -> None:
     assert recorded_events[-1] == "PENDING"
     assert "UNKNOWN" not in recorded_events
 
+def test_blocked_gate_does_not_create_reservation_event() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=150.00,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=GateDecision(
+            approved=False,
+            reason=(
+                "Order-execution permission has "
+                "not been confirmed."
+            ),
+        ),
+    )
+
+    assert result.submitted is False
+    assert result.portfolio_updated is False
+    assert journal.record_calls == []
+    assert broker.submission_calls == []
