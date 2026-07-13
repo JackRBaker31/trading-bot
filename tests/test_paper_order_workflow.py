@@ -1407,3 +1407,83 @@ def test_rejected_order_is_not_recorded_as_failed() -> None:
     assert recorded_events[-1] == "REJECTED"
     assert "FAILED" not in recorded_events
 
+def test_missing_broker_order_is_recorded_as_unknown() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        ),
+        pending_order_not_found=True,
+        historical_order=None,
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        price=150.00,
+    )
+
+    result = workflow.execute(
+        order=order,
+        gate_decision=approved_gate(),
+    )
+
+    assert result.submitted is True
+    assert result.portfolio_updated is False
+
+    assert journal.record_calls[-1] == {
+        "order": order,
+        "event": "UNKNOWN",
+        "broker_order_id": 123456,
+        "reason": result.reason,
+    }
+
+def test_pending_order_is_not_recorded_as_unknown() -> None:
+    portfolio = Portfolio(
+        starting_cash=5_000.00
+    )
+
+    broker = FakeBroker(
+        verification_order=create_broker_order(
+            status="NEW",
+        )
+    )
+
+    journal = FakeOrderJournal()
+
+    workflow = create_workflow(
+        broker=broker,
+        portfolio=portfolio,
+        order_journal=journal,
+    )
+
+    workflow.execute(
+        order=Order(
+            symbol="AAPL",
+            side=OrderSide.BUY,
+            quantity=2,
+            price=150.00,
+        ),
+        gate_decision=approved_gate(),
+    )
+
+    recorded_events = [
+        call["event"]
+        for call in journal.record_calls
+    ]
+
+    assert recorded_events[-1] == "PENDING"
+    assert "UNKNOWN" not in recorded_events
+

@@ -203,6 +203,13 @@ class PaperOrderWorkflow:
             current_order = polling_result.order
 
             if current_order is None:
+                self.order_journal.record(
+                    order=order,
+                    event="UNKNOWN",
+                    broker_order_id=submitted_order.order_id,
+                    reason=polling_result.reason,
+                )
+
                 return PaperOrderWorkflowResult(
                     submitted=True,
                     portfolio_updated=False,
