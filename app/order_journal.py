@@ -37,6 +37,14 @@ class OrderJournal:
         "RELEASED",
     }
 
+    RECOVERABLE_EVENTS = {
+        "RESERVED",
+        "SUBMITTED",
+        "PENDING",
+        "PARTIALLY_FILLED",
+        "UNKNOWN",
+    }
+
     def __init__(
         self,
         path: str | Path,
@@ -182,3 +190,16 @@ class OrderJournal:
                 active_keys.add(reservation_key)
 
         return active_keys
+    
+    def load_unfinished_orders(
+        self,
+    ) -> list[OrderJournalEntry]:
+        unfinished_entries: list[
+            OrderJournalEntry
+        ] = []
+
+        for entry in self.latest_entries().values():
+            if entry.event in self.RECOVERABLE_EVENTS:
+                unfinished_entries.append(entry)
+
+        return unfinished_entries

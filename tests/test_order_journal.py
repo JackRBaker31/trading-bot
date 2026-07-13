@@ -304,3 +304,103 @@ def test_entry_without_metadata_is_loaded(
     assert entries[0].event == "SUBMITTED"
     assert entries[0].metadata is None
 
+def test_pending_order_is_unfinished(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+    order = create_order()
+
+    journal.record(
+        order=order,
+        event="RESERVED",
+    )
+    journal.record(
+        order=order,
+        event="SUBMITTED",
+        broker_order_id=123456,
+    )
+    journal.record(
+        order=order,
+        event="PENDING",
+        broker_order_id=123456,
+    )
+
+    unfinished = journal.load_unfinished_orders()
+
+    assert len(unfinished) == 1
+    assert unfinished[0].event == "PENDING"
+    assert unfinished[0].broker_order_id == 123456
+
+def test_filled_order_is_not_unfinished(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+    order = create_order()
+
+    journal.record(
+        order=order,
+        event="SUBMITTED",
+        broker_order_id=123456,
+    )
+    journal.record(
+        order=order,
+        event="FILLED",
+        broker_order_id=123456,
+    )
+
+    assert journal.load_unfinished_orders() == []
+
+def test_only_recoverable_orders_are_returned(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+
+    pending_order = create_order(
+        symbol="AAPL",
+    )
+    failed_order = create_order(
+        symbol="MSFT",
+    )
+    unknown_order = create_order(
+        symbol="TSLA",
+    )
+
+    journal.record(
+        order=pending_order,
+        event="PENDING",
+        broker_order_id=111,
+    )
+    journal.record(
+        order=failed_order,
+        event="FAILED",
+        broker_order_id=222,
+    )
+    journal.record(
+        order=unknown_order,
+        event="UNKNOWN",
+        broker_order_id=333,
+    )
+
+    unfinished = journal.load_unfinished_orders()
+
+    unfinished_by_key = {
+        entry.reservation_key: entry
+        for entry in unfinished
+    }
+
+    assert set(unfinished_by_key) == {
+        "AAPL:BUY:2",
+        "TSLA:BUY:2",
+    }
+    assert (
+        unfinished_by_key[
+            "AAPL:BUY:2"
+        ].event
+        == "PENDING"
+    )
+    assert (
+        unfinished_by_key[
+            "TSLA:BUY:2"
+        ].event
+        == "UNKNOWN"
+    )
