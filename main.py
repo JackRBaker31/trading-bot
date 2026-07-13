@@ -38,6 +38,9 @@ from app.trading_loop import TradingLoop
 from app.startup_order_discovery import (
     StartupOrderDiscoveryService,
 )
+from app.startup_summary import (
+    StartupSummaryBuilder,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -375,6 +378,40 @@ def main() -> None:
                 start_trading=start_trading
             )
         )
+
+        discovery_result = (
+            startup_result.discovery_result
+        )
+
+        if discovery_result is not None:
+            startup_summary = (
+                StartupSummaryBuilder().build(
+                    discovery_result=discovery_result,
+                    startup_approved=(
+                        startup_result.trading_started
+                    ),
+                )
+            )
+
+            logger.info(
+                "paper_startup_summary "
+                "startup_approved=%s "
+                "discovery_approved=%s "
+                "discovery_reason=%s "
+                "known_active_order_count=%s "
+                "unknown_active_order_count=%s",
+                startup_summary.startup_approved,
+                startup_summary.discovery_approved,
+                startup_summary.discovery_reason,
+                (
+                    startup_summary
+                    .known_active_order_count
+                ),
+                (
+                    startup_summary
+                    .unknown_active_order_count
+                ),
+            )
 
         discovery_result = (
             startup_result.discovery_result
