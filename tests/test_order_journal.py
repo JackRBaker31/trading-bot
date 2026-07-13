@@ -247,3 +247,60 @@ def test_corrupt_journal_line_is_rejected(
         match="line 1",
     ):
         journal.load_entries()
+
+def test_record_persists_metadata(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+
+    entry = journal.record(
+        order=create_order(),
+        event="RELEASED",
+        broker_order_id=123456,
+        reason=(
+            "Duplicate reservation released."
+        ),
+        metadata={
+            "release_reason": (
+                "workflow_complete"
+            ),
+        },
+    )
+
+    assert entry.metadata == {
+        "release_reason": "workflow_complete",
+    }
+
+    loaded_entries = journal.load_entries()
+
+    assert loaded_entries[0].metadata == {
+        "release_reason": "workflow_complete",
+    }
+
+def test_entry_without_metadata_is_loaded(
+    tmp_path,
+) -> None:
+    journal = create_journal(tmp_path)
+
+    legacy_entry = {
+        "timestamp": FIXED_TIME.isoformat(),
+        "reservation_key": "AAPL:BUY:2",
+        "event": "SUBMITTED",
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 2,
+        "broker_order_id": 123456,
+        "reason": "Broker accepted the order.",
+    }
+
+    journal.path.write_text(
+        json.dumps(legacy_entry) + "\n",
+        encoding="utf-8",
+    )
+
+    entries = journal.load_entries()
+
+    assert len(entries) == 1
+    assert entries[0].event == "SUBMITTED"
+    assert entries[0].metadata is None
+

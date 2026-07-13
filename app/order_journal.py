@@ -17,6 +17,7 @@ class OrderJournalEntry:
     quantity: int
     broker_order_id: int | None = None
     reason: str = ""
+    metadata: dict[str, object] | None = None
 
 
 class OrderJournal:
@@ -62,6 +63,7 @@ class OrderJournal:
         event: str,
         broker_order_id: int | None = None,
         reason: str = "",
+        metadata: dict[str, object] | None = None,
     ) -> OrderJournalEntry:
         normalized_event = event.strip().upper()
 
@@ -93,6 +95,7 @@ class OrderJournal:
             quantity=order.quantity,
             broker_order_id=broker_order_id,
             reason=reason,
+            metadata=metadata,
         )
 
         self.path.parent.mkdir(
