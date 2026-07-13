@@ -81,7 +81,7 @@ class RecoveryStartupService:
         start_trading()
 
         logger.info(
-            "trading_started_after_recovery"
+            "startup_recovery_callback_completed"
         )
 
         return RecoveryStartupResult(

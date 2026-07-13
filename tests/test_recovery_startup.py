@@ -257,7 +257,7 @@ def test_approved_recovery_is_logged(
     )
 
     assert (
-        "trading_started_after_recovery"
+        "startup_recovery_callback_completed"
         in messages
     )
 
@@ -303,6 +303,6 @@ def test_refused_recovery_is_logged(
     )
 
     assert (
-        "trading_started_after_recovery"
+        "startup_recovery_callback_completed"
         not in messages
     )
