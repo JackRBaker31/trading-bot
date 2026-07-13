@@ -234,6 +234,13 @@ class PaperOrderWorkflow:
                     price=fill_price,
                 )
 
+            self.order_journal.record(
+                order=order,
+                event="FILLED",
+                broker_order_id=current_order.order_id,
+                reason=verification_result.reason,
+            )
+
             return PaperOrderWorkflowResult(
                 submitted=True,
                 portfolio_updated=True,
