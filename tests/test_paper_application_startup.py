@@ -191,6 +191,10 @@ def test_recovery_and_reconciliation_start_trading() -> None:
     assert reconciliation_service.calls == 1
     assert trading_calls == 1
     assert result.trading_started is True
+    assert result.discovery_result is not None
+    assert result.discovery_result.known_order_ids == (
+        987654,
+    )
 
 
 def test_failed_recovery_skips_reconciliation() -> None:

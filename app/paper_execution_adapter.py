@@ -5,6 +5,7 @@ from app.market_session import MarketSession
 from app.orders import Order
 from app.paper_order_workflow import (
     PaperOrderWorkflow,
+    PaperOrderWorkflowResult,
 )
 from app.paper_trading_gate import (
     PaperTradingGate,
@@ -50,11 +51,11 @@ class PaperExecutionAdapter:
             enforce_market_hours
         )
 
-    def submit_order(
+    def submit_order_with_result(
         self,
         order: Order,
         current_prices: dict[str, float],
-    ) -> bool:
+    ) -> PaperOrderWorkflowResult:
         logger.info(
             "paper_order_received "
             "symbol=%s side=%s quantity=%s "
@@ -149,4 +150,16 @@ class PaperExecutionAdapter:
                 reason,
             )
 
-        return executed
+        return result
+
+    def submit_order(
+        self,
+        order: Order,
+        current_prices: dict[str, float],
+    ) -> bool:
+        result = self.submit_order_with_result(
+            order=order,
+            current_prices=current_prices,
+        )
+
+        return result.portfolio_updated

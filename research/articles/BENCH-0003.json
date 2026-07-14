@@ -1,0 +1,13 @@
+{
+  "benchmark_id": "BENCH-0003",
+  "headline": "Microsoft reports growth in fourth-quarter revenue and operating income",
+  "source": "Microsoft Investor Relations",
+  "category": "earnings",
+  "sector": "Technology",
+  "company": "Microsoft",
+  "ticker": "MSFT",
+  "difficulty": "easy",
+  "published_at": "2025-07-30",
+  "article_text": "Microsoft (NASDAQ: MSFT) reported fourth-quarter fiscal 2025 revenue of $76.4 billion, an increase of 18% from the prior-year period. Operating income was $34.3 billion and increased 23%.",
+  "status": "ready"
+}

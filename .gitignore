@@ -1,7 +1,16 @@
+# Python
 .venv/
 __pycache__/
-*.pyc
-.env
-.vscode/
-data/
 .pytest_cache/
+*.pyc
+
+# Secrets
+.env
+
+# Runtime trading journals
+order_journal*.jsonl
+data/*.jsonl
+
+# Generated AI research output
+research/reports/*.json
+research/experiments/*.jsonl

@@ -44,6 +44,9 @@ from app.startup_summary import (
 from app.symbol_mapping_service import (
     SymbolMappingService,
 )
+from app.active_order_manager import (
+    ActiveOrderManager,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +211,7 @@ def main() -> None:
     )
 
     order_journal: OrderJournal | None = None
+    active_order_manager: ActiveOrderManager | None = None
     api_key = ""
     api_secret = ""
 
@@ -265,6 +269,12 @@ def main() -> None:
             len(symbol_mapping),
         )
 
+        active_order_manager = ActiveOrderManager(
+            symbol_mapping=symbol_mapping,
+            active_orders=broker.get_active_orders(),
+            order_provider=broker,
+        )
+
         order_journal = OrderJournal(
             path=Path(
                 "order_journal.jsonl"
@@ -311,13 +321,17 @@ def main() -> None:
         strategy=strategy,
         execution_service=execution_service,
         interval_seconds=(
-            config.trading_loop
-            .interval_seconds
+            config.trading_loop.interval_seconds
         ),
         market_session=market_session,
         enforce_market_hours=(
             config.market_session
             .enforce_market_hours
+        ),
+        active_order_manager=(
+            active_order_manager
+            if config.mode == "PAPER"
+            else None
         ),
     )
 
@@ -476,6 +490,20 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
+
+    except KeyboardInterrupt:
+        logger.info(
+            "application_shutdown_requested"
+        )
+
+        print(
+            "\nShutdown requested."
+        )
+
+        print(
+            "Application stopped cleanly."
+        )
+
     except Exception:
         logger.exception(
             "application_stopped_due_to_"

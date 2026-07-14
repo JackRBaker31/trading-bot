@@ -1,0 +1,13 @@
+{
+  "benchmark_id": "BENCH-0004",
+  "headline": "Tesla reports first-quarter production and deliveries",
+  "source": "Tesla Investor Relations",
+  "category": "misc",
+  "sector": "Consumer Discretionary",
+  "company": "Tesla",
+  "ticker": "TSLA",
+  "difficulty": "medium",
+  "published_at": "2025-04-02",
+  "article_text": "Tesla (NASDAQ: TSLA) produced more than 362,000 vehicles and delivered more than 336,000 vehicles during the first quarter of 2025. The company deployed 10.4 GWh of energy-storage products. Tesla said the changeover of Model Y production lines caused the loss of several weeks of production.",
+  "status": "ready"
+}

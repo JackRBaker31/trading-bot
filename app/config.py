@@ -23,7 +23,7 @@ class StrategyConfig:
 
 @dataclass(frozen=True)
 class TradingLoopConfig:
-    cycles: int
+    cycles: int | None
     interval_seconds: float
 
 @dataclass(frozen=True)
@@ -149,13 +149,23 @@ def load_config(
     trading_loop_data = raw_data["trading_loop"]
 
     trading_loop = TradingLoopConfig(
-        cycles=int(
-            trading_loop_data["cycles"]
+        cycles=(
+            None
+            if trading_loop_data["cycles"] is None
+            else int(trading_loop_data["cycles"])
         ),
         interval_seconds=float(
             trading_loop_data["interval_seconds"]
         ),
-    )
+        )
+    if (
+    trading_loop.cycles is not None
+    and trading_loop.cycles <= 0
+    ):
+        raise ValueError(
+            "Trading-loop cycles must be positive "
+            "or null for continuous mode."
+        )
 
     market_session_data = raw_data[
     "market_session"

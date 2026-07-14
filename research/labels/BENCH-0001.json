@@ -1,0 +1,13 @@
+{
+  "benchmark_id": "BENCH-0001",
+  "impact_term": "SHORTTERM",
+  "impact_scope": "STOCK",
+  "scope_items": [
+    "AAPL"
+  ],
+  "highlights": [
+    "Apple reported stronger-than-expected quarterly revenue",
+    "Apple raised its full-year guidance"
+  ],
+  "sentiment": "POSITIVE"
+}

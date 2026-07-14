@@ -1,0 +1,14 @@
+{
+  "benchmark_id": "BENCH-0003",
+  "impact_term": "SHORTTERM",
+  "impact_scope": "STOCK",
+  "scope_items": [
+    "MSFT"
+  ],
+  "highlights": [
+    "Microsoft reported fourth-quarter revenue of $76.4 billion",
+    "Revenue increased 18% from the prior-year period",
+    "Operating income was $34.3 billion and increased 23%"
+  ],
+  "sentiment": "POSITIVE"
+}

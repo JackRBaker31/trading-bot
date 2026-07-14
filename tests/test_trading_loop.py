@@ -314,3 +314,123 @@ def test_loop_logs_session_summary(
         "symbol_count=2"
         in caplog.text
     )
+
+def test_continuous_loop_stops_when_requested(
+    tmp_path: Path,
+) -> None:
+    log_file = tmp_path / "trade_log.jsonl"
+
+    trading_loop, _, _ = create_trading_loop(
+        log_file
+    )
+
+    completed_cycles: list[int] = []
+
+    def before_cycle(
+        cycle_number: int,
+    ) -> None:
+        completed_cycles.append(
+            cycle_number
+        )
+
+    def stop_requested() -> bool:
+        return len(completed_cycles) >= 3
+
+    trading_loop.run(
+        cycles=None,
+        before_cycle=before_cycle,
+        stop_requested=stop_requested,
+    )
+
+    assert completed_cycles == [
+        1,
+        2,
+        3,
+    ]
+
+from app.active_order_manager import (
+    ActiveOrderManager,
+)
+from app.broker import BrokerOrderResult
+
+
+def test_loop_skips_symbol_with_active_order(
+    tmp_path: Path,
+) -> None:
+    log_file = tmp_path / "trade_log.jsonl"
+
+    trading_loop, portfolio, market_data = (
+        create_trading_loop(log_file)
+    )
+
+    trading_loop.active_order_manager = (
+        ActiveOrderManager(
+            symbol_mapping={
+                "AAPL": "AAPL_US_EQ",
+                "MSFT": "MSFT_US_EQ",
+            },
+            active_orders=[
+                BrokerOrderResult(
+                    order_id=123456,
+                    ticker="AAPL_US_EQ",
+                    quantity=1.0,
+                    side="BUY",
+                    status="NEW",
+                    order_type="MARKET",
+                    filled_quantity=0.0,
+                    filled_value=0.0,
+                    currency="GBP",
+                )
+            ],
+        )
+    )
+
+    def change_price(
+        cycle_number: int,
+    ) -> None:
+        if cycle_number == 2:
+            market_data.set_price(
+                "AAPL",
+                146.00,
+            )
+
+    trading_loop.run(
+        cycles=2,
+        before_cycle=change_price,
+    )
+
+    assert portfolio.positions == {}
+    assert portfolio.cash == 10_000.00
+
+def test_loop_refreshes_active_orders_each_cycle(
+    tmp_path: Path,
+) -> None:
+    log_file = tmp_path / "trade_log.jsonl"
+
+    trading_loop, _, _ = create_trading_loop(
+        log_file
+    )
+
+    class RecordingManager:
+        def __init__(self) -> None:
+            self.refresh_calls = 0
+            self.active_orders = []
+
+        def refresh(self) -> None:
+            self.refresh_calls += 1
+
+        def is_symbol_blocked(
+            self,
+            symbol: str,
+        ) -> bool:
+            return False
+
+    manager = RecordingManager()
+
+    trading_loop.active_order_manager = manager  # type: ignore[assignment]
+
+    trading_loop.run(
+        cycles=3
+    )
+
+    assert manager.refresh_calls == 3

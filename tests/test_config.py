@@ -233,4 +233,49 @@ def test_enabled_paper_trading_rejects_live_environment(
     ):
         load_config(
             str(file_path)
+    )
+def test_config_allows_continuous_trading_loop(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "config.json"
+
+    data = valid_config()
+    data["trading_loop"] = {
+        "cycles": None,
+        "interval_seconds": 60.0,
+    }
+
+    write_config(
+        file_path,
+        data,
+    )
+
+    config = load_config(
+        str(file_path)
+    )
+
+    assert config.trading_loop.cycles is None
+
+def test_config_rejects_non_positive_cycles(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "config.json"
+
+    data = valid_config()
+    data["trading_loop"] = {
+        "cycles": 0,
+        "interval_seconds": 60.0,
+    }
+
+    write_config(
+        file_path,
+        data,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="cycles",
+    ):
+        load_config(
+            str(file_path)
         )

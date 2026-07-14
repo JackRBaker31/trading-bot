@@ -1,0 +1,15 @@
+{
+  "benchmark_id": "BENCH-0004",
+  "impact_term": "SHORTTERM",
+  "impact_scope": "STOCK",
+  "scope_items": [
+    "TSLA"
+  ],
+  "highlights": [
+    "Tesla produced more than 362,000 vehicles",
+    "Tesla delivered more than 336,000 vehicles",
+    "Energy-storage deployments were 10.4 GWh",
+    "The Model Y production-line changeover caused several weeks of lost production"
+  ],
+  "sentiment": "NEUTRAL"
+}

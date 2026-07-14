@@ -13,7 +13,9 @@ from submit_one_demo_order import (
     parse_args,
     validate_config,
 )
-
+from app.paper_order_workflow import (
+    PaperOrderWorkflowResult,
+)
 def test_requires_confirmation_flag() -> None:
     with pytest.raises(SystemExit):
         parse_args([])
@@ -124,18 +126,18 @@ def test_build_demo_order_creates_one_share_buy() -> None:
 class FakeExecutionAdapter:
     def __init__(
         self,
-        executed: bool,
+        result: PaperOrderWorkflowResult,
     ) -> None:
-        self.executed = executed
+        self.result = result
         self.calls: list[
             dict[str, object]
         ] = []
 
-    def submit_order(
+    def submit_order_with_result(
         self,
         order,
         current_prices,
-    ) -> bool:
+    ) -> PaperOrderWorkflowResult:
         self.calls.append(
             {
                 "order": order,
@@ -143,12 +145,18 @@ class FakeExecutionAdapter:
             }
         )
 
-        return self.executed
+        return self.result
 
 
 def test_execute_demo_order_submits_exactly_once() -> None:
+    expected_result = PaperOrderWorkflowResult(
+        submitted=True,
+        portfolio_updated=True,
+        reason="Filled.",
+    )
+
     adapter = FakeExecutionAdapter(
-        executed=True
+        result=expected_result
     )
 
     order = build_demo_order(
@@ -156,14 +164,35 @@ def test_execute_demo_order_submits_exactly_once() -> None:
         price=317.31,
     )
 
-    executed = execute_demo_order(
+    result = execute_demo_order(
         adapter=adapter,
         order=order,
     )
 
-    assert executed is True
+    assert result == expected_result
     assert len(adapter.calls) == 1
     assert adapter.calls[0]["order"] == order
     assert adapter.calls[0]["current_prices"] == {
         "AAPL": 317.31,
     }
+
+def test_rejects_simulated_market_data() -> None:
+    config = create_config()
+
+    config = AppConfig(
+        mode=config.mode,
+        market_data_provider="SIMULATED",
+        starting_cash=config.starting_cash,
+        symbols=config.symbols,
+        risk=config.risk,
+        strategy=config.strategy,
+        trading_loop=config.trading_loop,
+        market_session=config.market_session,
+        paper_trading=config.paper_trading,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="TWELVE_DATA",
+    ):
+        validate_config(config)

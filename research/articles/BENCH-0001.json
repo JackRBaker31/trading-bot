@@ -1,0 +1,13 @@
+{
+  "benchmark_id": "BENCH-0001",
+  "headline": "Apple raises full-year guidance",
+  "source": "Manual benchmark",
+  "category": "guidance",
+  "sector": "Technology",
+  "company": "Apple",
+  "ticker": "AAPL",
+  "difficulty": "easy",
+  "published_at": "2026-07-14T00:00:00Z",
+  "article_text": "Apple reported stronger-than-expected quarterly revenue and raised its full-year guidance.",
+  "status": "ready"
+}
