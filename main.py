@@ -41,6 +41,9 @@ from app.startup_order_discovery import (
 from app.startup_summary import (
     StartupSummaryBuilder,
 )
+from app.symbol_mapping_service import (
+    SymbolMappingService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +72,6 @@ def main() -> None:
         config.mode,
         config.market_data_provider,
     )
-
-    symbol_mapping = {
-        "AAPL": "AAPL_US_EQ",
-        "MSFT": "MSFT_US_EQ",
-    }
 
     market_data = create_market_data_provider(
         provider_name=(
@@ -245,6 +243,27 @@ def main() -> None:
                 "Trading 212 Demo credentials "
                 "are required for PAPER mode."
             )
+        broker = Trading212Client(
+                api_key=api_key,
+                api_secret=api_secret,
+                environment=(
+                    config.paper_trading
+                    .broker_environment
+            ),
+        )
+
+        symbol_mapping = (
+            SymbolMappingService().resolve(
+                broker=broker,
+                configured_symbols=config.symbols,
+            )
+        )
+
+        logger.info(
+            "broker_symbol_mapping_resolved "
+            "symbol_count=%s",
+            len(symbol_mapping),
+        )
 
         order_journal = OrderJournal(
             path=Path(
@@ -318,15 +337,6 @@ def main() -> None:
                 "PAPER mode order journal "
                 "was not initialized."
             )
-
-        broker = Trading212Client(
-            api_key=api_key,
-            api_secret=api_secret,
-            environment=(
-                config.paper_trading
-                .broker_environment
-            ),
-        )
 
         recovery_startup_service = (
             create_demo_recovery_startup_service(

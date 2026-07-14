@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 from app.config import load_config
 from app.logging_config import setup_logging
 from app.trading212_client import Trading212Client
+from app.instrument_resolver import (
+    InstrumentResolver,
+)
 
 
 def main() -> None:
@@ -57,6 +60,13 @@ def main() -> None:
     account = broker.get_account_summary()
     positions = broker.get_positions()
     active_orders = broker.get_active_orders()
+    instruments = broker.get_instruments()
+
+    symbol_mapping = InstrumentResolver(
+        instruments=instruments
+    ).resolve_symbols(
+        config.symbols
+    )
 
     print()
     print(
@@ -93,6 +103,19 @@ def main() -> None:
         raise RuntimeError(
             "Demo readiness failed because active "
             "broker orders exist."
+        )
+
+    print(
+        f"Available instruments: "
+        f"{len(instruments)}"
+    )
+    print("Resolved symbols:")
+
+    for symbol, broker_ticker in (
+        symbol_mapping.items()
+    ):
+        print(
+            f"- {symbol} -> {broker_ticker}"
         )
 
     print()
