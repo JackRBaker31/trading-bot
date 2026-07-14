@@ -18,7 +18,7 @@ from app.market_data_factory import (
 from app.market_session import MarketSession
 from app.order_journal import OrderJournal
 from app.paper_application_startup import (
-    PaperApplicationStartupService,
+    PaperApplicationStartupResult,
 )
 from app.paper_execution_factory import (
     create_paper_execution_adapter,
@@ -386,10 +386,7 @@ def main() -> None:
         if discovery_result is not None:
             startup_summary = (
                 StartupSummaryBuilder().build(
-                    discovery_result=discovery_result,
-                    startup_approved=(
-                        startup_result.trading_started
-                    ),
+                    startup_result=startup_result,
                 )
             )
 
