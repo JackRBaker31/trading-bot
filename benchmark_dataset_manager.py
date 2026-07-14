@@ -325,47 +325,6 @@ def main() -> None:
             args.benchmark_id
         )
 
+
 if __name__ == "__main__":
     main()
-
-def migrate_dataset() -> None:
-    dataset = BenchmarkDataset(
-        articles_directory=(
-            ARTICLES_DIRECTORY
-        ),
-        labels_directory=(
-            LABELS_DIRECTORY
-        ),
-    )
-
-    result = dataset.migrate_legacy_articles(
-        backup_directory=(
-            BACKUP_DIRECTORY
-        )
-    )
-
-    print()
-    print("BENCHMARK DATASET MIGRATION")
-    print("=" * 50)
-    print(
-        f"Migrated: {result.migrated_count}"
-    )
-    print(
-        f"Skipped:  {result.skipped_count}"
-    )
-
-    for message in result.messages:
-        print(f"- {message}")
-
-    if result.migrated_count:
-        print()
-        print(
-            "Legacy files were backed up to:"
-        )
-        print(BACKUP_DIRECTORY)
-        print()
-        print(
-            "Review and complete the generated "
-            "article metadata and labels before "
-            "running validation."
-        )
