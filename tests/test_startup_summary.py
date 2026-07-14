@@ -34,10 +34,16 @@ def test_summary_includes_order_discovery_counts() -> None:
         ),
     )
 
-    assert summary.known_active_order_count == 1
-    assert summary.unknown_active_order_count == 0
-    assert summary.discovery_approved is True
-    assert summary.discovery_reason == (
+    assert (
+    summary.discovery.known_order_count
+    == 1
+    )
+    assert (
+        summary.discovery.unknown_order_count
+        == 0
+    )
+    assert summary.discovery.approved is True
+    assert summary.discovery.reason == (
             "PAPER startup order discovery "
             "completed safely."
     )

@@ -19,13 +19,17 @@ class StartupOutcome(str, Enum):
     )
 
 @dataclass(frozen=True)
+class StartupDiscoverySummary:
+    approved: bool | None
+    reason: str
+    known_order_count: int
+    unknown_order_count: int
+
+@dataclass(frozen=True)
 class StartupSummary:
     outcome: StartupOutcome
     startup_approved: bool
-    discovery_approved: bool | None
-    discovery_reason: str
-    known_active_order_count: int
-    unknown_active_order_count: int
+    discovery: StartupDiscoverySummary
 
 
 class StartupSummaryBuilder:
@@ -44,10 +48,12 @@ class StartupSummaryBuilder:
                     .BLOCKED_BY_RECOVERY
                 ),
                 startup_approved=False,
-                discovery_approved=None,
-                discovery_reason="",
-                known_active_order_count=0,
-                unknown_active_order_count=0,
+                discovery=StartupDiscoverySummary(
+                    approved=None,
+                    reason="",
+                    known_order_count=0,
+                    unknown_order_count=0,
+                ),
             )
 
         outcome = StartupOutcome.APPROVED
@@ -76,16 +82,14 @@ class StartupSummaryBuilder:
             startup_approved=(
                 startup_result.trading_started
             ),
-            discovery_approved=(
-                discovery_result.approved
-            ),
-            discovery_reason=(
-                discovery_result.reason
-            ),
-            known_active_order_count=(
-                discovery_result.known_order_count
-            ),
-            unknown_active_order_count=(
-                discovery_result.unknown_order_count
+            discovery=StartupDiscoverySummary(
+                approved=discovery_result.approved,
+                reason=discovery_result.reason,
+                known_order_count=(
+                    discovery_result.known_order_count
+                ),
+                unknown_order_count=(
+                    discovery_result.unknown_order_count
+                ),
             ),
         )

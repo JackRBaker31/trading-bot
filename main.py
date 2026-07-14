@@ -398,17 +398,18 @@ def main() -> None:
                 "known_active_order_count=%s "
                 "unknown_active_order_count=%s",
                 startup_summary.startup_approved,
-                startup_summary.discovery_approved,
-                startup_summary.discovery_reason,
+                startup_summary.discovery.approved,
+                startup_summary.discovery.reason,
                 (
                     startup_summary
-                    .known_active_order_count
+                    .discovery
+                    .known_order_count
                 ),
                 (
                     startup_summary
-                    .unknown_active_order_count
+                    .discovery
+                    .unknown_order_count
                 ),
-            )
 
         if discovery_result is not None:
             logger.info(
