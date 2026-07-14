@@ -41,6 +41,17 @@ class BrokerPosition:
     current_price: float
     profit_loss: float
 
+@dataclass(frozen=True)
+class BrokerInstrument:
+    ticker: str
+    name: str
+    short_name: str
+    currency_code: str
+    instrument_type: str
+    isin: str
+    extended_hours: bool
+    max_open_quantity: float
+    working_schedule_id: int
 
 class BrokerClient(ABC):
     @abstractmethod
@@ -54,6 +65,12 @@ class BrokerClient(ABC):
         self,
     ) -> list[BrokerPosition]:
         """Return all open broker positions."""
+
+    @abstractmethod
+    def get_instruments(
+        self,
+    ) -> list["BrokerInstrument"]:
+        """Return the broker instrument catalogue."""
 
     @abstractmethod
     def get_active_orders(

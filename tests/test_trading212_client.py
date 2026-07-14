@@ -1187,3 +1187,85 @@ def test_non_404_get_error_remains_generic_broker_error(
         error_info.value,
         BrokerResourceNotFoundError,
     )
+
+def test_broker_instrument_can_be_created() -> None:
+    from app.broker import BrokerInstrument
+
+    instrument = BrokerInstrument(
+        ticker="AAPL_US_EQ",
+        name="Apple Inc.",
+        short_name="Apple",
+        currency_code="USD",
+        instrument_type="STOCK",
+        isin="US0378331005",
+        extended_hours=True,
+        max_open_quantity=1000.0,
+        working_schedule_id=12,
+    )
+
+    assert instrument.ticker == "AAPL_US_EQ"
+    assert instrument.currency_code == "USD"
+    assert instrument.instrument_type == "STOCK"
+
+def test_get_instruments_is_defined_on_client() -> None:
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    assert hasattr(
+        client,
+        "get_instruments",
+    )
+
+def test_get_instruments_returns_catalogue(
+    monkeypatch,
+) -> None:
+    captured_url = ""
+
+    def fake_get(
+        url,
+        auth,
+        timeout,
+    ):
+        nonlocal captured_url
+        captured_url = url
+
+        return FakeResponse(
+            [
+                {
+                    "ticker": "AAPL_US_EQ",
+                    "name": "Apple Inc.",
+                    "shortName": "Apple",
+                    "currencyCode": "USD",
+                    "type": "STOCK",
+                    "isin": "US0378331005",
+                    "extendedHours": True,
+                    "maxOpenQuantity": 1000,
+                    "workingScheduleId": 12,
+                }
+            ]
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+    )
+
+    instruments = client.get_instruments()
+
+    assert captured_url.endswith(
+        "/equity/metadata/instruments"
+    )
+    assert len(instruments) == 1
+    assert instruments[0].ticker == "AAPL_US_EQ"
+    assert instruments[0].short_name == "Apple"
+    assert instruments[0].currency_code == "USD"

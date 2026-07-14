@@ -12,6 +12,7 @@ from app.broker import (
     BrokerOrderSubmissionUnknownError,
     BrokerPosition,
     BrokerResourceNotFoundError,
+    BrokerInstrument,
 )
 
 
@@ -221,6 +222,71 @@ class Trading212Client(BrokerClient):
                 ) from error
 
         return positions
+    def get_instruments(
+        self,
+    ) -> list[BrokerInstrument]:
+        data = self._get(
+            "/equity/metadata/instruments"
+        )
+
+        if not isinstance(data, list):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "instruments response."
+            )
+
+        instruments: list[BrokerInstrument] = []
+
+        for item in data:
+            if not isinstance(item, dict):
+                raise BrokerError(
+                    "Trading 212 returned an invalid "
+                    "instrument."
+                )
+
+            try:
+                instruments.append(
+                    BrokerInstrument(
+                        ticker=str(
+                            item["ticker"]
+                        ),
+                        name=str(
+                            item["name"]
+                        ),
+                        short_name=str(
+                            item["shortName"]
+                        ),
+                        currency_code=str(
+                            item["currencyCode"]
+                        ),
+                        instrument_type=str(
+                            item["type"]
+                        ),
+                        isin=str(
+                            item["isin"]
+                        ),
+                        extended_hours=bool(
+                            item["extendedHours"]
+                        ),
+                        max_open_quantity=float(
+                            item["maxOpenQuantity"]
+                        ),
+                        working_schedule_id=int(
+                            item["workingScheduleId"]
+                        ),
+                    )
+                )
+            except (
+                KeyError,
+                TypeError,
+                ValueError,
+            ) as error:
+                raise BrokerError(
+                    "Trading 212 returned an invalid "
+                    "instrument."
+                ) from error
+
+        return instruments
     def place_market_order(
         self,
         ticker: str,

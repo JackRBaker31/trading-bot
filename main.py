@@ -18,7 +18,7 @@ from app.market_data_factory import (
 from app.market_session import MarketSession
 from app.order_journal import OrderJournal
 from app.paper_application_startup import (
-    PaperApplicationStartupResult,
+    PaperApplicationStartupService,
 )
 from app.paper_execution_factory import (
     create_paper_execution_adapter,
@@ -379,49 +379,34 @@ def main() -> None:
             )
         )
 
-        discovery_result = (
-            startup_result.discovery_result
+        startup_summary = (
+            StartupSummaryBuilder().build(
+                startup_result=startup_result,
+            )
         )
-
-        if discovery_result is not None:
-            startup_summary = (
-                StartupSummaryBuilder().build(
-                    startup_result=startup_result,
-                )
-            )
-
-            logger.info(
-                "paper_startup_summary "
-                "startup_approved=%s "
-                "discovery_approved=%s "
-                "discovery_reason=%s "
-                "known_active_order_count=%s "
-                "unknown_active_order_count=%s",
-                startup_summary.startup_approved,
-                startup_summary.discovery.approved,
-                startup_summary.discovery.reason,
-                (
-                    startup_summary
-                    .discovery
-                    .known_order_count
-                ),
-                (
-                    startup_summary
-                    .discovery
-                    .unknown_order_count
-                ),
-
-        if discovery_result is not None:
-            logger.info(
-                "known_order_count=%s "
-                "unknown_order_count=%s "
-                "known_order_ids=%s "
-                "unknown_order_ids=%s",
-                discovery_result.known_order_count,
-                discovery_result.unknown_order_count,
-                discovery_result.known_order_ids,
-                discovery_result.unknown_order_ids,
-            )
+        logger.info(
+            "paper_startup_summary "
+            "outcome=%s "
+            "startup_approved=%s "
+            "discovery_approved=%s "
+            "discovery_reason=%s "
+            "known_order_count=%s "
+            "unknown_order_count=%s",
+            startup_summary.outcome.value,
+            startup_summary.startup_approved,
+            startup_summary.discovery.approved,
+            startup_summary.discovery.reason,
+            (
+                startup_summary
+                .discovery
+                .known_order_count
+            ),
+            (
+                startup_summary
+                .discovery
+                .unknown_order_count
+            ),
+        )
 
         if not startup_result.trading_started:
             logger.error(
