@@ -29,7 +29,7 @@ class StartupSummary:
 
 
 class StartupSummaryBuilder:
-    def build(
+       def build(
         self,
         startup_result: PaperApplicationStartupResult,
     ) -> StartupSummary:
@@ -37,20 +37,7 @@ class StartupSummaryBuilder:
             startup_result.discovery_result
         )
 
-        reconciliation_result = (
-            startup_result.reconciliation_result
-        )
-
-        if (
-            reconciliation_result is not None
-            and not reconciliation_result.approved
-        ):
-            outcome = (
-                StartupOutcome
-                .BLOCKED_BY_RECONCILIATION
-            )
-
-        if startup_result.discovery_result is None:
+        if discovery_result is None:
             return StartupSummary(
                 outcome=(
                     StartupOutcome
@@ -63,11 +50,6 @@ class StartupSummaryBuilder:
                 unknown_active_order_count=0,
             )
 
-        if discovery_result is None:
-            raise ValueError(
-                "Startup discovery result is required."
-            )
-
         outcome = StartupOutcome.APPROVED
 
         if not discovery_result.approved:
@@ -75,6 +57,19 @@ class StartupSummaryBuilder:
                 StartupOutcome
                 .BLOCKED_BY_DISCOVERY
             )
+        else:
+            reconciliation_result = (
+                startup_result.reconciliation_result
+            )
+
+            if (
+                reconciliation_result is not None
+                and not reconciliation_result.approved
+            ):
+                outcome = (
+                    StartupOutcome
+                    .BLOCKED_BY_RECONCILIATION
+                )
 
         return StartupSummary(
             outcome=outcome,

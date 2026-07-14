@@ -410,13 +410,8 @@ def main() -> None:
                 ),
             )
 
-        discovery_result = (
-            startup_result.discovery_result
-        )
-
         if discovery_result is not None:
             logger.info(
-                "paper_startup_order_discovery "
                 "known_order_count=%s "
                 "unknown_order_count=%s "
                 "known_order_ids=%s "
