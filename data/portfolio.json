@@ -1,0 +1,10 @@
+{
+  "starting_cash": 5000.0,
+  "cash": 4765.42,
+  "positions": {
+    "AAPL": 1
+  },
+  "applied_broker_order_ids": [
+    51900146642
+  ]
+}

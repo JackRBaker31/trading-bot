@@ -1,13 +1,13 @@
 {
   "benchmark_id": "BENCH-0006",
-  "headline": "",
-  "source": "",
-  "category": "misc",
-  "sector": "",
-  "company": "",
-  "ticker": "",
-  "difficulty": "medium",
-  "published_at": "",
-  "article_text": "",
-  "status": "draft"
+  "headline": "FDA approves Vertex non-opioid acute-pain treatment",
+  "source": "FDA / Vertex announcement",
+  "category": "regulation",
+  "sector": "Healthcare",
+  "company": "Vertex Pharmaceuticals",
+  "ticker": "VRTX",
+  "difficulty": "easy",
+  "published_at": "2025-01-30",
+  "article_text": "The U.S. Food and Drug Administration approved Vertex Pharmaceuticals' Journavx for the treatment of moderate-to-severe acute pain in adults. Journavx is a non-opioid oral treatment that blocks pain signals in the peripheral nervous system.",
+  "status": "ready"
 }

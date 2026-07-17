@@ -1,0 +1,603 @@
+
+===== app\recovered_fill_recovery.py =====
+from dataclasses import dataclass
+
+from app.order_journal import OrderJournal
+from app.recovered_fill import (
+    RecoveredFill,
+    RecoveredFillValidator,
+)
+from app.recovered_fill_applier import (
+    RecoveredFillApplier,
+    RecoveredFillApplicationResult,
+)
+from app.recovery_plan import (
+    RecoveryAction,
+    RecoveryPlanItem,
+)
+
+
+@dataclass(frozen=True)
+class RecoveredFillRecoveryResult:
+    plan_item: RecoveryPlanItem
+    recovered_fill: RecoveredFill
+    application_result: (
+        RecoveredFillApplicationResult
+    )
+    completed: bool
+    reason: str
+
+
+class RecoveredFillRecoveryService:
+    def __init__(
+        self,
+        validator: RecoveredFillValidator,
+        applier: RecoveredFillApplier,
+        order_journal: OrderJournal,
+    ) -> None:
+        self.validator = validator
+        self.applier = applier
+        self.order_journal = order_journal
+
+    def recover(
+        self,
+        plan_item: RecoveryPlanItem,
+    ) -> RecoveredFillRecoveryResult:
+        if (
+            plan_item.action
+            != RecoveryAction.UPDATE_PORTFOLIO
+        ):
+            raise ValueError(
+                "Recovery action does not require "
+                "a portfolio update."
+            )
+
+        recovered_fill = self.validator.validate(
+            plan_item=plan_item
+        )
+
+        application_result = self.applier.apply(
+            recovered_fill=recovered_fill
+        )
+
+        recovery_item = plan_item.recovery_item
+        polling_result = recovery_item.polling_result
+
+        if polling_result is None:
+            raise ValueError(
+                "Recovered fill requires a broker "
+                "polling result."
+            )
+
+        self.order_journal.record_from_entry(
+            source_entry=(
+                recovery_item.journal_entry
+            ),
+            event="FILLED",
+            broker_order_id=(
+                recovered_fill.broker_order_id
+            ),
+            reason=polling_result.reason,
+            metadata={
+                "recovered_on_startup": True,
+                "recovery_action": (
+                    plan_item.action.value
+                ),
+                "portfolio_applied": (
+                    application_result.applied
+                ),
+            },
+        )
+
+        return RecoveredFillRecoveryResult(
+            plan_item=plan_item,
+            recovered_fill=recovered_fill,
+            application_result=application_result,
+            completed=True,
+            reason=(
+                "Recovered fill was finalized."
+            ),
+        )
+
+===== app\demo_recovery_factory.py =====
+from app.order_journal import OrderJournal
+from app.order_polling import OrderPollingService
+from app.order_verification import (
+    OrderVerificationService,
+)
+from app.portfolio import Portfolio
+from app.portfolio_store import PortfolioStore
+from app.recovery_factory import (
+    create_recovery_startup_service,
+)
+from app.recovery_startup import (
+    RecoveryStartupService,
+)
+from app.trading212_client import Trading212Client
+
+
+def create_demo_recovery_startup_service(
+    *,
+    api_key: str,
+    api_secret: str,
+    order_journal: OrderJournal,
+    portfolio: Portfolio,
+    portfolio_store: PortfolioStore,
+    max_poll_attempts: int = 5,
+    poll_interval_seconds: float = 1.0,
+    quantity_tolerance: float = 0.000001,
+) -> RecoveryStartupService:
+    broker = Trading212Client(
+        api_key=api_key,
+        api_secret=api_secret,
+        environment="DEMO",
+    )
+
+    verification_service = (
+        OrderVerificationService()
+    )
+
+    polling_service = OrderPollingService(
+        broker=broker,
+        verification_service=verification_service,
+        max_attempts=max_poll_attempts,
+        poll_interval_seconds=(
+            poll_interval_seconds
+        ),
+    )
+
+    return create_recovery_startup_service(
+        order_journal=order_journal,
+        polling_service=polling_service,
+        portfolio=portfolio,
+        portfolio_store=portfolio_store,
+        quantity_tolerance=quantity_tolerance,
+    )
+
+===== app\recovery_startup.py =====
+import logging
+from collections.abc import Callable
+from dataclasses import dataclass
+
+from app.recovery_coordinator import (
+    RecoveryCoordinator,
+    RecoveryCoordinatorReport,
+)
+from app.recovery_startup_gate import (
+    RecoveryStartupDecision,
+    RecoveryStartupGate,
+)
+
+logger = logging.getLogger(__name__)
+
+@dataclass(frozen=True)
+class RecoveryStartupResult:
+    recovery_report: RecoveryCoordinatorReport
+    decision: RecoveryStartupDecision
+    trading_started: bool
+
+
+class RecoveryStartupService:
+    def __init__(
+        self,
+        recovery_coordinator: RecoveryCoordinator,
+        recovery_gate: RecoveryStartupGate,
+    ) -> None:
+        self.recovery_coordinator = (
+            recovery_coordinator
+        )
+        self.recovery_gate = recovery_gate
+
+    def start(
+        self,
+        start_trading: Callable[[], None],
+    ) -> RecoveryStartupResult:
+        logger.info(
+            "startup_recovery_started"
+        )
+
+        recovery_report = (
+            self.recovery_coordinator.recover()
+        )
+
+        logger.info(
+            "startup_recovery_report "
+            "total_items=%s completed_items=%s "
+            "incomplete_items=%s startup_blocked=%s",
+            len(recovery_report.items),
+            recovery_report.completed_items,
+            recovery_report.incomplete_items,
+            recovery_report.startup_blocked,
+        )
+
+        decision = self.recovery_gate.evaluate(
+            report=recovery_report
+        )
+
+        if not decision.approved:
+            logger.error(
+                "startup_recovery_refused "
+                "reason=%s incomplete_items=%s "
+                "startup_blocked=%s",
+                decision.reason,
+                recovery_report.incomplete_items,
+                recovery_report.startup_blocked,
+            )
+
+            return RecoveryStartupResult(
+                recovery_report=recovery_report,
+                decision=decision,
+                trading_started=False,
+            )
+
+        logger.info(
+            "startup_recovery_approved reason=%s",
+            decision.reason,
+        )
+
+        start_trading()
+
+        logger.info(
+            "startup_recovery_callback_completed"
+        )
+
+        return RecoveryStartupResult(
+            recovery_report=recovery_report,
+            decision=decision,
+            trading_started=True,
+        )
+
+===== app\recovery_executor.py =====
+from dataclasses import dataclass
+
+from app.order_journal import OrderJournal
+from app.recovery_plan import (
+    RecoveryAction,
+    RecoveryPlanItem,
+)
+
+
+@dataclass(frozen=True)
+class RecoveryExecutionResult:
+    plan_item: RecoveryPlanItem
+    completed: bool
+    reason: str
+
+
+class RecoveryExecutor:
+    def __init__(
+        self,
+        order_journal: OrderJournal,
+    ) -> None:
+        self.order_journal = order_journal
+
+    def execute(
+        self,
+        plan_item: RecoveryPlanItem,
+    ) -> RecoveryExecutionResult:
+        if (
+            plan_item.action
+            != RecoveryAction.RECORD_FAILURE
+        ):
+            raise ValueError(
+                "Recovery action is not supported "
+                "by this executor."
+            )
+
+        recovery_item = plan_item.recovery_item
+        polling_result = recovery_item.polling_result
+
+        if polling_result is None:
+            raise ValueError(
+                "Failure recovery requires a broker "
+                "polling result."
+            )
+
+        broker_order = polling_result.order
+
+        if broker_order is None:
+            raise ValueError(
+                "Failure recovery requires broker "
+                "order information."
+            )
+
+        raw_status = broker_order.status.strip().upper()
+
+        event = (
+            "REJECTED"
+            if raw_status == "REJECTED"
+            else "FAILED"
+        )
+
+        self.order_journal.record_from_entry(
+            source_entry=(
+                recovery_item.journal_entry
+            ),
+            event=event,
+            broker_order_id=broker_order.order_id,
+            reason=polling_result.reason,
+            metadata={
+                "recovered_on_startup": True,
+                "recovery_action": (
+                    plan_item.action.value
+                ),
+            },
+        )
+
+        return RecoveryExecutionResult(
+            plan_item=plan_item,
+            completed=True,
+            reason=(
+                "Recovered terminal failure was "
+                "recorded."
+            ),
+        )
+
+===== app\portfolio.py =====
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Portfolio:
+    starting_cash: float
+    cash: float = field(init=False)
+    positions: dict[str, int] = field(default_factory=dict)
+    applied_broker_order_ids: set[int] = field(
+        default_factory=set
+    )
+
+    def __post_init__(self) -> None:
+        if self.starting_cash < 0:
+            raise ValueError("Starting cash cannot be negative.")
+
+        self.cash = self.starting_cash
+
+    def buy(self, symbol: str, quantity: int, price: float) -> None:
+        symbol = self._clean_symbol(symbol)
+        self._validate_order(quantity, price)
+
+        total_cost = quantity * price
+
+        if total_cost > self.cash:
+            raise ValueError(
+                f"Insufficient cash. Required £{total_cost:.2f}, "
+                f"but only £{self.cash:.2f} is available."
+            )
+
+        self.cash -= total_cost
+        self.positions[symbol] = self.positions.get(symbol, 0) + quantity
+
+    def sell(self, symbol: str, quantity: int, price: float) -> None:
+        symbol = self._clean_symbol(symbol)
+        self._validate_order(quantity, price)
+
+        owned_quantity = self.positions.get(symbol, 0)
+
+        if quantity > owned_quantity:
+            raise ValueError(
+                f"Insufficient shares. Attempted to sell {quantity} "
+                f"{symbol} shares, but only {owned_quantity} are owned."
+            )
+
+        self.cash += quantity * price
+        remaining_quantity = owned_quantity - quantity
+
+        if remaining_quantity == 0:
+            del self.positions[symbol]
+        else:
+            self.positions[symbol] = remaining_quantity
+
+    def has_applied_broker_order(
+        self,
+        broker_order_id: int,
+    ) -> bool:
+        if broker_order_id <= 0:
+            raise ValueError(
+                "Broker order ID must be positive."
+            )
+
+        return (
+            broker_order_id
+            in self.applied_broker_order_ids
+        )
+
+
+    def mark_broker_order_applied(
+        self,
+        broker_order_id: int,
+    ) -> None:
+        if broker_order_id <= 0:
+            raise ValueError(
+                "Broker order ID must be positive."
+            )
+
+        if self.has_applied_broker_order(
+            broker_order_id
+        ):
+            raise ValueError(
+                "Broker order has already been applied."
+            )
+
+        self.applied_broker_order_ids.add(
+            broker_order_id
+        )
+
+    def portfolio_value(self, current_prices: dict[str, float]) -> float:
+        positions_value = 0.0
+
+        for symbol, quantity in self.positions.items():
+            if symbol not in current_prices:
+                raise ValueError(f"No current price was supplied for {symbol}.")
+
+            price = current_prices[symbol]
+
+            if price <= 0:
+                raise ValueError(f"Current price for {symbol} must be positive.")
+
+            positions_value += quantity * price
+
+        return self.cash + positions_value
+
+    def profit_and_loss(self, current_prices: dict[str, float]) -> float:
+        return self.portfolio_value(current_prices) - self.starting_cash
+
+    def display(self, current_prices: dict[str, float]) -> None:
+        print("\n--- SIMULATED PORTFOLIO ---")
+        print(f"Cash: £{self.cash:.2f}")
+
+        if not self.positions:
+            print("Positions: None")
+        else:
+            print("Positions:")
+
+            for symbol, quantity in self.positions.items():
+                current_price = current_prices.get(symbol)
+
+                if current_price is None:
+                    print(f"  {symbol}: {quantity} shares — price unavailable")
+                    continue
+
+                value = quantity * current_price
+                print(
+                    f"  {symbol}: {quantity} shares "
+                    f"at £{current_price:.2f} = £{value:.2f}"
+                )
+
+        total_value = self.portfolio_value(current_prices)
+        pnl = self.profit_and_loss(current_prices)
+
+        print(f"Total portfolio value: £{total_value:.2f}")
+        print(f"Profit/loss: £{pnl:.2f}")
+        print("---------------------------")
+
+    @staticmethod
+    def _clean_symbol(symbol: str) -> str:
+        cleaned_symbol = symbol.upper().strip()
+
+        if not cleaned_symbol:
+            raise ValueError("A stock symbol is required.")
+
+        return cleaned_symbol
+
+    @staticmethod
+    def _validate_order(quantity: int, price: float) -> None:
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
+
+        if price <= 0:
+            raise ValueError("Price must be greater than zero.")
+
+===== app\portfolio_store.py =====
+import json
+import logging
+from pathlib import Path
+
+from app.portfolio import Portfolio
+
+
+logger = logging.getLogger(__name__)
+
+
+class PortfolioStore:
+    def __init__(
+        self,
+        file_path: str = "data/portfolio.json",
+    ) -> None:
+        self.file_path = Path(file_path)
+
+    def save(self, portfolio: Portfolio) -> None:
+        self.file_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        data = {
+            "starting_cash": portfolio.starting_cash,
+            "cash": portfolio.cash,
+            "positions": portfolio.positions,
+            "applied_broker_order_ids": sorted(
+                portfolio.applied_broker_order_ids
+            ),
+        }
+
+        temporary_path = self.file_path.with_suffix(".tmp")
+
+        temporary_path.write_text(
+            json.dumps(data, indent=2),
+            encoding="utf-8",
+        )
+
+        temporary_path.replace(self.file_path)
+
+        logger.info(
+            "portfolio_saved file=%s cash=%.2f positions=%s",
+            self.file_path,
+            portfolio.cash,
+            portfolio.positions,
+        )
+
+    def load(self) -> Portfolio:
+        if not self.file_path.exists():
+            logger.error(
+                "portfolio_file_missing file=%s",
+                self.file_path,
+            )
+
+            raise FileNotFoundError(
+                f"Portfolio file does not exist: {self.file_path}"
+            )
+
+        data = json.loads(
+            self.file_path.read_text(
+                encoding="utf-8",
+            )
+        )
+
+        portfolio = Portfolio(
+            starting_cash=float(data["starting_cash"])
+        )
+
+        portfolio.cash = float(data["cash"])
+
+        portfolio.positions = {
+            str(symbol): int(quantity)
+            for symbol, quantity in data["positions"].items()
+        }
+
+        portfolio.applied_broker_order_ids = {
+            int(broker_order_id)
+            for broker_order_id in data.get(
+                "applied_broker_order_ids",
+                [],
+            )
+        }
+
+        logger.info(
+            "portfolio_loaded file=%s cash=%.2f positions=%s",
+            self.file_path,
+            portfolio.cash,
+            portfolio.positions,
+        )
+
+        return portfolio
+
+    def load_or_create(
+        self,
+        starting_cash: float,
+    ) -> Portfolio:
+        if self.file_path.exists():
+            return self.load()
+
+        logger.info(
+            "portfolio_creating file=%s starting_cash=%.2f",
+            self.file_path,
+            starting_cash,
+        )
+
+        portfolio = Portfolio(
+            starting_cash=starting_cash
+        )
+
+        self.save(portfolio)
+
+        return portfolio

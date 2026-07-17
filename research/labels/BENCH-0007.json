@@ -1,8 +1,15 @@
 {
   "benchmark_id": "BENCH-0007",
-  "impact_term": "SHORTTERM",
+  "impact_term": "LONGTERM",
   "impact_scope": "STOCK",
-  "scope_items": [],
-  "highlights": [],
-  "sentiment": "NEUTRAL"
+  "scope_items": [
+    "GOOGL"
+  ],
+  "highlights": [
+    "Google agreed to acquire Wiz for $32 billion",
+    "The transaction is an all-cash acquisition",
+    "Wiz would join Google Cloud",
+    "The acquisition remains subject to regulatory approval"
+  ],
+  "sentiment": "POSITIVE"
 }

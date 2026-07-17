@@ -1,13 +1,13 @@
 {
   "benchmark_id": "BENCH-0010",
-  "headline": "",
-  "source": "",
-  "category": "misc",
-  "sector": "",
-  "company": "",
-  "ticker": "",
-  "difficulty": "medium",
-  "published_at": "",
-  "article_text": "",
-  "status": "draft"
+  "headline": "Vertex wins approval for Journavx amid reimbursement uncertainty",
+  "source": "Reuters summary of FDA approval",
+  "category": "regulation",
+  "sector": "Healthcare",
+  "company": "Vertex Pharmaceuticals",
+  "ticker": "VRTX",
+  "difficulty": "hard",
+  "published_at": "2025-01-30",
+  "article_text": "Vertex Pharmaceuticals received FDA approval for Journavx, a non-opioid treatment for acute pain. The approval creates a new treatment option, although commercial uptake may depend on insurance coverage, hospital adoption and competition from lower-cost opioid medicines.",
+  "status": "ready"
 }

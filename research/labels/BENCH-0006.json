@@ -2,7 +2,13 @@
   "benchmark_id": "BENCH-0006",
   "impact_term": "SHORTTERM",
   "impact_scope": "STOCK",
-  "scope_items": [],
-  "highlights": [],
-  "sentiment": "NEUTRAL"
+  "scope_items": [
+    "VRTX"
+  ],
+  "highlights": [
+    "The FDA approved Journavx for moderate-to-severe acute pain in adults",
+    "Journavx is a non-opioid oral treatment",
+    "The treatment blocks pain signals in the peripheral nervous system"
+  ],
+  "sentiment": "POSITIVE"
 }

@@ -1269,3 +1269,191 @@ def test_get_instruments_returns_catalogue(
     assert instruments[0].ticker == "AAPL_US_EQ"
     assert instruments[0].short_name == "Apple"
     assert instruments[0].currency_code == "USD"
+    
+def test_get_historical_orders_returns_all_orders(
+    monkeypatch,
+) -> None:
+    responses = [
+        {
+            "items": [
+                {
+                    "order": {
+                        "id": 101,
+                        "ticker": "AAPL_US_EQ",
+                        "quantity": 1.0,
+                        "side": "BUY",
+                        "status": "FILLED",
+                        "type": "MARKET",
+                        "filledQuantity": 1.0,
+                        "currency": "GBP",
+                        "instrument": {
+                            "ticker": "AAPL_US_EQ",
+                        },
+                    },
+                    "fill": {
+                        "id": 1001,
+                        "quantity": 1.0,
+                        "price": 313.90,
+                        "walletImpact": {
+                            "currency": "GBP",
+                            "netValue": 234.58,
+                        },
+                    },
+                },
+            ],
+            "nextPagePath": (
+                "/equity/history/orders"
+                "?limit=50&cursor=next"
+            ),
+        },
+        {
+            "items": [
+                {
+                    "order": {
+                        "id": 102,
+                        "ticker": "MSFT_US_EQ",
+                        "quantity": 2.0,
+                        "side": "SELL",
+                        "status": "FILLED",
+                        "type": "MARKET",
+                        "filledQuantity": 2.0,
+                        "currency": "GBP",
+                        "instrument": {
+                            "ticker": "MSFT_US_EQ",
+                        },
+                    },
+                    "fill": {
+                        "id": 1002,
+                        "quantity": 2.0,
+                        "price": 320.00,
+                        "walletImpact": {
+                            "currency": "GBP",
+                            "netValue": 640.00,
+                        },
+                    },
+                },
+            ],
+            "nextPagePath": None,
+        },
+    ]
+
+    response_iterator = iter(
+        responses
+    )
+
+    def fake_get(
+        url,
+        **kwargs,
+    ):
+        return FakeResponse(
+            next(response_iterator)
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="test-key",
+        api_secret="test-secret",
+        environment="DEMO",
+    )
+
+    orders = client.get_historical_orders()
+
+    assert [
+        order.order_id
+        for order in orders
+    ] == [
+        101,
+        102,
+    ]
+
+    assert orders[0].ticker == "AAPL_US_EQ"
+    assert orders[0].filled_quantity == 1.0
+    assert orders[0].filled_value == 234.58
+    assert orders[0].currency == "GBP"
+
+    assert orders[1].ticker == "MSFT_US_EQ"
+    assert orders[1].filled_quantity == 2.0
+    assert orders[1].filled_value == 640.00
+    assert orders[1].currency == "GBP"
+    
+def test_get_retries_once_after_rate_limit(
+    monkeypatch,
+) -> None:
+    request = httpx.Request(
+        "GET",
+        "https://example.com",
+    )
+
+    rate_limited_response = httpx.Response(
+        429,
+        request=request,
+        headers={
+            "x-ratelimit-reset": "1002",
+            "x-ratelimit-remaining": "0",
+        },
+    )
+
+    successful_response = FakeResponse(
+        {
+            "id": 123456,
+            "currency": "GBP",
+            "cash": {
+                "availableToTrade": 4765.42,
+                "reservedForOrders": 0,
+                "inPies": 0,
+            },
+            "investments": {
+                "currentValue": 234.58,
+                "totalCost": 234.58,
+                "realizedProfitLoss": 0,
+                "unrealizedProfitLoss": 0,
+            },
+            "totalValue": 5000,
+        }
+    )
+
+    responses = iter(
+        [
+            rate_limited_response,
+            successful_response,
+        ]
+    )
+
+    sleep_calls: list[float] = []
+
+    def fake_get(
+        url,
+        **kwargs,
+    ):
+        return next(
+            responses
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        fake_get,
+    )
+
+    client = Trading212Client(
+        api_key="key",
+        api_secret="secret",
+        environment="DEMO",
+        now_provider=lambda: 1000.0,
+        sleep_provider=(
+            sleep_calls.append
+        ),
+        max_rate_limit_retries=1,
+    )
+
+    summary = client.get_account_summary()
+
+    assert summary.available_to_trade == 4765.42
+    assert sleep_calls == [
+        3.0,
+    ]

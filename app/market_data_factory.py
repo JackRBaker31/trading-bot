@@ -19,6 +19,7 @@ def create_market_data_provider(
         simulated_starting_prices = {
             "AAPL": 150.00,
             "MSFT": 320.00,
+            "AMZN": 250.00,
         }
 
         missing_symbols = [

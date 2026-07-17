@@ -1,13 +1,13 @@
 {
   "benchmark_id": "BENCH-0009",
-  "headline": "",
-  "source": "",
-  "category": "misc",
-  "sector": "",
-  "company": "",
-  "ticker": "",
-  "difficulty": "medium",
-  "published_at": "",
-  "article_text": "",
-  "status": "draft"
+  "headline": "SEC announces enforcement action linked to Tingo Group audit",
+  "source": "U.S. Securities and Exchange Commission",
+  "category": "regulation",
+  "sector": "Financial Services",
+  "company": "Tingo Group",
+  "ticker": "TIO",
+  "difficulty": "hard",
+  "published_at": "2025-08-13",
+  "article_text": "The U.S. Securities and Exchange Commission announced a settled enforcement action against an auditor and accounting firm connected with the Tingo Group fraud case. The action included permanent injunctions, civil penalties totalling $200,000 and a six-year suspension from practising before the SEC.",
+  "status": "ready"
 }

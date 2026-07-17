@@ -48,6 +48,7 @@ class BenchmarkArticle:
     sector: str
     company: str
     ticker: str
+    aliases: tuple[str, ...]
     difficulty: str
     published_at: str
     article_text: str
@@ -207,6 +208,7 @@ class BenchmarkDataset:
             "sector": "",
             "company": "",
             "ticker": "",
+            "aliases": [],
             "difficulty": "medium",
             "published_at": "",
             "article_text": "",
@@ -286,6 +288,7 @@ class BenchmarkDataset:
                 "sector": "",
                 "company": "",
                 "ticker": ticker,
+                "aliases": [],
                 "difficulty": "medium",
                 "published_at": "",
                 "article_text": str(data.get("article_text", "")).strip(),
@@ -344,6 +347,20 @@ class BenchmarkDataset:
         for file_path in sorted(self.articles_directory.glob("*.json")):
             data = self._load_json_object(file_path)
             try:
+
+                aliases = data.get(
+                    "aliases",
+                    [],
+                )
+
+                if not isinstance(
+                    aliases,
+                    list,
+                ):
+                    raise TypeError(
+                        "aliases must be a list"
+                    )
+
                 article = BenchmarkArticle(
                     benchmark_id=str(
                         data["benchmark_id"]
@@ -372,6 +389,12 @@ class BenchmarkDataset:
                     ticker=str(
                         data["ticker"]
                     ).upper().strip(),
+                    aliases=tuple(
+                        self._normalise_string_list(
+                            data.get("aliases", []),
+                            uppercase=True,
+                        )
+                    ),
                     difficulty=str(
                         data["difficulty"]
                     ).lower().strip(),

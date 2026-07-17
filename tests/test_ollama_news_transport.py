@@ -97,6 +97,7 @@ def test_generates_using_ollama_api(
     assert payload["stream"] is False
     assert payload["options"] == {
         "temperature": 0,
+        "seed": 42,
     }
 
     assert payload["format"] == (

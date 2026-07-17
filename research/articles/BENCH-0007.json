@@ -1,13 +1,13 @@
 {
   "benchmark_id": "BENCH-0007",
-  "headline": "",
-  "source": "",
-  "category": "misc",
-  "sector": "",
-  "company": "",
-  "ticker": "",
+  "headline": "Google agrees to acquire Wiz for $32 billion",
+  "source": "Google acquisition announcement",
+  "category": "m_and_a",
+  "sector": "Technology",
+  "company": "Alphabet",
+  "ticker": "GOOGL",
   "difficulty": "medium",
-  "published_at": "",
-  "article_text": "",
-  "status": "draft"
+  "published_at": "2025-03-18",
+  "article_text": "Google announced an agreement to acquire cloud-security company Wiz for $32 billion in an all-cash transaction. Wiz would join Google Cloud after the transaction closes. The acquisition remains subject to regulatory approval.",
+  "status": "ready"
 }

@@ -2,7 +2,14 @@
   "benchmark_id": "BENCH-0010",
   "impact_term": "SHORTTERM",
   "impact_scope": "STOCK",
-  "scope_items": [],
-  "highlights": [],
-  "sentiment": "NEUTRAL"
+  "scope_items": [
+    "VRTX"
+  ],
+  "highlights": [
+    "Vertex received FDA approval for Journavx",
+    "Journavx is a non-opioid treatment for acute pain",
+    "Commercial uptake may depend on insurance coverage and hospital adoption",
+    "The treatment may face competition from lower-cost opioid medicines"
+  ],
+  "sentiment": "POSITIVE"
 }

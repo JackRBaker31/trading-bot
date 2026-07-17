@@ -1,8 +1,12 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-from app.broker import BrokerOrderResult
-from app.order_journal import OrderJournalEntry
+from app.broker import (
+    BrokerOrderResult,
+)
+from app.order_journal import (
+    OrderJournalEntry,
+)
 
 
 class ActiveOrderBroker(Protocol):
@@ -10,6 +14,7 @@ class ActiveOrderBroker(Protocol):
         self,
     ) -> list[BrokerOrderResult]:
         """Return all active broker orders."""
+        ...
 
 
 class UnfinishedOrderJournal(Protocol):
@@ -18,6 +23,7 @@ class UnfinishedOrderJournal(Protocol):
         broker_order_id: int,
     ) -> OrderJournalEntry | None:
         """Return a matching unfinished journal entry."""
+        ...
 
 
 @dataclass(frozen=True)
@@ -43,14 +49,24 @@ class StartupOrderDiscoveryResult:
             self.unknown_order_ids
         )
 
+
 class StartupOrderDiscoveryService:
     def __init__(
         self,
+        *,
         broker: ActiveOrderBroker,
         journal: UnfinishedOrderJournal,
+        initial_active_orders: (
+            list[BrokerOrderResult] | None
+        ) = None,
     ) -> None:
-        self.broker = broker
-        self.journal = journal
+        self._broker = broker
+        self._journal = journal
+        self._initial_active_orders = (
+            list(initial_active_orders)
+            if initial_active_orders is not None
+            else None
+        )
 
     def discover(
         self,
@@ -58,9 +74,20 @@ class StartupOrderDiscoveryService:
         known_order_ids: list[int] = []
         unknown_order_ids: list[int] = []
 
-        for order in self.broker.get_active_orders():
+        if self._initial_active_orders is not None:
+            active_orders = (
+                self._initial_active_orders
+            )
+
+            self._initial_active_orders = None
+        else:
+            active_orders = (
+                self._broker.get_active_orders()
+            )
+
+        for order in active_orders:
             journal_entry = (
-                self.journal
+                self._journal
                 .find_unfinished_order_by_broker_order_id(
                     order.order_id
                 )
@@ -101,3 +128,4 @@ class StartupOrderDiscoveryService:
                 "completed safely."
             ),
         )
+

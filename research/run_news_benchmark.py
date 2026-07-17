@@ -231,6 +231,46 @@ def main() -> None:
                 "  Gold-label score: "
                 f"{item.evaluation.overall_score:.1%}"
             )
+            print(
+                "  Components: "
+                f"sentiment="
+                f"{item.evaluation.sentiment_correct}, "
+                f"term="
+                f"{item.evaluation.impact_term_correct}, "
+                f"scope="
+                f"{item.evaluation.impact_scope_correct}, "
+                f"precision="
+                f"{item.evaluation.scope_item_precision:.1%}, "
+                f"recall="
+                f"{item.evaluation.scope_item_recall:.1%}, "
+                f"highlights="
+                f"{item.evaluation.highlight_similarity:.1%}"
+            )
+
+            expected = dataset.labels[
+                item.benchmark_id
+            ]
+
+            if item.analysis is not None:
+                print(
+                    "  Actual: "
+                    f"sentiment="
+                    f"{item.analysis.sentiment.value}, "
+                    f"term="
+                    f"{item.analysis.impact_term.value}, "
+                    f"scope="
+                    f"{item.analysis.impact_scope.value}, "
+                    f"items="
+                    f"{list(item.analysis.scope_items)}"
+                )
+                print(
+                    "  Expected: "
+                    f"sentiment={expected.sentiment}, "
+                    f"term={expected.impact_term}, "
+                    f"scope={expected.impact_scope}, "
+                    f"items="
+                    f"{list(expected.scope_items)}"
+                )
 
         for reason in item.rejection_reasons:
             print(f"  - {reason}")

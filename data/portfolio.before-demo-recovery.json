@@ -1,0 +1,9 @@
+{
+  "starting_cash": 5000.0,
+  "cash": 2676.0,
+  "positions": {
+    "AAPL": 12,
+    "MSFT": 2
+  },
+  "applied_broker_order_ids": []
+}

@@ -39,13 +39,20 @@ class PaperStartupReconciliationResult:
 class PaperStartupReconciliationService:
     def __init__(
         self,
-        broker: ReadOnlyBroker,
-        reconciler: BrokerReconciler,
-        portfolio: Portfolio,
+        *,
+        broker,
+        reconciler,
+        portfolio,
+        initial_active_orders=None,
     ) -> None:
         self.broker = broker
         self.reconciler = reconciler
         self.portfolio = portfolio
+        self._initial_active_orders = (
+            list(initial_active_orders)
+            if initial_active_orders is not None
+            else None
+        )
 
     def reconcile(
         self,
@@ -64,9 +71,15 @@ class PaperStartupReconciliationService:
             broker_positions=broker_positions,
         )
 
-        active_orders = (
-            self.broker.get_active_orders()
-        )
+        if self._initial_active_orders is not None:
+            active_orders = (
+                self._initial_active_orders
+            )
+            self._initial_active_orders = None
+        else:
+            active_orders = (
+                self.broker.get_active_orders()
+            )
 
         if active_orders:
             return PaperStartupReconciliationResult(

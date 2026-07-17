@@ -1,6 +1,7 @@
 import json
 import logging
-
+import time
+from collections.abc import Callable
 import httpx
 
 from app.broker import (
@@ -34,6 +35,13 @@ class Trading212Client(BrokerClient):
         api_secret: str,
         environment: str = "DEMO",
         timeout_seconds: float = 10.0,
+        now_provider: (
+            Callable[[], float] | None
+        ) = None,
+        sleep_provider: (
+            Callable[[float], None] | None
+        ) = None,
+        max_rate_limit_retries: int = 1,
     ) -> None:
         cleaned_key = api_key.strip()
         cleaned_secret = api_secret.strip()
@@ -74,6 +82,28 @@ class Trading212Client(BrokerClient):
             self.base_url = self.DEMO_BASE_URL
         else:
             self.base_url = self.LIVE_BASE_URL
+        
+        if max_rate_limit_retries < 0:
+            raise ValueError(
+                "Maximum rate-limit retries "
+                "cannot be negative."
+            )
+
+        self._now_provider = (
+            now_provider
+            if now_provider is not None
+            else time.time
+        )
+
+        self._sleep_provider = (
+            sleep_provider
+            if sleep_provider is not None
+            else time.sleep
+        )
+
+        self._max_rate_limit_retries = (
+            max_rate_limit_retries
+        )
 
     def get_account_summary(
         self,
@@ -377,77 +407,57 @@ class Trading212Client(BrokerClient):
             ),
         )
 
-
-    def find_historical_order(
+    def get_historical_orders(
         self,
-        order_id: int,
         max_pages: int = 5,
-    ) -> BrokerOrderResult | None:
-        if order_id <= 0:
-            raise ValueError(
-                "Order ID must be positive."
-            )
-
+    ) -> list[BrokerOrderResult]:
         if max_pages <= 0:
             raise ValueError(
                 "Maximum pages must be positive."
             )
 
         path = "/equity/history/orders?limit=50"
+        orders: list[BrokerOrderResult] = []
 
         for _ in range(max_pages):
-            data = self._get(path)
+            data = self._get(
+                path
+            )
 
-            if not isinstance(data, dict):
+            if not isinstance(
+                data,
+                dict,
+            ):
                 raise BrokerError(
                     "Trading 212 returned an invalid "
                     "historical-orders response."
                 )
 
-            items = data.get("items")
+            items = data.get(
+                "items"
+            )
 
-            if not isinstance(items, list):
+            if not isinstance(
+                items,
+                list,
+            ):
                 raise BrokerError(
                     "Trading 212 returned an invalid "
                     "historical-orders response."
                 )
 
             for item in items:
-                if not isinstance(item, dict):
-                    raise BrokerError(
-                        "Trading 212 returned an invalid "
-                        "historical order."
+                orders.append(
+                    self._parse_historical_order_result(
+                        item
                     )
-
-                try:
-                    item_order_id = int(
-                        item["id"]
-                    )
-                except (
-                    KeyError,
-                    TypeError,
-                    ValueError,
-                ) as error:
-                    raise BrokerError(
-                        "Trading 212 returned an invalid "
-                        "historical order."
-                    ) from error
-
-                if item_order_id == order_id:
-                    return self._parse_order_result(
-                        data=item,
-                        error_message=(
-                            "Trading 212 returned an "
-                            "invalid historical order."
-                        ),
-                    )
-
+                )
             next_page_path = data.get(
                 "nextPagePath"
             )
 
             if next_page_path is None:
-                return None
+                break
 
             if not isinstance(
                 next_page_path,
@@ -462,7 +472,168 @@ class Trading212Client(BrokerClient):
                 next_page_path
             )
 
+        return orders
+
+    def find_historical_order(
+        self,
+        order_id: int,
+        max_pages: int = 5,
+    ) -> BrokerOrderResult | None:
+        if order_id <= 0:
+            raise ValueError(
+                "Order ID must be positive."
+            )
+
+        for order in self.get_historical_orders(
+            max_pages=max_pages,
+        ):
+            if order.order_id == order_id:
+                return order
+
         return None
+
+    @staticmethod
+    def _parse_historical_order_result(
+        data: object,
+    ) -> BrokerOrderResult:
+        if not isinstance(data, dict):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "historical order."
+            )
+        if "order" not in data:
+            return Trading212Client._parse_order_result(
+                data=data,
+                error_message=(
+                    "Trading 212 returned an invalid "
+                    "historical order."
+                ),
+            )
+        order_data = data.get("order")
+        fill_data = data.get("fill")
+
+        if not isinstance(order_data, dict):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "historical order."
+            )
+
+        if fill_data is None:
+            fill_data = {}
+
+        if not isinstance(fill_data, dict):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "historical fill."
+            )
+
+        wallet_impact = fill_data.get(
+            "walletImpact",
+            {},
+        )
+
+        if wallet_impact is None:
+            wallet_impact = {}
+
+        if not isinstance(wallet_impact, dict):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "historical wallet impact."
+            )
+
+        instrument = order_data.get(
+            "instrument",
+            {},
+        )
+
+        if instrument is None:
+            instrument = {}
+
+        if not isinstance(instrument, dict):
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "historical instrument."
+            )
+
+        raw_ticker = (
+            order_data.get("ticker")
+            or instrument.get("ticker")
+        )
+
+        try:
+            ticker = str(
+                raw_ticker
+            ).upper().strip()
+
+            order_id = int(
+                order_data["id"]
+            )
+            quantity = float(
+                order_data["quantity"]
+            )
+            side = str(
+                order_data["side"]
+            ).upper().strip()
+            status = str(
+                order_data["status"]
+            ).upper().strip()
+            order_type = str(
+                order_data["type"]
+            ).upper().strip()
+
+            filled_quantity = float(
+                order_data.get(
+                    "filledQuantity",
+                    fill_data.get(
+                        "quantity",
+                        0,
+                    ),
+                )
+            )
+
+            filled_value = float(
+                wallet_impact.get(
+                    "netValue",
+                    0,
+                )
+            )
+
+            currency = str(
+                wallet_impact.get(
+                    "currency",
+                    order_data.get(
+                        "currency",
+                        "",
+                    ),
+                )
+            ).upper().strip()
+        except (
+            KeyError,
+            TypeError,
+            ValueError,
+        ) as error:
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "historical order."
+            ) from error
+
+        if not ticker:
+            raise BrokerError(
+                "Trading 212 returned an invalid "
+                "historical order ticker."
+            )
+
+        return BrokerOrderResult(
+            order_id=order_id,
+            ticker=ticker,
+            quantity=quantity,
+            side=side,
+            status=status,
+            order_type=order_type,
+            filled_quantity=filled_quantity,
+            filled_value=filled_value,
+            currency=currency,
+        )
 
     @staticmethod
     def _parse_order_result(
@@ -542,109 +713,168 @@ class Trading212Client(BrokerClient):
 
         return cleaned_path
 
+    def _rate_limit_retry_delay(
+        self,
+        response: httpx.Response,
+    ) -> float:
+        raw_reset_time = response.headers.get(
+            "x-ratelimit-reset"
+        )
+
+        if raw_reset_time is None:
+            return 1.0
+
+        try:
+            reset_time = float(
+                raw_reset_time
+            )
+        except ValueError:
+            return 1.0
+
+        return max(
+            1.0,
+            reset_time
+            - self._now_provider()
+            + 1.0,
+        )
+
     def _get(
         self,
         path: str,
     ) -> object:
         url = f"{self.base_url}{path}"
 
-        logger.info(
-            "broker_request environment=%s "
-            "method=GET path=%s",
-            self.environment,
-            path,
-        )
-
-        try:
-            response = httpx.get(
-                url,
-                auth=httpx.BasicAuth(
-                    self.api_key,
-                    self.api_secret,
-                ),
-                timeout=self.timeout_seconds,
-            )
-
-            response.raise_for_status()
-
-        except httpx.TimeoutException as error:
-            logger.error(
-                "broker_order_timeout "
-                "environment=%s path=%s",
+        for attempt in range(
+            self._max_rate_limit_retries + 1
+        ):
+            logger.info(
+                "broker_request environment=%s "
+                "method=GET path=%s",
                 self.environment,
                 path,
             )
 
-            raise BrokerOrderSubmissionUnknownError(
-                "Trading 212 order request timed out. "
-                "Order status must be checked before "
-                "retrying."
-            ) from error
-
-        except httpx.HTTPStatusError as error:
-            status_code = (
-                error.response.status_code
-            )
-
-            logger.error(
-                "broker_http_error "
-                "environment=%s path=%s "
-                "status_code=%s",
-                self.environment,
-                path,
-                status_code,
-            )
-
-            if status_code == 429:
-                reset_at = (
-                    error.response.headers.get(
-                        "x-ratelimit-reset",
-                        "unknown",
-                    )
+            try:
+                response = httpx.get(
+                    url,
+                    auth=httpx.BasicAuth(
+                        self.api_key,
+                        self.api_secret,
+                    ),
+                    timeout=self.timeout_seconds,
                 )
 
-                remaining = (
-                    error.response.headers.get(
-                        "x-ratelimit-remaining",
-                        "0",
+                response.raise_for_status()
+
+            except httpx.TimeoutException as error:
+                logger.error(
+                    "broker_order_timeout "
+                    "environment=%s path=%s",
+                    self.environment,
+                    path,
+                )
+
+                raise BrokerOrderSubmissionUnknownError(
+                    "Trading 212 order request timed out. "
+                    "Order status must be checked before "
+                    "retrying."
+                ) from error
+
+            except httpx.HTTPStatusError as error:
+                status_code = (
+                    error.response.status_code
+                )
+
+                logger.error(
+                    "broker_http_error "
+                    "environment=%s path=%s "
+                    "status_code=%s",
+                    self.environment,
+                    path,
+                    status_code,
+                )
+
+                if (
+                    status_code == 429
+                    and attempt
+                    < self._max_rate_limit_retries
+                ):
+                    delay_seconds = (
+                        self._rate_limit_retry_delay(
+                            error.response
+                        )
                     )
+
+                    logger.warning(
+                        "broker_rate_limit_retry "
+                        "path=%s attempt=%s "
+                        "delay_seconds=%.2f",
+                        path,
+                        attempt + 1,
+                        delay_seconds,
+                    )
+
+                    self._sleep_provider(
+                        delay_seconds
+                    )
+
+                    continue
+
+                if status_code == 429:
+                    reset_at = (
+                        error.response.headers.get(
+                            "x-ratelimit-reset",
+                            "unknown",
+                        )
+                    )
+
+                    remaining = (
+                        error.response.headers.get(
+                            "x-ratelimit-remaining",
+                            "0",
+                        )
+                    )
+
+                    raise BrokerError(
+                        "Trading 212 rate limit reached. "
+                        f"Remaining requests: {remaining}. "
+                        f"Reset time: {reset_at}."
+                    ) from error
+
+                if status_code == 404:
+                    raise BrokerResourceNotFoundError(
+                        "Trading 212 resource was not "
+                        f"found: {path}"
+                    ) from error
+
+                raise BrokerError(
+                    "Trading 212 returned HTTP "
+                    f"{status_code}."
+                ) from error
+
+            except httpx.HTTPError as error:
+                logger.exception(
+                    "broker_connection_error "
+                    "environment=%s path=%s",
+                    self.environment,
+                    path,
                 )
 
                 raise BrokerError(
-                    "Trading 212 rate limit reached. "
-                    f"Remaining requests: {remaining}. "
-                    f"Reset time: {reset_at}."
+                    "Trading 212 connection failed."
                 ) from error
 
-            if status_code == 404:
-                raise BrokerResourceNotFoundError(
-                    f"Trading 212 resource was not found: "
-                    f"{path}"
+            try:
+                return response.json()
+            except ValueError as error:
+                raise BrokerError(
+                    "Trading 212 returned invalid JSON."
                 ) from error
 
-            raise BrokerError(
-                f"Trading 212 returned HTTP "
-                f"{status_code}."
-            ) from error
-
-        except httpx.HTTPError as error:
-            logger.exception(
-                "broker_connection_error "
-                "environment=%s path=%s",
-                self.environment,
-                path,
-            )
-
-            raise BrokerError(
-                "Trading 212 connection failed."
-            ) from error
-
-        try:
-            return response.json()
-        except ValueError as error:
-            raise BrokerError(
-                "Trading 212 returned invalid JSON."
-            ) from error
+        raise BrokerError(
+            "Trading 212 request failed after "
+            "rate-limit retries."
+        )
 
     @staticmethod
     def _format_error_response(

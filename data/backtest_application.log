@@ -1,0 +1,94 @@
+2026-07-12 16:54:33 | INFO | app.backtest | backtest_started price_points=5
+2026-07-12 16:54:33 | INFO | app.backtest | backtest_day date=2026-01-02 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 16:54:33 | INFO | app.backtest | backtest_day date=2026-01-03 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 16:54:33 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 16:54:33 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 16:54:33 | INFO | app.backtest | backtest_day date=2026-01-04 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 16:54:33 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 16:54:33 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 16:54:33 | INFO | app.backtest | backtest_day date=2026-01-05 prices={'AAPL': 145.0, 'MSFT': 315.0}
+2026-07-12 16:54:33 | INFO | app.backtest | backtest_day date=2026-01-06 prices={'AAPL': 149.0, 'MSFT': 322.0}
+2026-07-12 16:54:33 | INFO | app.backtest | backtest_finished ending_value=10075.00 return_percent=0.75 executed_trades=2 rejected_orders=0
+2026-07-12 16:56:08 | INFO | app.backtest | backtest_started price_points=5
+2026-07-12 16:56:08 | INFO | app.backtest | backtest_day date=2026-01-02 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 16:56:08 | INFO | app.backtest | backtest_day date=2026-01-03 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 16:56:08 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 16:56:08 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 16:56:08 | INFO | app.backtest | backtest_day date=2026-01-04 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 16:56:08 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 16:56:08 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 16:56:08 | INFO | app.backtest | backtest_day date=2026-01-05 prices={'AAPL': 145.0, 'MSFT': 315.0}
+2026-07-12 16:56:08 | INFO | app.backtest | backtest_day date=2026-01-06 prices={'AAPL': 149.0, 'MSFT': 322.0}
+2026-07-12 16:56:08 | INFO | app.backtest | backtest_finished ending_value=10075.00 return_percent=0.75 executed_trades=2 rejected_orders=0
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_started price_points=8
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-02 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-03 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 17:06:29 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 17:06:29 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-04 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 17:06:29 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 17:06:29 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-05 prices={'AAPL': 145.0, 'MSFT': 315.0}
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-06 prices={'AAPL': 149.0, 'MSFT': 322.0}
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-07 prices={'AAPL': 152.0, 'MSFT': 325.0}
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-08 prices={'AAPL': 148.0, 'MSFT': 317.0}
+2026-07-12 17:06:29 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=148.00 value=740.00
+2026-07-12 17:06:29 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=148.00 session_trade_count=3
+2026-07-12 17:06:29 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=317.00 value=1585.00
+2026-07-12 17:06:29 | WARNING | app.execution | order_rejected symbol=MSFT side=BUY reason=Proposed MSFT position value £3170.00 exceeds the £3000.00 position limit.
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_day date=2026-01-09 prices={'AAPL': 151.0, 'MSFT': 321.0}
+2026-07-12 17:06:29 | INFO | app.backtest | backtest_finished ending_value=10095.00 return_percent=0.95 executed_trades=3 rejected_orders=1
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_started price_points=8
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-02 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-03 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 17:06:40 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 17:06:40 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-04 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 17:06:40 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 17:06:40 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-05 prices={'AAPL': 145.0, 'MSFT': 315.0}
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-06 prices={'AAPL': 149.0, 'MSFT': 322.0}
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-07 prices={'AAPL': 152.0, 'MSFT': 325.0}
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-08 prices={'AAPL': 148.0, 'MSFT': 317.0}
+2026-07-12 17:06:40 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=148.00 value=740.00
+2026-07-12 17:06:40 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=148.00 session_trade_count=3
+2026-07-12 17:06:40 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=317.00 value=1585.00
+2026-07-12 17:06:40 | WARNING | app.execution | order_rejected symbol=MSFT side=BUY reason=Proposed MSFT position value £3170.00 exceeds the £3000.00 position limit.
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_day date=2026-01-09 prices={'AAPL': 151.0, 'MSFT': 321.0}
+2026-07-12 17:06:40 | INFO | app.backtest | backtest_finished ending_value=10095.00 return_percent=0.95 executed_trades=3 rejected_orders=1
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_started price_points=8
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-02 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-03 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 17:08:00 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 17:08:00 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-04 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 17:08:00 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 17:08:00 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-05 prices={'AAPL': 145.0, 'MSFT': 315.0}
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-06 prices={'AAPL': 149.0, 'MSFT': 322.0}
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-07 prices={'AAPL': 152.0, 'MSFT': 325.0}
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-08 prices={'AAPL': 148.0, 'MSFT': 317.0}
+2026-07-12 17:08:00 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=148.00 value=740.00
+2026-07-12 17:08:00 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=148.00 session_trade_count=3
+2026-07-12 17:08:00 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=317.00 value=1585.00
+2026-07-12 17:08:00 | WARNING | app.execution | order_rejected symbol=MSFT side=BUY reason=Proposed MSFT position value £3170.00 exceeds the £3000.00 position limit.
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_day date=2026-01-09 prices={'AAPL': 151.0, 'MSFT': 321.0}
+2026-07-12 17:08:00 | INFO | app.backtest | backtest_finished ending_value=10095.00 return_percent=0.95 executed_trades=3 rejected_orders=1
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_started price_points=8
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-02 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-03 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 17:15:43 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 17:15:43 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-04 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 17:15:43 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 17:15:43 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-05 prices={'AAPL': 145.0, 'MSFT': 315.0}
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-06 prices={'AAPL': 149.0, 'MSFT': 322.0}
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-07 prices={'AAPL': 152.0, 'MSFT': 325.0}
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-08 prices={'AAPL': 148.0, 'MSFT': 317.0}
+2026-07-12 17:15:43 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=148.00 value=740.00
+2026-07-12 17:15:43 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=148.00 session_trade_count=3
+2026-07-12 17:15:43 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=317.00 value=1585.00
+2026-07-12 17:15:43 | WARNING | app.execution | order_rejected symbol=MSFT side=BUY reason=Proposed MSFT position value £3170.00 exceeds the £3000.00 position limit.
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_day date=2026-01-09 prices={'AAPL': 151.0, 'MSFT': 321.0}
+2026-07-12 17:15:43 | INFO | app.backtest | backtest_finished ending_value=10095.00 return_percent=0.95 max_drawdown_percent=0.59 benchmark_return_percent=0.49 excess_return_percent=0.46 average_exposure_percent=20.16 executed_trades=3 rejected_orders=1

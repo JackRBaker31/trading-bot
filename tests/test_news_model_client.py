@@ -57,6 +57,48 @@ def test_builds_prompt_and_returns_raw_output() -> None:
     assert '"scope_items": ["TICKER"]' not in prompt
     assert "Never output placeholder words" in prompt
 
+def test_prompt_allows_company_name_when_ticker_is_missing() -> None:
+    transport = FakeTransport(
+        output="{}"
+    )
+
+    client = NewsModelClient(
+        transport=transport
+    )
+
+    client.analyse(
+        "Google announced a major investment."
+    )
+
+    prompt = transport.prompts[0]
+
+    assert (
+        "return the company name in scope_items"
+        in prompt
+    )
+
+def test_prompt_treats_named_company_approval_as_stock_news() -> None:
+    transport = FakeTransport(
+        output="{}"
+    )
+
+    client = NewsModelClient(
+        transport=transport
+    )
+
+    client.analyse(
+        "The FDA approved Vertex "
+        "Pharmaceuticals' new treatment."
+    )
+
+    prompt = transport.prompts[0]
+
+    assert (
+        "regulatory approval involving a named company "
+        "is STOCK-specific"
+        in prompt
+    )
+
 def test_rejects_empty_article() -> None:
     client = NewsModelClient(
         transport=FakeTransport(

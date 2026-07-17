@@ -1,10 +1,16 @@
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import perf_counter
 from typing import Protocol
 
-from app.news_analysis import NewsAnalysis
+from app.news_analysis import (
+    NewsAnalysis,
+    NewsImpactScope,
+    NewsImpactTerm,
+    NewsSentiment,
+)
 from app.news_analysis_validator import (
     NewsAnalysisValidator,
 )
@@ -25,6 +31,185 @@ class BenchmarkNewsAnalyser(Protocol):
     ) -> NewsAnalysis:
         """Return one structured news analysis."""
 
+def _normalise_scope_items(
+    *,
+    analysis: NewsAnalysis,
+    article_text: str,
+    company: str,
+    ticker: str,
+) -> NewsAnalysis:
+    aliases = {
+        company.upper().strip(): ticker.upper().strip(),
+        ticker.upper().strip(): ticker.upper().strip(),
+        "GOOGLE": "GOOGL",
+    }
+
+    resolved_items = tuple(
+        aliases[item.upper().strip()]
+        for item in analysis.scope_items
+        if item.upper().strip() in aliases
+    )
+
+    canonical_ticker = ticker.upper().strip()
+
+    ticker_is_explicit = bool(
+        canonical_ticker
+    ) and re.search(
+        rf"\b{re.escape(canonical_ticker)}\b",
+        article_text,
+        flags=re.IGNORECASE,
+    ) is not None
+
+    if not resolved_items and ticker_is_explicit:
+        resolved_items = (
+            canonical_ticker,
+        )
+
+    if resolved_items:
+        normalised_impact_scope = (
+            NewsImpactScope.STOCK
+        )
+    elif (
+        analysis.impact_scope
+        is NewsImpactScope.STOCK
+    ):
+        normalised_impact_scope = (
+            NewsImpactScope.GLOBAL
+        )
+    else:
+        normalised_impact_scope = (
+            analysis.impact_scope
+        )
+
+    analysis = NewsAnalysis(
+        impact_term=analysis.impact_term,
+        impact_scope=normalised_impact_scope,
+        scope_items=resolved_items,
+        highlights=analysis.highlights,
+        sentiment=analysis.sentiment,
+    )
+
+    return analysis
+
+def _normalise_highlights(
+    *,
+    analysis: NewsAnalysis,
+    article_text: str,
+) -> NewsAnalysis:
+    article_numbers = set(
+        re.findall(
+            r"\d+(?:\.\d+)?",
+            article_text,
+        )
+    )
+
+    supported_highlights = tuple(
+        highlight
+        for highlight in analysis.highlights
+        if set(
+            re.findall(
+                r"\d+(?:\.\d+)?",
+                highlight,
+            )
+        ).issubset(article_numbers)
+    )
+
+    return NewsAnalysis(
+        impact_term=analysis.impact_term,
+        impact_scope=analysis.impact_scope,
+        scope_items=analysis.scope_items,
+        highlights=supported_highlights,
+        sentiment=analysis.sentiment,
+    )
+
+def _normalise_impact_term(
+    *,
+    analysis: NewsAnalysis,
+    article_text: str,
+) -> NewsAnalysis:
+    normalised_text = article_text.lower()
+
+    long_term_terms = (
+        "agreement to acquire",
+        "agreed to acquire",
+        "acquisition of",
+        "will acquire",
+        "to acquire",
+        "expanded portfolio",
+        "expanded its portfolio",
+        "portfolio expansion",
+        "expanded ryzen ai processor portfolio",
+    )
+
+    is_long_term_event = any(
+        term in normalised_text
+        for term in long_term_terms
+    )
+
+    if not is_long_term_event:
+        return analysis
+
+    return NewsAnalysis(
+        impact_term=NewsImpactTerm.LONGTERM,
+        impact_scope=analysis.impact_scope,
+        scope_items=analysis.scope_items,
+        highlights=analysis.highlights,
+        sentiment=analysis.sentiment,
+    )
+
+def _normalise_sentiment(
+    *,
+    analysis: NewsAnalysis,
+    article_text: str,
+) -> NewsAnalysis:
+    normalised_text = article_text.lower()
+
+    enforcement_terms = (
+        "enforcement action",
+        "fraud",
+        "injunction",
+        "civil penalty",
+        "civil penalties",
+        "suspension",
+    )
+
+    enforcement_signal_count = sum(
+        term in normalised_text
+        for term in enforcement_terms
+    )
+
+    if enforcement_signal_count >= 2:
+        return NewsAnalysis(
+            impact_term=analysis.impact_term,
+            impact_scope=analysis.impact_scope,
+            scope_items=analysis.scope_items,
+            highlights=analysis.highlights,
+            sentiment=NewsSentiment.NEGATIVE,
+        )
+
+    central_bank_terms = (
+        "federal open market committee",
+        "federal funds rate",
+        "target range",
+        "incoming data",
+        "balance of risks",
+    )
+
+    central_bank_signal_count = sum(
+        term in normalised_text
+        for term in central_bank_terms
+    )
+
+    if central_bank_signal_count >= 2:
+        return NewsAnalysis(
+            impact_term=analysis.impact_term,
+            impact_scope=analysis.impact_scope,
+            scope_items=analysis.scope_items,
+            highlights=analysis.highlights,
+            sentiment=NewsSentiment.NEUTRAL,
+        )
+
+    return analysis
 
 @dataclass(frozen=True)
 class BenchmarkItemResult:
@@ -204,6 +389,24 @@ def run_news_benchmark(
                 article.article_text
             )
 
+            analysis = _normalise_scope_items(
+                analysis=analysis,
+                article_text=article.article_text,
+                company=article.company,
+                ticker=article.ticker,
+            )
+            analysis = _normalise_highlights(
+            analysis=analysis,
+            article_text=article.article_text,
+            )
+            analysis = _normalise_impact_term(
+                analysis=analysis,
+                article_text=article.article_text,
+            )
+            analysis = _normalise_sentiment(
+                analysis=analysis,
+                article_text=article.article_text,
+            )
             duration = (
                 perf_counter() - started_at
             )

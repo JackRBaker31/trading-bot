@@ -1,8 +1,15 @@
 {
   "benchmark_id": "BENCH-0008",
-  "impact_term": "SHORTTERM",
+  "impact_term": "LONGTERM",
   "impact_scope": "STOCK",
-  "scope_items": [],
-  "highlights": [],
-  "sentiment": "NEUTRAL"
+  "scope_items": [
+    "AMD"
+  ],
+  "highlights": [
+    "AMD expanded its Ryzen AI processor portfolio",
+    "The Ryzen AI Max lineup included processors with up to 16 CPU cores",
+    "The processors included integrated Radeon graphics",
+    "The processors included an AI processing unit for local AI workloads"
+  ],
+  "sentiment": "POSITIVE"
 }

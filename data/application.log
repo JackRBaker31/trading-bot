@@ -1,0 +1,1508 @@
+2026-07-12 16:14:13 | INFO | __main__ | application_starting
+2026-07-12 16:14:13 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-12 16:14:13 | INFO | __main__ | safe_mode_confirmed mode=SIMULATION real_money_trading=false
+2026-07-12 16:14:13 | INFO | app.portfolio_store | portfolio_creating file=data\portfolio.json starting_cash=10000.00
+2026-07-12 16:14:13 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=10000.00 positions={}
+2026-07-12 16:14:13 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-12 16:14:13 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-12 16:14:13 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 16:14:13 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-12 16:14:13 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-12 16:14:14 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-12 16:14:14 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 16:14:14 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-12 16:14:14 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 16:14:14 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 16:14:14 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-12 16:14:15 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-12 16:14:15 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 16:14:15 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-12 16:14:15 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 16:14:15 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 16:14:15 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-12 16:14:16 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-12 16:14:16 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-12 16:14:16 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-12 16:14:16 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=138.00 value=690.00
+2026-07-12 16:14:16 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=138.00 session_trade_count=3
+2026-07-12 16:14:16 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-12 16:14:17 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-12 16:14:17 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-12 16:14:17 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-12 16:14:17 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-12 16:14:17 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-12 16:14:17 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=7030.00 positions={'AAPL': 10, 'MSFT': 5}
+2026-07-12 16:14:17 | INFO | __main__ | application_finished cash=7030.00 positions={'AAPL': 10, 'MSFT': 5} session_trade_count=3
+2026-07-12 16:27:20 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-12 16:27:21 | INFO | httpx | HTTP Request: GET https://api.twelvedata.com/quote?symbol=AAPL&apikey=f781f188a13940b1a6023c0be788da29 "HTTP/1.1 200 OK"
+2026-07-12 16:27:21 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=315.3200
+2026-07-12 16:46:27 | INFO | __main__ | application_starting
+2026-07-12 16:46:27 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-12 16:46:27 | INFO | __main__ | safe_mode_confirmed mode=SIMULATION market_data_provider=SIMULATED real_money_trading=false
+2026-07-12 16:46:27 | INFO | app.portfolio_store | portfolio_creating file=data\portfolio.json starting_cash=10000.00
+2026-07-12 16:46:27 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=10000.00 positions={}
+2026-07-12 16:46:27 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-12 16:46:27 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-12 16:46:27 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 16:46:27 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-12 16:46:27 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-12 16:46:28 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-12 16:46:28 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 16:46:28 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-12 16:46:28 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=146.00 value=730.00
+2026-07-12 16:46:28 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=146.00 session_trade_count=1
+2026-07-12 16:46:28 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-12 16:46:29 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-12 16:46:29 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 16:46:29 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-12 16:46:29 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=5 price=310.00 value=1550.00
+2026-07-12 16:46:29 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=5 price=310.00 session_trade_count=2
+2026-07-12 16:46:29 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-12 16:46:30 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-12 16:46:30 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-12 16:46:30 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-12 16:46:30 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=5 price=138.00 value=690.00
+2026-07-12 16:46:30 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=5 price=138.00 session_trade_count=3
+2026-07-12 16:46:30 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-12 16:46:31 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-12 16:46:31 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-12 16:46:31 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-12 16:46:31 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-12 16:46:31 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-12 16:46:31 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=7030.00 positions={'AAPL': 10, 'MSFT': 5}
+2026-07-12 16:46:31 | INFO | __main__ | application_finished cash=7030.00 positions={'AAPL': 10, 'MSFT': 5} session_trade_count=3
+2026-07-12 18:03:39 | INFO | __main__ | application_starting
+2026-07-12 18:03:39 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-12 18:03:39 | INFO | __main__ | safe_mode_confirmed mode=SIMULATION market_data_provider=SIMULATED real_money_trading=false
+2026-07-12 18:03:39 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=7030.00 positions={'AAPL': 10, 'MSFT': 5}
+2026-07-12 18:03:39 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-12 18:03:39 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-12 18:03:39 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-12 18:03:39 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-12 18:03:39 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-12 18:03:40 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-12 18:03:40 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-12 18:03:40 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-12 18:03:40 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=6 price=146.00 value=876.00
+2026-07-12 18:03:40 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=6 price=146.00 session_trade_count=1
+2026-07-12 18:03:40 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-12 18:03:41 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-12 18:03:41 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-12 18:03:41 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-12 18:03:41 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=3 price=310.00 value=930.00
+2026-07-12 18:03:41 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=3 price=310.00 session_trade_count=2
+2026-07-12 18:03:41 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-12 18:03:42 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-12 18:03:42 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-12 18:03:42 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-12 18:03:42 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=7 price=138.00 value=966.00
+2026-07-12 18:03:42 | WARNING | app.execution | order_rejected symbol=AAPL side=BUY reason=Proposed AAPL position value £3174.00 exceeds the £3000.00 position limit.
+2026-07-12 18:03:42 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-12 18:03:43 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-12 18:03:43 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-12 18:03:43 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-12 18:03:43 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-12 18:03:43 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-12 18:03:43 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=5224.00 positions={'AAPL': 16, 'MSFT': 8}
+2026-07-12 18:03:43 | INFO | __main__ | application_finished cash=5224.00 positions={'AAPL': 16, 'MSFT': 8} session_trade_count=2
+2026-07-12 18:24:20 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 18:24:20 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 18:24:20 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 18:24:21 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 18:24:46 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 18:24:47 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 429 Too Many Requests"
+2026-07-12 18:24:47 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/account/summary status_code=429
+2026-07-12 18:26:43 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 18:26:44 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 18:26:44 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 18:26:44 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 18:28:54 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 18:28:55 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 18:28:55 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 18:28:55 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 18:48:53 | INFO | app.portfolio_store | portfolio_creating file=data\portfolio.json starting_cash=5000.00
+2026-07-12 18:48:53 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=5000.00 positions={}
+2026-07-12 18:48:53 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 18:48:53 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 18:48:53 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 18:48:54 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 19:19:12 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-12 19:19:12 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 19:19:13 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 19:19:13 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 19:19:13 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 19:19:13 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-12 19:24:08 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-12 19:24:08 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 19:24:09 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 19:24:09 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 19:24:09 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 19:24:09 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-12 19:49:42 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-12 19:49:42 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 19:49:43 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 19:49:43 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 19:49:43 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 19:49:43 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-12 19:52:33 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-12 19:52:33 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-12 19:52:33 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-12 19:52:33 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-12 19:52:34 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-12 19:52:34 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 13:49:31 | INFO | __main__ | application_starting
+2026-07-13 13:49:31 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-13 13:49:31 | INFO | __main__ | safe_mode_confirmed mode=SIMULATION market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 13:49:31 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 13:49:31 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 13:49:31 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 13:49:31 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 13:49:31 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 13:49:31 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 13:49:32 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 13:49:32 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 13:49:32 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 13:49:32 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 13:49:32 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=3 price=146.00 session_trade_count=1
+2026-07-13 13:49:32 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 13:49:33 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 13:49:33 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 13:49:33 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 13:49:33 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=1 price=310.00 value=310.00
+2026-07-13 13:49:33 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=1 price=310.00 session_trade_count=2
+2026-07-13 13:49:33 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 13:49:34 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 13:49:34 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 13:49:34 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 13:49:34 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=138.00 value=414.00
+2026-07-13 13:49:34 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=3 price=138.00 session_trade_count=3
+2026-07-13 13:49:34 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 13:49:35 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 13:49:35 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 13:49:35 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 13:49:35 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 13:49:35 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 13:49:35 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=3838.00 positions={'AAPL': 6, 'MSFT': 1}
+2026-07-13 13:49:35 | INFO | __main__ | application_finished cash=3838.00 positions={'AAPL': 6, 'MSFT': 1} session_trade_count=3
+2026-07-13 13:51:18 | INFO | __main__ | application_starting
+2026-07-13 13:51:18 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-13 13:51:18 | INFO | __main__ | safe_mode_confirmed mode=SIMULATION market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 13:51:18 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=3838.00 positions={'AAPL': 6, 'MSFT': 1}
+2026-07-13 13:51:18 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 13:51:18 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 13:51:18 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 13:51:18 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 13:51:18 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 13:51:19 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 13:51:19 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 13:51:19 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 13:51:19 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 13:51:19 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=3 price=146.00 session_trade_count=1
+2026-07-13 13:51:19 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 13:51:20 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 13:51:20 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 13:51:20 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 13:51:20 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=1 price=310.00 value=310.00
+2026-07-13 13:51:20 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=1 price=310.00 session_trade_count=2
+2026-07-13 13:51:20 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 13:51:21 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 13:51:21 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 13:51:21 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 13:51:21 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=138.00 value=414.00
+2026-07-13 13:51:21 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=3 price=138.00 session_trade_count=3
+2026-07-13 13:51:21 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 13:51:22 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 13:51:22 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 13:51:22 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 13:51:22 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 13:51:22 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 13:51:22 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=2676.00 positions={'AAPL': 12, 'MSFT': 2}
+2026-07-13 13:51:22 | INFO | __main__ | application_finished cash=2676.00 positions={'AAPL': 12, 'MSFT': 2} session_trade_count=3
+2026-07-13 13:52:05 | INFO | __main__ | application_starting
+2026-07-13 13:52:05 | INFO | app.config | configuration_loaded file=config.json mode=SIMULATION market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-13 13:52:05 | INFO | __main__ | safe_mode_confirmed mode=SIMULATION market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 13:52:05 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=2676.00 positions={'AAPL': 12, 'MSFT': 2}
+2026-07-13 13:52:05 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 13:52:05 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 13:52:05 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 13:52:05 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 13:52:05 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 13:52:06 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 13:52:06 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 13:52:06 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 13:52:06 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 13:52:06 | WARNING | app.execution | order_rejected symbol=AAPL side=BUY reason=Proposed exposure £2826.00 exceeds the £2500.00 portfolio exposure limit.
+2026-07-13 13:52:06 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 13:52:07 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 13:52:07 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 13:52:07 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 13:52:07 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=1 price=310.00 value=310.00
+2026-07-13 13:52:07 | WARNING | app.execution | order_rejected symbol=MSFT side=BUY reason=Proposed exposure £2634.00 exceeds the £2500.00 portfolio exposure limit.
+2026-07-13 13:52:07 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 13:52:08 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 13:52:08 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 13:52:08 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 13:52:08 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=138.00 value=414.00
+2026-07-13 13:52:08 | WARNING | app.execution | order_rejected symbol=AAPL side=BUY reason=Proposed exposure £2686.00 exceeds the £2500.00 portfolio exposure limit.
+2026-07-13 13:52:08 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 13:52:09 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 13:52:09 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 13:52:09 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 13:52:09 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 13:52:09 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 13:52:09 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=2676.00 positions={'AAPL': 12, 'MSFT': 2}
+2026-07-13 13:52:09 | INFO | __main__ | application_finished cash=2676.00 positions={'AAPL': 12, 'MSFT': 2} session_trade_count=0
+2026-07-13 14:12:53 | INFO | __main__ | application_starting
+2026-07-13 14:12:53 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-13 14:12:53 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 14:12:53 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=2676.00 positions={'AAPL': 12, 'MSFT': 2}
+2026-07-13 14:12:53 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 292, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 225, in main
+    raise ValueError(
+    ...<2 lines>...
+    )
+ValueError: Trading 212 Demo credentials are required for startup recovery.
+2026-07-13 14:15:38 | INFO | __main__ | application_starting
+2026-07-13 14:15:38 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-13 14:15:38 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 14:15:38 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=2676.00 positions={'AAPL': 12, 'MSFT': 2}
+2026-07-13 14:15:38 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 14:15:38 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 14:15:38 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 14:15:38 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 14:15:38 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 14:15:38 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 14:15:38 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 14:15:38 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 14:15:39 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 14:15:39 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 14:15:39 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 14:15:39 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 14:15:39 | WARNING | app.execution | order_rejected symbol=AAPL side=BUY reason=Proposed exposure £2826.00 exceeds the £2500.00 portfolio exposure limit.
+2026-07-13 14:15:39 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 14:15:40 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 14:15:40 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 14:15:40 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 14:15:40 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=1 price=310.00 value=310.00
+2026-07-13 14:15:40 | WARNING | app.execution | order_rejected symbol=MSFT side=BUY reason=Proposed exposure £2634.00 exceeds the £2500.00 portfolio exposure limit.
+2026-07-13 14:15:40 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 14:15:41 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 14:15:41 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 14:15:41 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 14:15:41 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=3 price=138.00 value=414.00
+2026-07-13 14:15:41 | WARNING | app.execution | order_rejected symbol=AAPL side=BUY reason=Proposed exposure £2686.00 exceeds the £2500.00 portfolio exposure limit.
+2026-07-13 14:15:41 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 14:15:42 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 14:15:42 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 14:15:42 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 14:15:42 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 14:15:42 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 14:15:42 | INFO | app.recovery_startup | trading_started_after_recovery
+2026-07-13 14:15:42 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=2676.00 positions={'AAPL': 12, 'MSFT': 2}
+2026-07-13 14:15:42 | INFO | __main__ | application_finished cash=2676.00 positions={'AAPL': 12, 'MSFT': 2} session_trade_count=0
+2026-07-13 14:17:37 | INFO | __main__ | application_starting
+2026-07-13 14:17:37 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=10000.00
+2026-07-13 14:17:37 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 14:17:37 | INFO | app.portfolio_store | portfolio_creating file=data\portfolio.json starting_cash=10000.00
+2026-07-13 14:17:37 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=10000.00 positions={}
+2026-07-13 14:17:37 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 14:17:37 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 14:17:37 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 14:17:37 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 14:17:37 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 14:17:37 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 14:17:37 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 14:17:37 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 14:17:38 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 14:17:38 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 14:17:38 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 14:17:38 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=6 price=146.00 value=876.00
+2026-07-13 14:17:38 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=6 price=146.00 session_trade_count=1
+2026-07-13 14:17:38 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 14:17:39 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 14:17:39 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 14:17:39 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 14:17:39 | INFO | app.execution | order_received symbol=MSFT side=BUY quantity=3 price=310.00 value=930.00
+2026-07-13 14:17:39 | INFO | app.execution | order_executed symbol=MSFT side=BUY quantity=3 price=310.00 session_trade_count=2
+2026-07-13 14:17:39 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 14:17:40 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 14:17:40 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 14:17:40 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 14:17:40 | INFO | app.execution | order_received symbol=AAPL side=BUY quantity=7 price=138.00 value=966.00
+2026-07-13 14:17:40 | INFO | app.execution | order_executed symbol=AAPL side=BUY quantity=7 price=138.00 session_trade_count=3
+2026-07-13 14:17:40 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 14:17:41 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 14:17:41 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 14:17:41 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 14:17:41 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 14:17:41 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 14:17:41 | INFO | app.recovery_startup | trading_started_after_recovery
+2026-07-13 14:17:41 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=7228.00 positions={'AAPL': 13, 'MSFT': 3}
+2026-07-13 14:17:41 | INFO | __main__ | application_finished cash=7228.00 positions={'AAPL': 13, 'MSFT': 3} session_trade_count=3
+2026-07-13 14:46:31 | INFO | __main__ | application_starting
+2026-07-13 14:46:31 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-13 14:46:31 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 14:46:31 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=7228.00 positions={'AAPL': 13, 'MSFT': 3}
+2026-07-13 14:46:31 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 14:46:31 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 14:46:31 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 14:46:31 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 14:46:31 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 14:46:31 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 14:46:31 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 14:46:31 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 14:46:32 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 14:46:32 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 14:46:32 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 14:46:32 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=6 price=146.00 value=876.00
+2026-07-13 14:46:32 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 14:46:32 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 14:46:33 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 14:46:33 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 14:46:33 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 14:46:33 | INFO | app.paper_execution_adapter | paper_order_received symbol=MSFT side=BUY quantity=3 price=310.00 value=930.00
+2026-07-13 14:46:33 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=MSFT side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 14:46:33 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 14:46:34 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 14:46:34 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 14:46:34 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 14:46:34 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=7 price=138.00 value=966.00
+2026-07-13 14:46:34 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 14:46:34 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 14:46:35 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 14:46:35 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 14:46:35 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 14:46:35 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 14:46:35 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 14:46:35 | INFO | app.recovery_startup | trading_started_after_recovery
+2026-07-13 14:46:35 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=7228.00 positions={'AAPL': 13, 'MSFT': 3}
+2026-07-13 14:46:35 | INFO | __main__ | application_finished cash=7228.00 positions={'AAPL': 13, 'MSFT': 3} session_trade_count=0
+2026-07-13 15:16:24 | INFO | __main__ | application_starting
+2026-07-13 15:16:24 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-13 15:16:24 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 15:16:24 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=7228.00 positions={'AAPL': 13, 'MSFT': 3}
+2026-07-13 15:16:24 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 15:16:24 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 15:16:24 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 15:16:24 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-13 15:16:25 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-13 15:16:25 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-13 15:16:25 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-13 15:16:25 | INFO | app.recovery_startup | trading_started_after_recovery
+2026-07-13 15:16:25 | ERROR | __main__ | paper_trading_refused reason=PAPER startup reconciliation failed.
+2026-07-13 15:17:56 | INFO | __main__ | application_starting
+2026-07-13 15:17:56 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-13 15:17:56 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 15:17:56 | INFO | app.portfolio_store | portfolio_creating file=data\portfolio.json starting_cash=5000.00
+2026-07-13 15:17:56 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:17:56 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 15:17:56 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 15:17:56 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 15:17:56 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-13 15:17:57 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-13 15:17:57 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-13 15:17:57 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-13 15:17:57 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 15:17:57 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 15:17:57 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 15:17:57 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 15:17:57 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 15:17:58 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 15:17:58 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 15:17:58 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 15:17:58 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 15:17:58 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:17:58 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 15:17:59 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 15:17:59 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 15:17:59 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 15:17:59 | INFO | app.paper_execution_adapter | paper_order_received symbol=MSFT side=BUY quantity=1 price=310.00 value=310.00
+2026-07-13 15:17:59 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=MSFT side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:17:59 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 15:18:00 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 15:18:00 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 15:18:00 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 15:18:00 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=138.00 value=414.00
+2026-07-13 15:18:00 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:18:00 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 15:18:01 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 15:18:01 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 15:18:01 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 15:18:01 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 15:18:01 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 15:18:01 | INFO | app.recovery_startup | trading_started_after_recovery
+2026-07-13 15:18:01 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:18:01 | INFO | __main__ | application_finished cash=5000.00 positions={} session_trade_count=0
+2026-07-13 15:27:40 | INFO | __main__ | application_starting
+2026-07-13 15:27:40 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-13 15:27:40 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 15:27:40 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:27:40 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 15:27:40 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 15:27:40 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 15:27:40 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-13 15:27:41 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-13 15:27:41 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-13 15:27:41 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-13 15:27:41 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 15:27:41 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 15:27:41 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 15:27:41 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 15:27:41 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 15:27:42 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 15:27:42 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 15:27:42 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 15:27:42 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 15:27:42 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:27:42 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 15:27:43 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 15:27:43 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 15:27:43 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 15:27:43 | INFO | app.paper_execution_adapter | paper_order_received symbol=MSFT side=BUY quantity=1 price=310.00 value=310.00
+2026-07-13 15:27:43 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=MSFT side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:27:43 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 15:27:44 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 15:27:44 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 15:27:44 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 15:27:44 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=138.00 value=414.00
+2026-07-13 15:27:44 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:27:44 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 15:27:45 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 15:27:45 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 15:27:45 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 15:27:45 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 15:27:45 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 15:27:45 | INFO | app.recovery_startup | trading_started_after_recovery
+2026-07-13 15:27:45 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:27:45 | INFO | __main__ | application_finished cash=5000.00 positions={} session_trade_count=0
+2026-07-13 15:34:13 | INFO | __main__ | application_starting
+2026-07-13 15:34:13 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-13 15:34:13 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 15:34:13 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:34:13 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 15:34:13 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 15:34:13 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 15:34:13 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-13 15:34:13 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-13 15:34:13 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-13 15:34:14 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-13 15:34:14 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 15:34:14 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 15:34:14 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 15:34:14 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 15:34:14 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 15:34:15 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 15:34:15 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 15:34:15 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 15:34:15 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 15:34:15 | WARNING | app.trading212_client | broker_order_request environment=DEMO method=POST path=/equity/orders/market payload={'ticker': 'AAPL_US_EQ', 'quantity': 3.0, 'extendedHours': False}
+2026-07-13 15:34:15 | INFO | httpx | HTTP Request: POST https://demo.trading212.com/api/v0/equity/orders/market "HTTP/1.1 403 Forbidden"
+2026-07-13 15:34:15 | ERROR | app.trading212_client | broker_order_http_error environment=DEMO path=/equity/orders/market status_code=403
+2026-07-13 15:34:15 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 576, in _post
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\.venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '403 Forbidden' for url 'https://demo.trading212.com/api/v0/equity/orders/market'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 424, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 362, in main
+    paper_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=start_trading
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 67, in start
+    self.recovery_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=reconcile_then_trade
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\recovery_startup.py", line 81, in start
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 63, in reconcile_then_trade
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 301, in start_trading
+    trading_loop.run(
+    ~~~~~~~~~~~~~~~~^
+        cycles=(
+        ^^^^^^^^
+    ...<4 lines>...
+        ),
+        ^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading_loop.py", line 164, in run
+    executed = self.execution_service.submit_order(
+        order=order,
+        current_prices=current_prices,
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_execution_adapter.py", line 106, in submit_order
+    result = self.workflow.execute(
+        order=order,
+        gate_decision=gate_decision,
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_order_workflow.py", line 174, in execute
+    self.execution_service.submit(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        order=order,
+        ^^^^^^^^^^^^
+        gate_decision=gate_decision,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_order_execution.py", line 89, in submit
+    self.broker.place_market_order(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        ticker=broker_ticker,
+        ^^^^^^^^^^^^^^^^^^^^^
+        quantity=broker_quantity,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+        extended_hours=False,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 246, in place_market_order
+    data = self._post(
+        path="/equity/orders/market",
+    ...<4 lines>...
+        },
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 622, in _post
+    raise BrokerError(
+    ...<2 lines>...
+    ) from error
+app.broker.BrokerError: Trading 212 returned HTTP 403 for the order request.
+2026-07-13 15:51:26 | INFO | __main__ | application_starting
+2026-07-13 15:51:27 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-13 15:51:27 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 15:51:27 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:51:27 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 15:51:27 | INFO | app.recovery_startup | startup_recovery_report total_items=1 completed_items=0 incomplete_items=1 startup_blocked=True
+2026-07-13 15:51:27 | ERROR | app.recovery_startup | startup_recovery_refused reason=Trading refused because startup recovery remains blocked. incomplete_items=1 startup_blocked=True
+2026-07-13 15:51:27 | ERROR | __main__ | paper_trading_refused reason=Trading refused because startup recovery remains blocked.
+2026-07-13 15:54:03 | INFO | __main__ | application_starting
+2026-07-13 15:54:03 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-13 15:54:03 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-13 15:54:03 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:54:03 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-13 15:54:03 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-13 15:54:03 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-13 15:54:03 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-13 15:54:03 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/account/summary "HTTP/1.1 200 OK"
+2026-07-13 15:54:03 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-13 15:54:04 | INFO | httpx | HTTP Request: GET https://demo.trading212.com/api/v0/equity/positions "HTTP/1.1 200 OK"
+2026-07-13 15:54:04 | INFO | app.trading_loop | trading_loop_started cycles=5 interval_seconds=1.0 symbols=AAPL,MSFT
+2026-07-13 15:54:04 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-13 15:54:04 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0}
+2026-07-13 15:54:04 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-13 15:54:04 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-13 15:54:05 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-13 15:54:05 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0}
+2026-07-13 15:54:05 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-13 15:54:05 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-13 15:54:05 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:54:05 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-13 15:54:06 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-13 15:54:06 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 142.0, 'MSFT': 310.0}
+2026-07-13 15:54:06 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=1
+2026-07-13 15:54:06 | INFO | app.paper_execution_adapter | paper_order_received symbol=MSFT side=BUY quantity=1 price=310.00 value=310.00
+2026-07-13 15:54:06 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=MSFT side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:54:06 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-13 15:54:07 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-13 15:54:07 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 138.0, 'MSFT': 308.0}
+2026-07-13 15:54:07 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=1
+2026-07-13 15:54:07 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=138.00 value=414.00
+2026-07-13 15:54:07 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-13 15:54:07 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-13 15:54:08 | INFO | app.trading_loop | trading_cycle_started cycle=5
+2026-07-13 15:54:08 | INFO | app.trading_loop | prices_received cycle=5 prices={'AAPL': 134.0, 'MSFT': 305.0}
+2026-07-13 15:54:08 | INFO | app.trading_loop | strategy_completed cycle=5 order_count=0
+2026-07-13 15:54:08 | INFO | app.trading_loop | trading_cycle_completed cycle=5
+2026-07-13 15:54:08 | INFO | app.trading_loop | trading_loop_finished cycles=5
+2026-07-13 15:54:08 | INFO | app.recovery_startup | startup_recovery_callback_completed
+2026-07-13 15:54:08 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=5000.00 positions={}
+2026-07-13 15:54:08 | INFO | __main__ | application_finished cash=5000.00 positions={} session_trade_count=0
+2026-07-13 19:26:01 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-13 19:26:01 | INFO | httpx | HTTP Request: GET https://api.twelvedata.com/quote?symbol=AAPL&apikey=f781f188a13940b1a6023c0be788da29 "HTTP/1.1 200 OK"
+2026-07-13 19:26:01 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=316.3550
+2026-07-13 19:28:21 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-13 19:28:21 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=316.4900
+2026-07-14 09:25:58 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 09:26:14 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 09:27:24 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 09:27:24 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 09:28:19 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 09:28:19 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 09:28:19 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-14 09:28:19 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 09:28:19 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/orders status_code=403
+2026-07-14 09:33:22 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 09:33:22 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 09:33:22 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-14 09:33:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 09:37:01 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 09:37:01 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 09:37:01 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-14 09:37:01 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 09:37:47 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-14 09:37:48 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=317.3100
+2026-07-14 10:22:30 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 10:22:30 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 10:22:30 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-14 10:22:30 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 10:22:30 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-14 10:37:46 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 10:37:46 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 10:37:46 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-14 10:37:47 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-14 10:37:47 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=317.3100
+2026-07-14 10:37:47 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-14 10:37:47 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=1 price=317.31 value=317.31
+2026-07-14 10:37:47 | WARNING | app.trading212_client | broker_order_request environment=DEMO method=POST path=/equity/orders/market payload={'ticker': 'AAPL_US_EQ', 'quantity': 1.0, 'extendedHours': False}
+2026-07-14 10:37:47 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders/51900146642
+2026-07-14 10:37:48 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders/51900146642
+2026-07-14 10:37:49 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders/51900146642
+2026-07-14 10:37:51 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders/51900146642
+2026-07-14 10:37:52 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders/51900146642
+2026-07-14 10:37:52 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=The broker order did not reach a terminal state before polling timed out.
+2026-07-14 10:38:51 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 10:38:51 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 10:38:52 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-14 10:38:52 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 10:38:52 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-14 10:55:23 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 10:55:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 10:55:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-14 10:55:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 10:55:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-14 11:02:50 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 11:02:50 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-14 11:02:50 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-14 11:02:50 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 11:02:50 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-14 11:23:08 | INFO | __main__ | application_starting
+2026-07-14 11:23:08 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-14 11:23:08 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-14 11:23:08 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-14 11:23:08 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-14 11:23:08 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-14 11:23:08 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-14 11:23:08 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-14 11:23:08 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-14 11:23:08 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-14 11:23:08 | INFO | app.recovery_startup | startup_recovery_callback_completed
+2026-07-14 11:23:08 | INFO | __main__ | paper_startup_summary outcome=BLOCKED_BY_DISCOVERY startup_approved=False discovery_approved=False discovery_reason=PAPER startup blocked by unknown active broker orders. known_order_count=0 unknown_order_count=1
+2026-07-14 11:23:08 | ERROR | __main__ | paper_trading_refused reason=PAPER startup blocked by unknown active broker orders.
+2026-07-14 12:52:11 | INFO | app.ollama_news_transport | news_model_request provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-14 12:52:14 | INFO | app.ollama_news_transport | news_model_response_received provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-14 13:00:35 | INFO | app.ollama_news_transport | news_model_request provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-14 13:00:39 | INFO | app.ollama_news_transport | news_model_response_received provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-14 19:38:44 | INFO | app.ollama_news_transport | news_model_request provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-14 19:38:48 | INFO | app.ollama_news_transport | news_model_response_received provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-17 14:29:33 | INFO | __main__ | application_starting
+2026-07-17 14:29:33 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 14:29:33 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 14:29:33 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 14:29:33 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 14:29:33 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 14:29:33 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:29:33 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 14:29:33 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 14:29:33 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 14:29:33 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:29:33 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/orders status_code=429
+2026-07-17 14:29:33 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 568, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\.venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://demo.trading212.com/api/v0/equity/orders'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 534, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 443, in main
+    paper_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=start_trading
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 93, in start
+    self.recovery_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=(
+        ^^^^^^^^^^^^^^^
+            discover_reconcile_then_trade
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+        ^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\recovery_startup.py", line 81, in start
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 75, in discover_reconcile_then_trade
+    .discover()
+     ~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\startup_order_discovery.py", line 61, in discover
+    for order in self.broker.get_active_orders():
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 334, in get_active_orders
+    data = self._get(
+        "/equity/orders"
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 613, in _get
+    raise BrokerError(
+    ...<3 lines>...
+    ) from error
+app.broker.BrokerError: Trading 212 rate limit reached. Remaining requests: 0. Reset time: 1784294979.
+2026-07-17 14:30:41 | INFO | __main__ | application_starting
+2026-07-17 14:30:41 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 14:30:41 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 14:30:41 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 14:30:41 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 14:30:41 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 14:30:41 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:30:41 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 14:30:41 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 14:30:41 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 14:30:41 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:30:41 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/orders status_code=429
+2026-07-17 14:30:41 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 568, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\.venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://demo.trading212.com/api/v0/equity/orders'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 534, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 443, in main
+    paper_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=start_trading
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 93, in start
+    self.recovery_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=(
+        ^^^^^^^^^^^^^^^
+            discover_reconcile_then_trade
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+        ^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\recovery_startup.py", line 81, in start
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 75, in discover_reconcile_then_trade
+    .discover()
+     ~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\startup_order_discovery.py", line 61, in discover
+    for order in self.broker.get_active_orders():
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 334, in get_active_orders
+    data = self._get(
+        "/equity/orders"
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 613, in _get
+    raise BrokerError(
+    ...<3 lines>...
+    ) from error
+app.broker.BrokerError: Trading 212 rate limit reached. Remaining requests: 0. Reset time: 1784295047.
+2026-07-17 14:34:38 | INFO | __main__ | application_starting
+2026-07-17 14:34:38 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 14:34:38 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 14:34:38 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 14:34:38 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 14:34:39 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 14:34:39 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:34:39 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 14:34:39 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 14:34:39 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 14:34:39 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:34:39 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/orders status_code=429
+2026-07-17 14:34:39 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 568, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\.venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://demo.trading212.com/api/v0/equity/orders'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 534, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 443, in main
+    paper_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=start_trading
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 93, in start
+    self.recovery_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=(
+        ^^^^^^^^^^^^^^^
+            discover_reconcile_then_trade
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+        ^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\recovery_startup.py", line 81, in start
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 75, in discover_reconcile_then_trade
+    .discover()
+     ~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\startup_order_discovery.py", line 85, in discover
+    self._broker.get_active_orders()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 334, in get_active_orders
+    data = self._get(
+        "/equity/orders"
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 613, in _get
+    raise BrokerError(
+    ...<3 lines>...
+    ) from error
+app.broker.BrokerError: Trading 212 rate limit reached. Remaining requests: 0. Reset time: 1784295284.
+2026-07-17 14:36:29 | INFO | __main__ | application_starting
+2026-07-17 14:36:29 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 14:36:29 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 14:36:29 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 14:36:29 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 14:36:29 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 14:36:29 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:36:29 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 14:36:29 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 14:36:29 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 14:36:29 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 14:36:29 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 14:36:30 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:36:30 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/orders status_code=429
+2026-07-17 14:36:30 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 568, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\.venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://demo.trading212.com/api/v0/equity/orders'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 541, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 450, in main
+    paper_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=start_trading
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 93, in start
+    self.recovery_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=(
+        ^^^^^^^^^^^^^^^
+            discover_reconcile_then_trade
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+        ^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\recovery_startup.py", line 81, in start
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 83, in discover_reconcile_then_trade
+    .reconcile()
+     ~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_startup_reconciliation.py", line 68, in reconcile
+    self.broker.get_active_orders()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 334, in get_active_orders
+    data = self._get(
+        "/equity/orders"
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 613, in _get
+    raise BrokerError(
+    ...<3 lines>...
+    ) from error
+app.broker.BrokerError: Trading 212 rate limit reached. Remaining requests: 0. Reset time: 1784295395.
+2026-07-17 14:39:15 | INFO | __main__ | application_starting
+2026-07-17 14:39:15 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 14:39:15 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 14:39:15 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 14:39:15 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 14:39:15 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 14:39:15 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 14:39:15 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 14:39:15 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 14:39:15 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 14:39:15 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 14:39:15 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 14:39:16 | INFO | app.recovery_startup | startup_recovery_callback_completed
+2026-07-17 14:39:16 | INFO | __main__ | paper_startup_summary outcome=BLOCKED_BY_RECONCILIATION startup_approved=False discovery_approved=True discovery_reason=PAPER startup order discovery completed safely. known_order_count=0 unknown_order_count=0
+2026-07-17 14:39:16 | ERROR | __main__ | paper_trading_refused reason=PAPER startup reconciliation failed.
+2026-07-17 15:06:13 | INFO | __main__ | application_starting
+2026-07-17 15:06:13 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:06:13 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:06:13 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 15:06:13 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:06:13 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:06:13 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:06:13 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:06:13 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 484, in _parse_order_result
+    instrument = data["instrument"]
+                 ~~~~^^^^^^^^^^^^^^
+KeyError: 'instrument'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 567, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 464, in main
+    .import_unapplied_fills()
+     ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\historical_fill_importer.py", line 61, in import_unapplied_fills
+    self._broker.get_historical_orders()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 421, in get_historical_orders
+    self._parse_order_result(
+    ~~~~~~~~~~~~~~~~~~~~~~~~^
+        data=item,
+        ^^^^^^^^^^
+    ...<3 lines>...
+        ),
+        ^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 522, in _parse_order_result
+    raise BrokerError(
+        error_message
+    ) from error
+app.broker.BrokerError: Trading 212 returned an invalid historical order.
+2026-07-17 15:09:03 | INFO | __main__ | application_starting
+2026-07-17 15:09:03 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:09:03 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:09:03 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 15:09:03 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:09:04 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:09:04 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:09:04 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:09:04 | INFO | app.trading212_client | historical_order_response_keys keys=['fill', 'order'] item={'order': {'id': 51900146642, 'strategy': 'QUANTITY', 'type': 'MARKET', 'ticker': 'AAPL_US_EQ', 'quantity': 1.0, 'filledQuantity': 1.0, 'status': 'FILLED', 'currency': 'GBP', 'extendedHours': False, 'initiatedFrom': 'API', 'side': 'BUY', 'createdAt': '2026-07-14T09:37:48.000Z', 'instrument': {'ticker': 'AAPL_US_EQ', 'name': 'Apple', 'isin': 'US0378331005', 'currency': 'USD'}}, 'fill': {'id': 51900553863, 'quantity': 1.0, 'price': 313.9, 'type': 'TRADE', 'tradingMethod': 'OTC', 'filledAt': '2026-07-14T13:30:00.000Z', 'walletImpact': {'currency': 'GBP', 'netValue': 234.58, 'fxRate': 1.34013576, 'taxes': [{'name': 'CURRENCY_CONVERSION_FEE', 'quantity': -0.35, 'currency': 'GBP', 'chargedAt': '2026-07-14T13:30:14.886Z'}]}}}
+2026-07-17 15:09:04 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 492, in _parse_order_result
+    instrument = data["instrument"]
+                 ~~~~^^^^^^^^^^^^^^
+KeyError: 'instrument'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 567, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 464, in main
+    .import_unapplied_fills()
+     ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\historical_fill_importer.py", line 61, in import_unapplied_fills
+    self._broker.get_historical_orders()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 429, in get_historical_orders
+    self._parse_order_result(
+    ~~~~~~~~~~~~~~~~~~~~~~~~^
+        data=item,
+        ^^^^^^^^^^
+    ...<3 lines>...
+        ),
+        ^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 530, in _parse_order_result
+    raise BrokerError(
+        error_message
+    ) from error
+app.broker.BrokerError: Trading 212 returned an invalid historical order.
+2026-07-17 15:17:23 | INFO | __main__ | application_starting
+2026-07-17 15:17:23 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:17:23 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:17:23 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=5000.00 positions={}
+2026-07-17 15:17:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:17:23 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:17:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:17:23 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:17:24 | INFO | app.trading212_client | historical_order_response_keys keys=['fill', 'order'] item={'order': {'id': 51900146642, 'strategy': 'QUANTITY', 'type': 'MARKET', 'ticker': 'AAPL_US_EQ', 'quantity': 1.0, 'filledQuantity': 1.0, 'status': 'FILLED', 'currency': 'GBP', 'extendedHours': False, 'initiatedFrom': 'API', 'side': 'BUY', 'createdAt': '2026-07-14T09:37:48.000Z', 'instrument': {'ticker': 'AAPL_US_EQ', 'name': 'Apple', 'isin': 'US0378331005', 'currency': 'USD'}}, 'fill': {'id': 51900553863, 'quantity': 1.0, 'price': 313.9, 'type': 'TRADE', 'tradingMethod': 'OTC', 'filledAt': '2026-07-14T13:30:00.000Z', 'walletImpact': {'currency': 'GBP', 'netValue': 234.58, 'fxRate': 1.34013576, 'taxes': [{'name': 'CURRENCY_CONVERSION_FEE', 'quantity': -0.35, 'currency': 'GBP', 'chargedAt': '2026-07-14T13:30:14.886Z'}]}}}
+2026-07-17 15:17:24 | INFO | app.portfolio_store | portfolio_saved file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 15:17:24 | INFO | __main__ | historical_fill_import_completed imported_order_ids=(51900146642,) skipped_order_ids=()
+2026-07-17 15:17:24 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 15:17:24 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 15:17:24 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 15:17:24 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 15:17:24 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 15:17:24 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT
+2026-07-17 15:17:24 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 15:17:24 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:17:24 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/orders status_code=429
+2026-07-17 15:17:24 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 717, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\.venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://demo.trading212.com/api/v0/equity/orders'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 567, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 476, in main
+    paper_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=start_trading
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 93, in start
+    self.recovery_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=(
+        ^^^^^^^^^^^^^^^
+            discover_reconcile_then_trade
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+        ^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\recovery_startup.py", line 81, in start
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 89, in discover_reconcile_then_trade
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 395, in start_trading
+    trading_loop.run(
+    ~~~~~~~~~~~~~~~~^
+        cycles=(
+        ^^^^^^^^
+    ...<4 lines>...
+        ),
+        ^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading_loop.py", line 203, in run
+    self.active_order_manager.refresh()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\active_order_manager.py", line 74, in refresh
+    self.order_provider.get_active_orders()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 334, in get_active_orders
+    data = self._get(
+        "/equity/orders"
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 762, in _get
+    raise BrokerError(
+    ...<3 lines>...
+    ) from error
+app.broker.BrokerError: Trading 212 rate limit reached. Remaining requests: 0. Reset time: 1784297849.
+2026-07-17 15:22:36 | INFO | __main__ | application_starting
+2026-07-17 15:22:36 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:22:36 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:22:36 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 15:22:36 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:22:37 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:22:37 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:22:37 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:22:37 | INFO | app.trading212_client | historical_order_response_keys keys=['fill', 'order'] item={'order': {'id': 51900146642, 'strategy': 'QUANTITY', 'type': 'MARKET', 'ticker': 'AAPL_US_EQ', 'quantity': 1.0, 'filledQuantity': 1.0, 'status': 'FILLED', 'currency': 'GBP', 'extendedHours': False, 'initiatedFrom': 'API', 'side': 'BUY', 'createdAt': '2026-07-14T09:37:48.000Z', 'instrument': {'ticker': 'AAPL_US_EQ', 'name': 'Apple', 'isin': 'US0378331005', 'currency': 'USD'}}, 'fill': {'id': 51900553863, 'quantity': 1.0, 'price': 313.9, 'type': 'TRADE', 'tradingMethod': 'OTC', 'filledAt': '2026-07-14T13:30:00.000Z', 'walletImpact': {'currency': 'GBP', 'netValue': 234.58, 'fxRate': 1.34013576, 'taxes': [{'name': 'CURRENCY_CONVERSION_FEE', 'quantity': -0.35, 'currency': 'GBP', 'chargedAt': '2026-07-14T13:30:14.886Z'}]}}}
+2026-07-17 15:22:37 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 15:22:37 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 15:22:37 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 15:22:37 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 15:22:37 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 15:22:37 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/account/summary status_code=429
+2026-07-17 15:22:37 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 717, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\.venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://demo.trading212.com/api/v0/equity/account/summary'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 570, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 479, in main
+    paper_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=start_trading
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 93, in start
+    self.recovery_startup_service.start(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        start_trading=(
+        ^^^^^^^^^^^^^^^
+            discover_reconcile_then_trade
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+        ^
+    )
+    ^
+  File "C:\Users\Jack\Documents\trading-bot\app\recovery_startup.py", line 81, in start
+    start_trading()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_application_startup.py", line 83, in discover_reconcile_then_trade
+    .reconcile()
+     ~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\paper_startup_reconciliation.py", line 61, in reconcile
+    self.broker.get_account_summary()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 81, in get_account_summary
+    data = self._get(
+        "/equity/account/summary"
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\trading212_client.py", line 762, in _get
+    raise BrokerError(
+    ...<3 lines>...
+    ) from error
+app.broker.BrokerError: Trading 212 rate limit reached. Remaining requests: 0. Reset time: 1784298158.
+2026-07-17 15:34:59 | INFO | __main__ | application_starting
+2026-07-17 15:34:59 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:34:59 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:34:59 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 15:34:59 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:35:00 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:35:00 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:35:00 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:35:00 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 15:35:00 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 15:35:00 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 15:35:00 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 15:35:00 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 15:35:00 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 15:35:00 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT
+2026-07-17 15:35:00 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 15:35:00 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:35:00 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=333.2400
+2026-07-17 15:35:00 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:35:01 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=393.2200
+2026-07-17 15:35:01 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 333.24, 'MSFT': 393.22}
+2026-07-17 15:35:01 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-17 15:35:01 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-17 15:35:50 | INFO | __main__ | application_shutdown_requested
+2026-07-17 15:35:55 | INFO | __main__ | application_starting
+2026-07-17 15:35:55 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:35:55 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:35:55 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 15:35:55 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:35:55 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:35:55 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:35:55 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:35:55 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 15:35:55 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 15:35:55 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 15:35:55 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 15:35:55 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 15:35:55 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 15:35:55 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT
+2026-07-17 15:35:55 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 15:35:55 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:35:56 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=333.5500
+2026-07-17 15:35:56 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:35:56 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=392.8600
+2026-07-17 15:35:56 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 333.55, 'MSFT': 392.86}
+2026-07-17 15:35:56 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-17 15:35:56 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-17 15:36:18 | INFO | __main__ | application_shutdown_requested
+2026-07-17 15:36:45 | INFO | __main__ | application_starting
+2026-07-17 15:36:45 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:36:45 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:36:45 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 15:36:45 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:36:46 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:36:46 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:36:46 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:36:46 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 15:36:46 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 15:36:46 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 15:36:46 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 15:36:46 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 15:36:46 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 15:36:46 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT
+2026-07-17 15:36:46 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 15:36:46 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:36:46 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=333.9350
+2026-07-17 15:36:46 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:36:47 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=392.9400
+2026-07-17 15:36:47 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 333.935, 'MSFT': 392.94}
+2026-07-17 15:36:47 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-17 15:36:47 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-17 15:37:11 | INFO | __main__ | application_shutdown_requested
+2026-07-17 15:47:18 | INFO | __main__ | application_starting
+2026-07-17 15:47:18 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:47:18 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 605, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 78, in main
+    if news_runtime_pipeline is not None:
+       ^^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'news_runtime_pipeline' where it is not associated with a value
+2026-07-17 15:49:44 | INFO | __main__ | application_starting
+2026-07-17 15:49:44 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:49:44 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:49:44 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 15:49:44 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:49:45 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:49:45 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:49:45 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:49:45 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 15:49:45 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 15:49:45 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 15:49:45 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 15:49:45 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 15:49:45 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 15:49:45 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT
+2026-07-17 15:49:45 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 15:49:46 | WARNING | app.news_refresh_coordinator | news_refresh_failed symbol=AAPL error=No news article was found for AAPL.
+2026-07-17 15:49:46 | WARNING | app.news_refresh_coordinator | news_refresh_failed symbol=MSFT error=No news article was found for MSFT.
+2026-07-17 15:49:46 | INFO | __main__ | news_refresh_cycle_completed cycle=1 refreshed_symbols=() skipped_symbols=() failed_symbols=('AAPL', 'MSFT')
+2026-07-17 15:49:46 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:49:46 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=332.8200
+2026-07-17 15:49:46 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:49:46 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=391.9900
+2026-07-17 15:49:46 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 332.82, 'MSFT': 391.99}
+2026-07-17 15:49:46 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-17 15:49:46 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-17 15:50:22 | INFO | __main__ | application_shutdown_requested
+2026-07-17 15:52:05 | INFO | __main__ | application_starting
+2026-07-17 15:52:05 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT starting_cash=5000.00
+2026-07-17 15:52:05 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 15:52:05 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 15:52:05 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 15:52:06 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=2
+2026-07-17 15:52:06 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:52:06 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 15:52:06 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 15:52:06 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 15:52:06 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 15:52:06 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 15:52:06 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 15:52:06 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 15:52:06 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT
+2026-07-17 15:52:06 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 15:52:06 | INFO | app.ollama_news_transport | news_model_request provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-17 15:52:11 | INFO | app.ollama_news_transport | news_model_response_received provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-17 15:52:11 | INFO | app.ollama_news_transport | news_model_request provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-17 15:52:14 | INFO | app.ollama_news_transport | news_model_response_received provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-17 15:52:14 | INFO | __main__ | news_refresh_cycle_completed cycle=1 refreshed_symbols=('AAPL', 'MSFT') skipped_symbols=() failed_symbols=()
+2026-07-17 15:52:14 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:52:15 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=332.4100
+2026-07-17 15:52:15 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:52:15 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=391.3700
+2026-07-17 15:52:15 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 332.41, 'MSFT': 391.37}
+2026-07-17 15:52:15 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-17 15:52:15 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-17 15:53:15 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-17 15:53:15 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:53:15 | INFO | app.trading_loop | active_orders_refreshed cycle=2 active_order_count=0
+2026-07-17 15:53:15 | INFO | __main__ | news_refresh_cycle_completed cycle=2 refreshed_symbols=() skipped_symbols=('AAPL', 'MSFT') failed_symbols=()
+2026-07-17 15:53:15 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:53:15 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=332.4100
+2026-07-17 15:53:15 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:53:16 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=391.3700
+2026-07-17 15:53:16 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 332.41, 'MSFT': 391.37}
+2026-07-17 15:53:16 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=0
+2026-07-17 15:53:16 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-17 15:54:16 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-17 15:54:16 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:54:16 | INFO | app.trading_loop | active_orders_refreshed cycle=3 active_order_count=0
+2026-07-17 15:54:16 | INFO | __main__ | news_refresh_cycle_completed cycle=3 refreshed_symbols=() skipped_symbols=('AAPL', 'MSFT') failed_symbols=()
+2026-07-17 15:54:16 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:54:16 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=332.0800
+2026-07-17 15:54:16 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:54:16 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=390.8600
+2026-07-17 15:54:16 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 332.08, 'MSFT': 390.86}
+2026-07-17 15:54:16 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=0
+2026-07-17 15:54:16 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-17 15:55:16 | INFO | app.trading_loop | trading_cycle_started cycle=4
+2026-07-17 15:55:16 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 15:55:16 | INFO | app.trading_loop | active_orders_refreshed cycle=4 active_order_count=0
+2026-07-17 15:55:16 | INFO | __main__ | news_refresh_cycle_completed cycle=4 refreshed_symbols=() skipped_symbols=('AAPL', 'MSFT') failed_symbols=()
+2026-07-17 15:55:16 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 15:55:17 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=332.8500
+2026-07-17 15:55:17 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 15:55:17 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=390.7800
+2026-07-17 15:55:17 | INFO | app.trading_loop | prices_received cycle=4 prices={'AAPL': 332.85, 'MSFT': 390.78}
+2026-07-17 15:55:17 | INFO | app.trading_loop | strategy_completed cycle=4 order_count=0
+2026-07-17 15:55:17 | INFO | app.trading_loop | trading_cycle_completed cycle=4
+2026-07-17 15:55:41 | INFO | __main__ | application_shutdown_requested
+2026-07-17 16:07:03 | INFO | __main__ | application_starting
+2026-07-17 16:07:03 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=TWELVE_DATA symbols=AAPL,MSFT,AMZN starting_cash=5000.00
+2026-07-17 16:07:03 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=TWELVE_DATA real_money_trading=false
+2026-07-17 16:07:03 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 16:07:03 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 16:07:03 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=3
+2026-07-17 16:07:03 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 16:07:04 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 16:07:04 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 16:07:04 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 16:07:04 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 16:07:04 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 16:07:04 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 16:07:04 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 16:07:04 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT,AMZN
+2026-07-17 16:07:04 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 16:07:04 | INFO | app.ollama_news_transport | news_model_request provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-17 16:07:09 | INFO | app.ollama_news_transport | news_model_response_received provider=OLLAMA model=hf.co/VaibTFU/qwen-0.5b-stocks-news-v2-GGUF:Q4_K_M
+2026-07-17 16:07:09 | INFO | __main__ | news_refresh_cycle_completed cycle=1 refreshed_symbols=('AMZN',) skipped_symbols=('AAPL', 'MSFT') failed_symbols=()
+2026-07-17 16:07:09 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 16:07:09 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=333.3300
+2026-07-17 16:07:09 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 16:07:10 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=392.1450
+2026-07-17 16:07:10 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AMZN
+2026-07-17 16:07:10 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AMZN price=248.9000
+2026-07-17 16:07:10 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 333.33, 'MSFT': 392.145, 'AMZN': 248.9}
+2026-07-17 16:07:10 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-17 16:07:10 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-17 16:08:10 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-17 16:08:10 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 16:08:10 | INFO | app.trading_loop | active_orders_refreshed cycle=2 active_order_count=0
+2026-07-17 16:08:10 | INFO | __main__ | news_refresh_cycle_completed cycle=2 refreshed_symbols=() skipped_symbols=('AAPL', 'MSFT', 'AMZN') failed_symbols=()
+2026-07-17 16:08:10 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 16:08:11 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=333.3300
+2026-07-17 16:08:11 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 16:08:11 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=392.1450
+2026-07-17 16:08:11 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AMZN
+2026-07-17 16:08:12 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AMZN price=248.9000
+2026-07-17 16:08:12 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 333.33, 'MSFT': 392.145, 'AMZN': 248.9}
+2026-07-17 16:08:12 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=0
+2026-07-17 16:08:12 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-17 16:09:12 | INFO | app.trading_loop | trading_cycle_started cycle=3
+2026-07-17 16:09:12 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 16:09:12 | INFO | app.trading_loop | active_orders_refreshed cycle=3 active_order_count=0
+2026-07-17 16:09:12 | INFO | __main__ | news_refresh_cycle_completed cycle=3 refreshed_symbols=() skipped_symbols=('AAPL', 'MSFT', 'AMZN') failed_symbols=()
+2026-07-17 16:09:12 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AAPL
+2026-07-17 16:09:12 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AAPL price=333.2000
+2026-07-17 16:09:12 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=MSFT
+2026-07-17 16:09:14 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=MSFT price=391.8800
+2026-07-17 16:09:14 | INFO | app.twelve_data_market_data | market_data_request provider=TWELVE_DATA symbol=AMZN
+2026-07-17 16:09:14 | INFO | app.twelve_data_market_data | market_data_received provider=TWELVE_DATA symbol=AMZN price=248.9000
+2026-07-17 16:09:14 | INFO | app.trading_loop | prices_received cycle=3 prices={'AAPL': 333.2, 'MSFT': 391.88, 'AMZN': 248.9}
+2026-07-17 16:09:14 | INFO | app.trading_loop | strategy_completed cycle=3 order_count=0
+2026-07-17 16:09:14 | INFO | app.trading_loop | trading_cycle_completed cycle=3
+2026-07-17 16:10:08 | INFO | __main__ | application_shutdown_requested
+2026-07-17 16:12:17 | INFO | __main__ | application_starting
+2026-07-17 16:12:17 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT,AMZN starting_cash=5000.00
+2026-07-17 16:12:17 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-17 16:12:17 | ERROR | __main__ | application_stopped_due_to_unhandled_error
+Traceback (most recent call last):
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 607, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Jack\Documents\trading-bot\main.py", line 128, in main
+    market_data = create_market_data_provider(
+        provider_name=(
+    ...<2 lines>...
+        symbols=config.symbols,
+    )
+  File "C:\Users\Jack\Documents\trading-bot\app\market_data_factory.py", line 31, in create_market_data_provider
+    raise ValueError(
+    ...<2 lines>...
+    )
+ValueError: No simulated starting price exists for: AMZN
+2026-07-17 16:13:26 | INFO | __main__ | application_starting
+2026-07-17 16:13:26 | INFO | app.config | configuration_loaded file=config.json mode=PAPER market_data_provider=SIMULATED symbols=AAPL,MSFT,AMZN starting_cash=5000.00
+2026-07-17 16:13:26 | INFO | __main__ | safe_mode_confirmed mode=PAPER market_data_provider=SIMULATED real_money_trading=false
+2026-07-17 16:13:26 | INFO | app.portfolio_store | portfolio_loaded file=data\portfolio.json cash=4765.42 positions={'AAPL': 1}
+2026-07-17 16:13:26 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/metadata/instruments
+2026-07-17 16:13:26 | INFO | __main__ | broker_symbol_mapping_resolved symbol_count=3
+2026-07-17 16:13:26 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 16:13:26 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/history/orders?limit=50
+2026-07-17 16:13:27 | INFO | __main__ | historical_fill_import_completed imported_order_ids=() skipped_order_ids=(51900146642,)
+2026-07-17 16:13:27 | INFO | app.recovery_startup | startup_recovery_started
+2026-07-17 16:13:27 | INFO | app.recovery_startup | startup_recovery_report total_items=0 completed_items=0 incomplete_items=0 startup_blocked=False
+2026-07-17 16:13:27 | INFO | app.recovery_startup | startup_recovery_approved reason=Startup recovery completed safely.
+2026-07-17 16:13:27 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 16:13:27 | ERROR | app.trading212_client | broker_http_error environment=DEMO path=/equity/account/summary status_code=429
+2026-07-17 16:13:27 | WARNING | app.trading212_client | broker_rate_limit_retry path=/equity/account/summary attempt=1 delay_seconds=1.58
+2026-07-17 16:13:29 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/account/summary
+2026-07-17 16:13:29 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/positions
+2026-07-17 16:13:29 | INFO | app.trading_loop | trading_loop_started cycles=continuous interval_seconds=60.0 symbols=AAPL,MSFT,AMZN
+2026-07-17 16:13:29 | INFO | app.trading_loop | trading_cycle_started cycle=1
+2026-07-17 16:13:29 | INFO | __main__ | news_refresh_cycle_completed cycle=1 refreshed_symbols=() skipped_symbols=('AAPL', 'MSFT', 'AMZN') failed_symbols=()
+2026-07-17 16:13:29 | INFO | app.trading_loop | prices_received cycle=1 prices={'AAPL': 150.0, 'MSFT': 320.0, 'AMZN': 250.0}
+2026-07-17 16:13:29 | INFO | app.trading_loop | strategy_completed cycle=1 order_count=0
+2026-07-17 16:13:29 | INFO | app.trading_loop | trading_cycle_completed cycle=1
+2026-07-17 16:14:29 | INFO | app.trading_loop | trading_cycle_started cycle=2
+2026-07-17 16:14:29 | INFO | app.trading212_client | broker_request environment=DEMO method=GET path=/equity/orders
+2026-07-17 16:14:29 | INFO | app.trading_loop | active_orders_refreshed cycle=2 active_order_count=0
+2026-07-17 16:14:29 | INFO | __main__ | news_refresh_cycle_completed cycle=2 refreshed_symbols=() skipped_symbols=('AAPL', 'MSFT', 'AMZN') failed_symbols=()
+2026-07-17 16:14:29 | INFO | app.trading_loop | prices_received cycle=2 prices={'AAPL': 146.0, 'MSFT': 318.0, 'AMZN': 250.0}
+2026-07-17 16:14:29 | INFO | app.trading_loop | strategy_completed cycle=2 order_count=1
+2026-07-17 16:14:29 | INFO | app.trading_loop | news_policy_shadow_rejection symbol=AAPL side=BUY quantity=3 sentiment=NEGATIVE impact_scope=STOCK
+2026-07-17 16:14:29 | INFO | app.paper_execution_adapter | paper_order_received symbol=AAPL side=BUY quantity=3 price=146.00 value=438.00
+2026-07-17 16:14:29 | WARNING | app.paper_execution_adapter | paper_order_not_completed symbol=AAPL side=BUY reason=Order-execution permission has not been confirmed.
+2026-07-17 16:14:29 | INFO | app.trading_loop | trading_cycle_completed cycle=2
+2026-07-17 16:15:21 | INFO | __main__ | application_shutdown_requested

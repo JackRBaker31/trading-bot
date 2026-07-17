@@ -47,7 +47,21 @@ from app.symbol_mapping_service import (
 from app.active_order_manager import (
     ActiveOrderManager,
 )
-
+from app.news_policy_runtime_factory import (
+    create_news_policy_runtime,
+)
+from app.news_runtime_factory import (
+    create_news_runtime_pipeline,
+)
+from app.historical_fill_importer import (
+    HistoricalFillImporter,
+)
+from app.news_refresh_coordinator import (
+    NewsRefreshCoordinator,
+)
+from app.position_state_store import (
+    PositionStateStore,
+)
 logger = logging.getLogger(__name__)
 
 
@@ -58,6 +72,34 @@ def main() -> None:
     logger.info("application_starting")
 
     config = load_config()
+    
+    news_policy_runtime = (
+    create_news_policy_runtime()
+)
+
+    news_runtime_pipeline = None
+
+    if news_policy_runtime.config.enabled:
+        news_runtime_pipeline = (
+            create_news_runtime_pipeline(
+                source_name="alpha_vantage",
+            )
+        )
+
+    news_refresh_coordinator = None
+
+    if news_runtime_pipeline is not None:
+        news_refresh_coordinator = (
+            NewsRefreshCoordinator(
+                provider=(
+                    news_runtime_pipeline.provider
+                ),
+                refresh_service=(
+                    news_runtime_pipeline
+                    .refresh_service
+                ),
+            )
+        )
 
     print("Trading system starting...")
     print(f"Current time: {datetime.now()}")
@@ -67,6 +109,16 @@ def main() -> None:
         f"{config.market_data_provider}"
     )
     print("Real-money trading: DISABLED")
+    print(
+        "News policy: "
+        f"{news_policy_runtime.config.mode}"
+    )
+
+    if news_runtime_pipeline is None:
+        print("News runtime: disabled")
+    else:
+        print("News runtime: enabled")
+
 
     logger.info(
         "safe_mode_confirmed mode=%s "
@@ -87,6 +139,16 @@ def main() -> None:
 
     portfolio = portfolio_store.load_or_create(
         starting_cash=config.starting_cash
+    )
+
+    position_state_store = PositionStateStore(
+        file_path=Path(
+            "data/position_states.json"
+        )
+    )
+
+    position_states = (
+        position_state_store.load()
     )
 
     risk_limits = RiskLimits(
@@ -127,9 +189,29 @@ def main() -> None:
         ),
     )
 
-    def simulate_price_changes(
+    def prepare_cycle(
         cycle_number: int,
     ) -> None:
+        if news_refresh_coordinator is not None:
+            refresh_result = (
+                news_refresh_coordinator
+                .refresh_missing_or_expired(
+                    symbols=config.symbols,
+                )
+            )
+
+            logger.info(
+                "news_refresh_cycle_completed "
+                "cycle=%s refreshed_symbols=%s "
+                "skipped_symbols=%s "
+                "failed_symbols=%s",
+                cycle_number,
+                refresh_result.refreshed_symbols,
+                refresh_result.skipped_symbols,
+                refresh_result.failed_symbols,
+            )
+                
+        
         if (
             config.market_data_provider
             != "SIMULATED"
@@ -262,17 +344,28 @@ def main() -> None:
                 configured_symbols=config.symbols,
             )
         )
-
+        
         logger.info(
             "broker_symbol_mapping_resolved "
             "symbol_count=%s",
             len(symbol_mapping),
         )
 
+        startup_active_orders = (
+            broker.get_active_orders()
+        )
+
         active_order_manager = ActiveOrderManager(
             symbol_mapping=symbol_mapping,
-            active_orders=broker.get_active_orders(),
+            active_orders=startup_active_orders,
             order_provider=broker,
+        )
+        
+        historical_fill_importer = HistoricalFillImporter(
+            broker=broker,
+            portfolio=portfolio,
+            portfolio_store=portfolio_store,
+            symbol_mapping=symbol_mapping,
         )
 
         order_journal = OrderJournal(
@@ -333,6 +426,24 @@ def main() -> None:
             if config.mode == "PAPER"
             else None
         ),
+        refresh_active_orders_on_first_cycle=(
+            config.mode != "PAPER"
+        ),
+        news_analysis_provider=(
+            news_runtime_pipeline.provider
+            if news_runtime_pipeline
+            is not None
+            else None
+        ),
+        news_policy_observation_log=(
+            news_policy_runtime.observation_log
+        ),
+        news_policy_shadow_mode=(
+            news_policy_runtime
+            .config
+            .shadow_mode
+        ),
+        position_states=position_states,
     )
 
     def start_trading() -> None:
@@ -341,10 +452,9 @@ def main() -> None:
                 config.trading_loop.cycles
             ),
             before_cycle=(
-                simulate_price_changes
+                prepare_cycle
             ),
         )
-
     if config.mode == "PAPER":
         if order_journal is None:
             raise RuntimeError(
@@ -373,6 +483,9 @@ def main() -> None:
                 broker=broker,
                 reconciler=reconciler,
                 portfolio=portfolio,
+                initial_active_orders=(
+                    startup_active_orders
+                ),
             )
         )
 
@@ -380,6 +493,9 @@ def main() -> None:
             StartupOrderDiscoveryService(
                 broker=broker,
                 journal=order_journal,
+                initial_active_orders=(
+                    startup_active_orders
+                ),
             )
         )
 
@@ -395,6 +511,19 @@ def main() -> None:
                     reconciliation_service
                 ),
             )
+        )
+
+        historical_fill_result = (
+            historical_fill_importer
+            .import_unapplied_fills()
+        )
+
+        logger.info(
+            "historical_fill_import_completed "
+            "imported_order_ids=%s "
+            "skipped_order_ids=%s",
+            historical_fill_result.imported_order_ids,
+            historical_fill_result.skipped_order_ids,
         )
 
         startup_result = (
@@ -465,6 +594,9 @@ def main() -> None:
         portfolio
     )
 
+    position_state_store.save(
+        trading_loop.position_states
+    )
     print("\nPortfolio saved.")
 
     final_prices = market_data.get_prices(

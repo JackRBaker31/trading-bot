@@ -1,10 +1,11 @@
 {
   "mode": "PAPER",
-  "market_data_provider": "TWELVE_DATA",
+  "market_data_provider": "SIMULATED",
   "starting_cash": 5000.0,
   "symbols": [
     "AAPL",
-    "MSFT"
+    "MSFT",
+    "AMZN"
   ],
   "risk": {
     "max_order_value": 2000.0,

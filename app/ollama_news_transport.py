@@ -111,6 +111,7 @@ class OllamaNewsTransport:
                     "format": NEWS_ANALYSIS_SCHEMA,
                     "options": {
                         "temperature": 0,
+                        "seed": 42,
                     },
                 },
                 timeout=self.timeout_seconds,

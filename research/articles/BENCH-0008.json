@@ -1,13 +1,13 @@
 {
   "benchmark_id": "BENCH-0008",
-  "headline": "",
-  "source": "",
-  "category": "misc",
-  "sector": "",
-  "company": "",
-  "ticker": "",
+  "headline": "AMD expands Ryzen AI processor portfolio",
+  "source": "AMD CES announcement",
+  "category": "products",
+  "sector": "Technology",
+  "company": "Advanced Micro Devices",
+  "ticker": "AMD",
   "difficulty": "medium",
-  "published_at": "",
-  "article_text": "",
-  "status": "draft"
+  "published_at": "2025-01-06",
+  "article_text": "AMD announced an expanded Ryzen AI processor portfolio at CES 2025. The lineup included Ryzen AI Max processors with up to 16 CPU cores, integrated Radeon graphics and an AI processing unit designed for local AI workloads.",
+  "status": "ready"
 }

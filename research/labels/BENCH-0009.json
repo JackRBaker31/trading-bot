@@ -2,7 +2,14 @@
   "benchmark_id": "BENCH-0009",
   "impact_term": "SHORTTERM",
   "impact_scope": "STOCK",
-  "scope_items": [],
-  "highlights": [],
-  "sentiment": "NEUTRAL"
+  "scope_items": [
+    "TIO"
+  ],
+  "highlights": [
+    "The SEC announced a settled enforcement action linked to the Tingo Group fraud case",
+    "The action included permanent injunctions",
+    "Civil penalties totalled $200,000",
+    "The action included a six-year suspension from practising before the SEC"
+  ],
+  "sentiment": "NEGATIVE"
 }
