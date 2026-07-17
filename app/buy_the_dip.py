@@ -3,6 +3,7 @@ from app.portfolio import Portfolio
 from app.position_sizing import PercentagePositionSizer
 from app.strategy import Strategy
 from app.technical_indicators import simple_moving_average
+from app.entry_filter import EntryFilter
 
 class BuyTheDipStrategy(Strategy):
     def __init__(
@@ -11,6 +12,7 @@ class BuyTheDipStrategy(Strategy):
         target_allocation_percent: float = 10.0,
         cooldown_cycles: int = 2,
         sma_period: int | None = None,
+        entry_filters: list[EntryFilter] | None = None,
     ) -> None:
         if drop_threshold_percent <= 0:
             raise ValueError(
@@ -34,6 +36,11 @@ class BuyTheDipStrategy(Strategy):
 
         self.cooldown_cycles = cooldown_cycles
         self.sma_period = sma_period
+        self.entry_filters = (
+            list(entry_filters)
+            if entry_filters is not None
+            else []
+        )
 
         self.previous_prices: dict[str, float] = {}
         self.cooldowns: dict[str, int] = {}
@@ -91,13 +98,27 @@ class BuyTheDipStrategy(Strategy):
                         values=symbol_price_history,
                         period=self.sma_period,
                     )
-                    sma_allows_buy = price >= moving_average
+                    sma_allows_buy = (
+                        price >= moving_average
+                    )
+
+            entry_filters_allow_buy = all(
+                entry_filter.allows_entry(
+                    symbol=symbol,
+                    current_price=price,
+                    price_history=list(
+                        symbol_price_history
+                    ),
+                )
+                for entry_filter in self.entry_filters
+            )
 
             if (
                 percentage_change
                 <= -self.drop_threshold_percent
                 and not symbol_is_on_cooldown
                 and sma_allows_buy
+                and entry_filters_allow_buy
             ):
                 sizing_result = (
                     self.position_sizer.calculate(

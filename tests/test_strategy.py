@@ -3,7 +3,7 @@ import pytest
 from app.buy_the_dip import BuyTheDipStrategy
 from app.orders import OrderSide
 from app.portfolio import Portfolio
-
+from app.rsi_entry_filter import RsiEntryFilter
 
 def create_portfolio() -> Portfolio:
     return Portfolio(
@@ -290,3 +290,102 @@ def test_sma_filter_uses_prices_before_current_dip() -> None:
     assert len(orders) == 1
     assert orders[0].symbol == "AAPL"
     assert orders[0].side == OrderSide.BUY
+
+class RejectAllEntryFilter:
+    def allows_entry(
+        self,
+        *,
+        symbol: str,
+        current_price: float,
+        price_history: list[float],
+    ) -> bool:
+        return False
+
+
+def test_entry_filter_can_block_buy_order() -> None:
+    strategy = BuyTheDipStrategy(
+        drop_threshold_percent=2.0,
+        entry_filters=[
+            RejectAllEntryFilter(),
+        ],
+    )
+    portfolio = create_portfolio()
+
+    strategy.generate_orders(
+        prices={"AAPL": 100.00},
+        portfolio=portfolio,
+    )
+
+    orders = strategy.generate_orders(
+        prices={"AAPL": 90.00},
+        portfolio=portfolio,
+    )
+
+    assert orders == []
+
+def test_rsi_entry_filter_allows_oversold_dip() -> None:
+    strategy = BuyTheDipStrategy(
+        drop_threshold_percent=2.0,
+        entry_filters=[
+            RsiEntryFilter(
+                period=3,
+                buy_threshold=30.0,
+            ),
+        ],
+    )
+    portfolio = create_portfolio()
+
+    strategy.generate_orders(
+        prices={"AAPL": 100.0},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 100.0},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 100.0},
+        portfolio=portfolio,
+    )
+
+    orders = strategy.generate_orders(
+        prices={"AAPL": 90.0},
+        portfolio=portfolio,
+    )
+
+    assert len(orders) == 1
+    assert orders[0].symbol == "AAPL"
+    assert orders[0].side == OrderSide.BUY
+
+
+def test_rsi_entry_filter_blocks_non_oversold_dip() -> None:
+    strategy = BuyTheDipStrategy(
+        drop_threshold_percent=2.0,
+        entry_filters=[
+            RsiEntryFilter(
+                period=3,
+                buy_threshold=30.0,
+            ),
+        ],
+    )
+    portfolio = create_portfolio()
+
+    strategy.generate_orders(
+        prices={"AAPL": 100.0},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 99.0},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 101.0},
+        portfolio=portfolio,
+    )
+
+    orders = strategy.generate_orders(
+        prices={"AAPL": 98.0},
+        portfolio=portfolio,
+    )
+
+    assert orders == []
