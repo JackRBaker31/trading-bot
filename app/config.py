@@ -19,6 +19,9 @@ class StrategyConfig:
     drop_threshold_percent: float
     target_allocation_percent: float
     cooldown_cycles: int
+    sma_period: int | None = None
+    rsi_period: int | None = None
+    rsi_buy_threshold: float | None = None
 
 
 @dataclass(frozen=True)
@@ -143,6 +146,25 @@ def load_config(
         ),
         cooldown_cycles=int(
             strategy_data["cooldown_cycles"]
+        ),
+        sma_period=(
+            None
+            if strategy_data.get("sma_period") is None
+            else int(strategy_data["sma_period"])
+        ),
+        rsi_period=(
+            None
+            if strategy_data.get("rsi_period") is None
+            else int(strategy_data["rsi_period"])
+        ),
+        rsi_buy_threshold=(
+            None
+            if strategy_data.get(
+                "rsi_buy_threshold"
+            ) is None
+            else float(
+                strategy_data["rsi_buy_threshold"]
+            )
         ),
     )
 

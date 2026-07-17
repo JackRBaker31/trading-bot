@@ -104,10 +104,17 @@ def test_load_config(
     )
 
     assert (
-    config.paper_trading
-    .order_execution_permission_confirmed
-    is False
-)
+        config.paper_trading
+        .order_execution_permission_confirmed
+        is False
+    )
+
+    assert config.strategy.sma_period is None
+    assert config.strategy.rsi_period is None
+    assert (
+        config.strategy.rsi_buy_threshold
+        is None
+    )
 
 
 def test_symbols_are_cleaned(
@@ -279,3 +286,36 @@ def test_config_rejects_non_positive_cycles(
         load_config(
             str(file_path)
         )
+
+def test_loads_optional_indicator_strategy_config(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "config.json"
+
+    data = valid_config()
+    strategy_data = data["strategy"]
+
+    assert isinstance(
+        strategy_data,
+        dict,
+    )
+
+    strategy_data["sma_period"] = 20
+    strategy_data["rsi_period"] = 14
+    strategy_data["rsi_buy_threshold"] = 30.0
+
+    write_config(
+        file_path,
+        data,
+    )
+
+    config = load_config(
+        str(file_path)
+    )
+
+    assert config.strategy.sma_period == 20
+    assert config.strategy.rsi_period == 14
+    assert (
+        config.strategy.rsi_buy_threshold
+        == 30.0
+    )

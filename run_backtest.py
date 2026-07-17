@@ -8,9 +8,12 @@ from app.logging_config import setup_logging
 from app.portfolio import Portfolio
 from app.risk import RiskEngine, RiskLimits
 from app.trade_log import TradeLog
+from app.config import load_config
+from app.rsi_entry_filter import RsiEntryFilter
 
 
 def main() -> None:
+    config = load_config()
     setup_logging(
         log_file="data/backtest_application.log"
     )
@@ -51,10 +54,39 @@ def main() -> None:
         trade_log=trade_log,
     )
 
+    entry_filters = []
+
+    if (
+        config.strategy.rsi_period is not None
+        and config.strategy.rsi_buy_threshold
+        is not None
+    ):
+        entry_filters.append(
+            RsiEntryFilter(
+                period=config.strategy.rsi_period,
+                buy_threshold=(
+                    config.strategy
+                    .rsi_buy_threshold
+                ),
+            )
+        )
+
     strategy = BuyTheDipStrategy(
-        drop_threshold_percent=2.0,
-        target_allocation_percent=10.0,
-        cooldown_cycles=2,
+        drop_threshold_percent=(
+            config.strategy
+            .drop_threshold_percent
+        ),
+        target_allocation_percent=(
+            config.strategy
+            .target_allocation_percent
+        ),
+        cooldown_cycles=(
+            config.strategy.cooldown_cycles
+        ),
+        sma_period=(
+            config.strategy.sma_period
+        ),
+        entry_filters=entry_filters,
     )
 
     backtest_engine = BacktestEngine(

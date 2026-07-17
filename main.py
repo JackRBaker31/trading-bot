@@ -62,6 +62,7 @@ from app.news_refresh_coordinator import (
 from app.position_state_store import (
     PositionStateStore,
 )
+from app.rsi_entry_filter import RsiEntryFilter
 logger = logging.getLogger(__name__)
 
 
@@ -175,6 +176,23 @@ def main() -> None:
 
     trade_log = TradeLog()
 
+    entry_filters = []
+
+    if (
+        config.strategy.rsi_period is not None
+        and config.strategy.rsi_buy_threshold
+        is not None
+    ):
+        entry_filters.append(
+            RsiEntryFilter(
+                period=config.strategy.rsi_period,
+                buy_threshold=(
+                    config.strategy
+                    .rsi_buy_threshold
+                ),
+            )
+        )
+
     strategy = BuyTheDipStrategy(
         drop_threshold_percent=(
             config.strategy
@@ -187,6 +205,10 @@ def main() -> None:
         cooldown_cycles=(
             config.strategy.cooldown_cycles
         ),
+        sma_period=(
+            config.strategy.sma_period
+        ),
+        entry_filters=entry_filters,
     )
 
     def prepare_cycle(
