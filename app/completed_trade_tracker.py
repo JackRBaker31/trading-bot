@@ -48,6 +48,61 @@ class CompletedTradeTracker:
             for trade in self.completed_trades
             if trade.realised_profit < 0
         )
+    
+    @property
+    def win_rate_percent(
+        self,
+    ) -> float:
+        completed_trade_count = (
+            self.winning_trade_count
+            + self.losing_trade_count
+        )
+
+        if completed_trade_count == 0:
+            return 0.0
+
+        return (
+            self.winning_trade_count
+            / completed_trade_count
+            * 100.0
+        )
+
+    @property
+    def gross_profit(
+        self,
+    ) -> float:
+        return sum(
+            trade.realised_profit
+            for trade in self.completed_trades
+            if trade.realised_profit > 0
+        )
+
+    @property
+    def gross_loss(
+        self,
+    ) -> float:
+        return abs(
+            sum(
+                trade.realised_profit
+                for trade in self.completed_trades
+                if trade.realised_profit < 0
+            )
+        )
+
+    @property
+    def profit_factor(
+        self,
+    ) -> float:
+        if self.gross_loss == 0:
+            if self.gross_profit > 0:
+                return float("inf")
+
+            return 0.0
+
+        return (
+            self.gross_profit
+            / self.gross_loss
+        )
 
     def record_buy(
         self,
@@ -171,3 +226,122 @@ class CompletedTradeTracker:
             ]
 
         return completed
+    
+    @property
+    def average_winning_trade(
+        self,
+    ) -> float:
+        winning_profits = [
+            trade.realised_profit
+            for trade in self.completed_trades
+            if trade.realised_profit > 0
+        ]
+
+        if not winning_profits:
+            return 0.0
+
+        return (
+            sum(winning_profits)
+            / len(winning_profits)
+        )
+
+    @property
+    def average_losing_trade(
+        self,
+    ) -> float:
+        losing_profits = [
+            trade.realised_profit
+            for trade in self.completed_trades
+            if trade.realised_profit < 0
+        ]
+
+        if not losing_profits:
+            return 0.0
+
+        return (
+            sum(losing_profits)
+            / len(losing_profits)
+        )
+
+    @property
+    def largest_winning_trade(
+        self,
+    ) -> float:
+        winning_profits = [
+            trade.realised_profit
+            for trade in self.completed_trades
+            if trade.realised_profit > 0
+        ]
+
+        if not winning_profits:
+            return 0.0
+
+        return max(winning_profits)
+
+    @property
+    def largest_losing_trade(
+        self,
+    ) -> float:
+        losing_profits = [
+            trade.realised_profit
+            for trade in self.completed_trades
+            if trade.realised_profit < 0
+        ]
+
+        if not losing_profits:
+            return 0.0
+
+        return min(losing_profits)
+
+    @property
+    def expectancy(
+        self,
+    ) -> float:
+        if not self.completed_trades:
+            return 0.0
+
+        return (
+            sum(
+                trade.realised_profit
+                for trade in self.completed_trades
+            )
+            / len(self.completed_trades)
+        )
+    
+    @property
+    def maximum_consecutive_wins(
+        self,
+    ) -> int:
+        maximum_streak = 0
+        current_streak = 0
+
+        for trade in self.completed_trades:
+            if trade.realised_profit > 0:
+                current_streak += 1
+                maximum_streak = max(
+                    maximum_streak,
+                    current_streak,
+                )
+            else:
+                current_streak = 0
+
+        return maximum_streak
+
+    @property
+    def maximum_consecutive_losses(
+        self,
+    ) -> int:
+        maximum_streak = 0
+        current_streak = 0
+
+        for trade in self.completed_trades:
+            if trade.realised_profit < 0:
+                current_streak += 1
+                maximum_streak = max(
+                    maximum_streak,
+                    current_streak,
+                )
+            else:
+                current_streak = 0
+
+        return maximum_streak

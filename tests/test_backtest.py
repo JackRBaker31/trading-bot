@@ -11,6 +11,7 @@ from app.portfolio import Portfolio
 from app.risk import RiskEngine, RiskLimits
 from app.trade_log import TradeLog
 from app.backtest_result import EquityPoint
+from app.backtest_models import HistoricalPriceBar
 
 def create_backtest_engine(
     log_file: Path,
@@ -87,9 +88,17 @@ def test_backtest_executes_strategy_order(
     assert portfolio.positions["AAPL"] == 6
     assert result.executed_trades == 1
     assert result.rejected_orders == 0
+    assert result.profit_factor == 0.0
     assert len(result.equity_curve) == 3
     assert len(trade_log.entries) == 1
-
+    assert result.average_winning_trade == 0.0
+    assert result.average_losing_trade == 0.0
+    assert result.largest_winning_trade == 0.0
+    assert result.largest_losing_trade == 0.0
+    assert result.expectancy == 0.0
+    assert result.win_rate_percent == 0.0
+    assert result.maximum_consecutive_wins == 0
+    assert result.maximum_consecutive_losses == 0
 
 def test_backtest_calculates_return(
     tmp_path: Path,
@@ -263,3 +272,108 @@ def test_equal_weight_benchmark_is_calculated() -> None:
     assert benchmark_return == pytest.approx(
         0.0
     )
+
+def test_backtest_can_run_historical_price_bars(
+    tmp_path: Path,
+) -> None:
+    engine, portfolio, trade_log = (
+        create_backtest_engine(
+            tmp_path / "trade_log.jsonl"
+        )
+    )
+
+    bars = [
+        HistoricalPriceBar(
+            symbol="AAPL",
+            trading_date=date(2026, 1, 2),
+            open_price=149.0,
+            high_price=152.0,
+            low_price=148.0,
+            close_price=150.0,
+            volume=1_000,
+        ),
+        HistoricalPriceBar(
+            symbol="AAPL",
+            trading_date=date(2026, 1, 3),
+            open_price=149.0,
+            high_price=150.0,
+            low_price=145.0,
+            close_price=146.0,
+            volume=1_100,
+        ),
+        HistoricalPriceBar(
+            symbol="AAPL",
+            trading_date=date(2026, 1, 4),
+            open_price=147.0,
+            high_price=151.0,
+            low_price=146.0,
+            close_price=150.0,
+            volume=1_200,
+        ),
+    ]
+
+    result = engine.run_bars(
+        bars=bars
+    )
+
+    assert portfolio.positions["AAPL"] == 6
+    assert result.executed_trades == 1
+    assert result.rejected_orders == 0
+    assert len(result.equity_curve) == 3
+    assert len(trade_log.entries) == 1
+
+
+def test_backtest_rejects_empty_price_bars(
+    tmp_path: Path,
+) -> None:
+    engine, _, _ = create_backtest_engine(
+        tmp_path / "trade_log.jsonl"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="At least one historical price bar",
+    ):
+        engine.run_bars(
+            bars=[]
+        )
+
+
+def test_backtest_rejects_duplicate_symbol_bar_for_date(
+    tmp_path: Path,
+) -> None:
+    engine, _, _ = create_backtest_engine(
+        tmp_path / "trade_log.jsonl"
+    )
+
+    bars = [
+        HistoricalPriceBar(
+            symbol="AAPL",
+            trading_date=date(2026, 1, 2),
+            open_price=149.0,
+            high_price=152.0,
+            low_price=148.0,
+            close_price=150.0,
+            volume=1_000,
+        ),
+        HistoricalPriceBar(
+            symbol="AAPL",
+            trading_date=date(2026, 1, 2),
+            open_price=150.0,
+            high_price=153.0,
+            low_price=149.0,
+            close_price=151.0,
+            volume=1_100,
+        ),
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Duplicate historical price bar "
+            "for AAPL on 2026-01-02"
+        ),
+    ):
+        engine.run_bars(
+            bars=bars
+        )

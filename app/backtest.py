@@ -8,7 +8,11 @@ from app.execution import ExecutionService
 from app.historical_data import HistoricalPrice
 from app.portfolio import Portfolio
 from app.strategy import Strategy
-
+from app.backtest_models import HistoricalPriceBar
+from app.completed_trade_tracker import (
+    CompletedTradeTracker,
+)
+from app.orders import OrderSide
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +27,53 @@ class BacktestEngine:
         self.portfolio = portfolio
         self.strategy = strategy
         self.execution_service = execution_service
+
+    def run_bars(
+        self,
+        bars: list[HistoricalPriceBar],
+    ) -> BacktestResult:
+        if not bars:
+            raise ValueError(
+                "At least one historical price bar is required."
+            )
+
+        prices_by_date: dict[
+            object,
+            dict[str, float],
+        ] = {}
+
+        for bar in bars:
+            daily_prices = prices_by_date.setdefault(
+                bar.trading_date,
+                {},
+            )
+
+            if bar.symbol in daily_prices:
+                raise ValueError(
+                    "Duplicate historical price bar for "
+                    f"{bar.symbol} on "
+                    f"{bar.trading_date.isoformat()}."
+                )
+
+            daily_prices[bar.symbol] = (
+                bar.close_price
+            )
+
+        historical_prices = [
+            HistoricalPrice(
+                trading_date=trading_date,
+                prices=prices_by_date[
+                    trading_date
+                ],
+            )
+            for trading_date in sorted(
+                prices_by_date
+            )
+        ]
+
+        return self.run(
+            historical_prices=historical_prices
+        )
 
     def run(
         self,
@@ -41,6 +92,7 @@ class BacktestEngine:
         starting_cash = self.portfolio.starting_cash
         equity_curve: list[EquityPoint] = []
         exposure_percentages: list[float] = []
+        trade_tracker = CompletedTradeTracker()
 
         for price_point in historical_prices:
             current_prices = price_point.prices
@@ -57,10 +109,28 @@ class BacktestEngine:
         )
 
             for order in orders:
-                self.execution_service.submit_order(
-                    order=order,
-                    current_prices=current_prices,
+                executed = (
+                    self.execution_service.submit_order(
+                        order=order,
+                        current_prices=current_prices,
+                    )
                 )
+
+                if not executed:
+                    continue
+
+                if order.side is OrderSide.BUY:
+                    trade_tracker.record_buy(
+                        symbol=order.symbol,
+                        quantity=order.quantity,
+                        price=order.price,
+                    )
+                else:
+                    trade_tracker.record_sell(
+                        symbol=order.symbol,
+                        quantity=order.quantity,
+                        price=order.price,
+                    )
 
             portfolio_value = self.portfolio.portfolio_value(
                 current_prices
@@ -85,6 +155,7 @@ class BacktestEngine:
                 )
             )
 
+        trade_tracker = CompletedTradeTracker()
         final_prices = historical_prices[-1].prices
 
         ending_value = self.portfolio.portfolio_value(
@@ -134,6 +205,27 @@ class BacktestEngine:
             starting_cash=starting_cash,
             ending_value=ending_value,
             total_return_percent=total_return_percent,
+                        average_winning_trade=(
+                trade_tracker.average_winning_trade
+            ),
+            average_losing_trade=(
+                trade_tracker.average_losing_trade
+            ),
+            largest_winning_trade=(
+                trade_tracker.largest_winning_trade
+            ),
+            largest_losing_trade=(
+                trade_tracker.largest_losing_trade
+            ),
+            expectancy=(
+                trade_tracker.expectancy
+            ),
+            win_rate_percent=(
+                trade_tracker.win_rate_percent
+            ),
+            profit_factor=(
+                trade_tracker.profit_factor
+            ),
             maximum_drawdown_percent=(
                 maximum_drawdown_percent
             ),
@@ -142,6 +234,12 @@ class BacktestEngine:
             ),
             excess_return_percent=(
                 excess_return_percent
+            ),
+            maximum_consecutive_wins=(
+                trade_tracker.maximum_consecutive_wins
+            ),
+            maximum_consecutive_losses=(
+                trade_tracker.maximum_consecutive_losses
             ),
             average_exposure_percent=(
                 average_exposure_percent
