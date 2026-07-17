@@ -2,7 +2,7 @@ from app.orders import Order, OrderSide
 from app.portfolio import Portfolio
 from app.position_sizing import PercentagePositionSizer
 from app.strategy import Strategy
-
+from app.technical_indicators import simple_moving_average
 
 class BuyTheDipStrategy(Strategy):
     def __init__(
@@ -10,6 +10,7 @@ class BuyTheDipStrategy(Strategy):
         drop_threshold_percent: float = 2.0,
         target_allocation_percent: float = 10.0,
         cooldown_cycles: int = 2,
+        sma_period: int | None = None,
     ) -> None:
         if drop_threshold_percent <= 0:
             raise ValueError(
@@ -32,9 +33,11 @@ class BuyTheDipStrategy(Strategy):
         )
 
         self.cooldown_cycles = cooldown_cycles
+        self.sma_period = sma_period
 
         self.previous_prices: dict[str, float] = {}
         self.cooldowns: dict[str, int] = {}
+        self.price_history: dict[str, list[float]] = {}
 
     def generate_orders(
         self,
@@ -52,12 +55,21 @@ class BuyTheDipStrategy(Strategy):
         available_cash = portfolio.cash
 
         for symbol, price in prices.items():
+
+            symbol_price_history = (
+                self.price_history.setdefault(
+                    symbol,
+                    [],
+                )
+            )
+
             previous_price = self.previous_prices.get(
                 symbol
             )
 
             if previous_price is None:
                 self.previous_prices[symbol] = price
+                symbol_price_history.append(price)
                 continue
 
             percentage_change = (
@@ -69,10 +81,23 @@ class BuyTheDipStrategy(Strategy):
                 self.cooldowns.get(symbol, 0) > 0
             )
 
+            sma_allows_buy = True
+
+            if self.sma_period is not None:
+                if len(symbol_price_history) < self.sma_period:
+                    sma_allows_buy = False
+                else:
+                    moving_average = simple_moving_average(
+                        values=symbol_price_history,
+                        period=self.sma_period,
+                    )
+                    sma_allows_buy = price >= moving_average
+
             if (
                 percentage_change
                 <= -self.drop_threshold_percent
                 and not symbol_is_on_cooldown
+                and sma_allows_buy
             ):
                 sizing_result = (
                     self.position_sizer.calculate(
@@ -103,6 +128,7 @@ class BuyTheDipStrategy(Strategy):
                     )
 
             self.previous_prices[symbol] = price
+            symbol_price_history.append(price)
 
         return orders
 

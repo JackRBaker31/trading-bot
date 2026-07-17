@@ -215,3 +215,78 @@ def test_strategy_rejects_invalid_configuration() -> None:
         BuyTheDipStrategy(
             cooldown_cycles=-1,
         )
+    
+def test_sma_filter_blocks_buy_below_moving_average() -> None:
+    strategy = BuyTheDipStrategy(
+        drop_threshold_percent=2.0,
+        sma_period=3,
+    )
+    portfolio = create_portfolio()
+
+    strategy.generate_orders(
+        prices={"AAPL": 100.00},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 100.00},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 100.00},
+        portfolio=portfolio,
+    )
+
+    orders = strategy.generate_orders(
+        prices={"AAPL": 90.00},
+        portfolio=portfolio,
+    )
+
+    assert orders == []
+
+def test_sma_filter_blocks_buy_until_enough_price_history_exists() -> None:
+    strategy = BuyTheDipStrategy(
+        drop_threshold_percent=2.0,
+        sma_period=3,
+    )
+    portfolio = create_portfolio()
+
+    strategy.generate_orders(
+        prices={"AAPL": 100.00},
+        portfolio=portfolio,
+    )
+
+    orders = strategy.generate_orders(
+        prices={"AAPL": 90.00},
+        portfolio=portfolio,
+    )
+
+    assert orders == []
+
+def test_sma_filter_uses_prices_before_current_dip() -> None:
+    strategy = BuyTheDipStrategy(
+        drop_threshold_percent=2.0,
+        sma_period=3,
+    )
+    portfolio = create_portfolio()
+
+    strategy.generate_orders(
+        prices={"AAPL": 50.00},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 100.00},
+        portfolio=portfolio,
+    )
+    strategy.generate_orders(
+        prices={"AAPL": 100.00},
+        portfolio=portfolio,
+    )
+
+    orders = strategy.generate_orders(
+        prices={"AAPL": 90.00},
+        portfolio=portfolio,
+    )
+
+    assert len(orders) == 1
+    assert orders[0].symbol == "AAPL"
+    assert orders[0].side == OrderSide.BUY
