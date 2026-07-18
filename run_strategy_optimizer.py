@@ -1,3 +1,4 @@
+import logging
 from app.config import load_config
 from app.csv_historical_data import (
     load_historical_prices_from_csv,
@@ -13,10 +14,14 @@ from app.strategy_optimizer import (
 
 def main() -> None:
     config = load_config()
-
+    logging.getLogger(
+        "app.execution"
+    ).setLevel(
+        logging.ERROR
+    )
     historical_prices = (
         load_historical_prices_from_csv(
-            file_path="data/sample_prices.csv"
+            file_path="data/research_prices.csv"
         )
     )
 

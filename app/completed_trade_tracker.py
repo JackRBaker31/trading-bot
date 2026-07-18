@@ -9,6 +9,19 @@ class CompletedTrade:
     exit_price: float
     realised_profit: float
 
+    @property
+    def return_percent(
+        self,
+    ) -> float:
+        return (
+            (
+                self.exit_price
+                - self.average_entry_price
+            )
+            / self.average_entry_price
+            * 100.0
+        )
+
 
 @dataclass
 class _OpenPosition:

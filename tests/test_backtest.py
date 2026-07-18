@@ -12,6 +12,50 @@ from app.risk import RiskEngine, RiskLimits
 from app.trade_log import TradeLog
 from app.backtest_result import EquityPoint
 from app.backtest_models import HistoricalPriceBar
+from app.orders import Order, OrderSide
+from app.strategy import Strategy
+from app.execution_cost import (
+    ExecutionCostModel,
+)
+from app.position_exit_manager import (
+    PositionExitManager,
+)
+from app.position_exit_policy import (
+    PositionExitPolicy,
+)
+
+class BuyThenSellStrategy(Strategy):
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def generate_orders(
+        self,
+        prices: dict[str, float],
+        portfolio: Portfolio,
+    ) -> list[Order]:
+        self.call_count += 1
+
+        if self.call_count == 1:
+            return [
+                Order(
+                    symbol="AAPL",
+                    side=OrderSide.BUY,
+                    quantity=2,
+                    price=100.0,
+                )
+            ]
+
+        if self.call_count == 2:
+            return [
+                Order(
+                    symbol="AAPL",
+                    side=OrderSide.SELL,
+                    quantity=2,
+                    price=110.0,
+                )
+            ]
+
+        return []
 
 def create_backtest_engine(
     log_file: Path,
@@ -99,6 +143,186 @@ def test_backtest_executes_strategy_order(
     assert result.win_rate_percent == 0.0
     assert result.maximum_consecutive_wins == 0
     assert result.maximum_consecutive_losses == 0
+    assert (
+        result.completed_trade_returns_percent
+        == []
+    )
+
+
+def test_backtest_exposes_completed_trade_returns(
+    tmp_path: Path,
+) -> None:
+    portfolio = Portfolio(
+        starting_cash=10_000.0
+    )
+
+    trade_log = TradeLog(
+        file_path=str(
+            tmp_path / "trade_log.jsonl"
+        )
+    )
+
+    execution_service = ExecutionService(
+        portfolio=portfolio,
+        risk_engine=RiskEngine(
+            RiskLimits(
+                max_order_value=2_000.0,
+                max_position_value=3_000.0,
+                max_portfolio_exposure=0.5,
+                max_trades_per_session=10,
+                approved_symbols={"AAPL"},
+            )
+        ),
+        trade_log=trade_log,
+    )
+
+    engine = BacktestEngine(
+        portfolio=portfolio,
+        strategy=BuyThenSellStrategy(),
+        execution_service=execution_service,
+    )
+
+    result = engine.run(
+        historical_prices=[
+            HistoricalPrice(
+                trading_date=date(2026, 1, 2),
+                prices={"AAPL": 100.0},
+            ),
+            HistoricalPrice(
+                trading_date=date(2026, 1, 3),
+                prices={"AAPL": 110.0},
+            ),
+        ]
+    )
+
+    assert result.executed_trades == 2
+    assert (
+        result.completed_trade_returns_percent
+        == pytest.approx(
+            [
+                10.0,
+            ]
+        )
+    )
+
+def test_execution_costs_do_not_change_exit_signal_path(
+    tmp_path: Path,
+) -> None:
+    historical_prices = [
+        HistoricalPrice(
+            trading_date=date(2026, 1, 1),
+            prices={
+                "AAPL": 100.0,
+            },
+        ),
+        HistoricalPrice(
+            trading_date=date(2026, 1, 2),
+            prices={
+                "AAPL": 110.0,
+            },
+        ),
+    ]
+
+    exit_manager = PositionExitManager(
+        policy=PositionExitPolicy(
+            stop_loss_percent=5.0,
+            take_profit_percent=10.0,
+            trailing_stop_percent=4.0,
+            trailing_activation_percent=6.0,
+        )
+    )
+
+    gross_portfolio = Portfolio(
+        starting_cash=10_000.0
+    )
+
+    gross_service = ExecutionService(
+        portfolio=gross_portfolio,
+        risk_engine=RiskEngine(
+            RiskLimits(
+                max_order_value=5_000.0,
+                max_position_value=5_000.0,
+                max_portfolio_exposure=1.0,
+                max_trades_per_session=10,
+                approved_symbols={"AAPL"},
+            )
+        ),
+        trade_log=TradeLog(
+            file_path=str(
+                tmp_path / "gross.jsonl"
+            )
+        ),
+        execution_cost_model=ExecutionCostModel(),
+    )
+
+    gross_engine = BacktestEngine(
+        portfolio=gross_portfolio,
+        strategy=BuyThenSellStrategy(),
+        execution_service=gross_service,
+        position_exit_manager=exit_manager,
+    )
+
+    net_portfolio = Portfolio(
+        starting_cash=10_000.0
+    )
+
+    net_service = ExecutionService(
+        portfolio=net_portfolio,
+        risk_engine=RiskEngine(
+            RiskLimits(
+                max_order_value=5_000.0,
+                max_position_value=5_000.0,
+                max_portfolio_exposure=1.0,
+                max_trades_per_session=10,
+                approved_symbols={"AAPL"},
+            )
+        ),
+        trade_log=TradeLog(
+            file_path=str(
+                tmp_path / "net.jsonl"
+            )
+        ),
+        execution_cost_model=ExecutionCostModel(
+            slippage_percent=0.10,
+            commission_percent=0.10,
+        ),
+    )
+
+    net_engine = BacktestEngine(
+        portfolio=net_portfolio,
+        strategy=BuyThenSellStrategy(),
+        execution_service=net_service,
+        position_exit_manager=exit_manager,
+    )
+
+    gross_result = gross_engine.run(
+        historical_prices=historical_prices
+    )
+
+    net_result = net_engine.run(
+        historical_prices=historical_prices
+    )
+
+    assert (
+        gross_result.executed_trades
+        == net_result.executed_trades
+    )
+
+    assert (
+        len(
+            gross_result
+            .completed_trade_profits
+        )
+        == len(
+            net_result
+            .completed_trade_profits
+        )
+    )
+
+    assert (
+        net_result.completed_trade_profits[0]
+        < gross_result.completed_trade_profits[0]
+    )
 
 def test_backtest_calculates_return(
     tmp_path: Path,
@@ -377,3 +601,71 @@ def test_backtest_rejects_duplicate_symbol_bar_for_date(
         engine.run_bars(
             bars=bars
         )
+
+def test_backtest_completed_profit_includes_execution_costs(
+    tmp_path: Path,
+) -> None:
+    portfolio = Portfolio(
+        starting_cash=10_000.0
+    )
+
+    trade_log = TradeLog(
+        file_path=str(
+            tmp_path / "trade_log.jsonl"
+        )
+    )
+
+    execution_service = ExecutionService(
+        portfolio=portfolio,
+        risk_engine=RiskEngine(
+            RiskLimits(
+                max_order_value=5_000.0,
+                max_position_value=5_000.0,
+                max_portfolio_exposure=1.0,
+                max_trades_per_session=10,
+                approved_symbols={"AAPL"},
+            )
+        ),
+        trade_log=trade_log,
+        execution_cost_model=ExecutionCostModel(
+            slippage_percent=1.0,
+            commission_percent=0.5,
+        ),
+    )
+
+    engine = BacktestEngine(
+        portfolio=portfolio,
+        strategy=BuyThenSellStrategy(),
+        execution_service=execution_service,
+    )
+
+    result = engine.run(
+        historical_prices=[
+            HistoricalPrice(
+                trading_date=date(
+                    2026,
+                    1,
+                    2,
+                ),
+                prices={
+                    "AAPL": 100.0,
+                },
+            ),
+            HistoricalPrice(
+                trading_date=date(
+                    2026,
+                    1,
+                    3,
+                ),
+                prices={
+                    "AAPL": 110.0,
+                },
+            ),
+        ]
+    )
+
+    assert result.completed_trade_profits == pytest.approx(
+        [
+            13.701,
+        ]
+    )

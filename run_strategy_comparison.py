@@ -1,3 +1,4 @@
+import logging
 from app.buy_the_dip import BuyTheDipStrategy
 from app.config import load_config
 from app.csv_historical_data import (
@@ -38,7 +39,11 @@ def create_entry_filters(
 
 def main() -> None:
     config = load_config()
-
+    logging.getLogger(
+        "app.execution"
+    ).setLevel(
+        logging.ERROR
+    )
     historical_prices = (
         load_historical_prices_from_csv(
             file_path="data/sample_prices.csv"

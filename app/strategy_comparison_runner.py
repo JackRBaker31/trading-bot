@@ -13,6 +13,12 @@ from app.trade_log import TradeLog
 from app.strategy_definition import (
     StrategyDefinition,
 )
+from app.position_exit_manager import (
+    PositionExitManager,
+)
+from app.execution_cost import (
+    ExecutionCostModel,
+)
 
 class StrategyComparisonRunner:
     def __init__(
@@ -20,6 +26,12 @@ class StrategyComparisonRunner:
         *,
         starting_cash: float,
         risk_limits: RiskLimits,
+        position_exit_manager: (
+            PositionExitManager | None
+        ) = None,
+        execution_cost_model: (
+            ExecutionCostModel | None
+        ) = None,
     ) -> None:
         if starting_cash <= 0:
             raise ValueError(
@@ -28,7 +40,12 @@ class StrategyComparisonRunner:
 
         self.starting_cash = starting_cash
         self.risk_limits = risk_limits
-
+        self.position_exit_manager = (
+            position_exit_manager
+        )
+        self.execution_cost_model = (
+            execution_cost_model
+        )
     def run(
         self,
         *,
@@ -57,11 +74,17 @@ class StrategyComparisonRunner:
                     self.risk_limits
                 ),
                 trade_log=trade_log,
+                execution_cost_model=(
+                    self.execution_cost_model
+                ),
             )
             engine = BacktestEngine(
                 portfolio=portfolio,
                 strategy=definition.factory(),
                 execution_service=execution_service,
+                position_exit_manager=(
+                    self.position_exit_manager
+                ),
             )
 
             results[definition.name] = engine.run(

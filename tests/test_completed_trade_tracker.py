@@ -498,3 +498,30 @@ def test_consecutive_trade_streaks_are_zero_without_completed_trades() -> None:
 
     assert tracker.maximum_consecutive_wins == 0
     assert tracker.maximum_consecutive_losses == 0
+
+def test_completed_trade_calculates_positive_return_percent() -> None:
+    trade = CompletedTrade(
+        symbol="AAPL",
+        quantity=2,
+        average_entry_price=100.0,
+        exit_price=110.0,
+        realised_profit=20.0,
+    )
+
+    assert trade.return_percent == pytest.approx(
+        10.0
+    )
+
+
+def test_completed_trade_calculates_negative_return_percent() -> None:
+    trade = CompletedTrade(
+        symbol="AAPL",
+        quantity=2,
+        average_entry_price=100.0,
+        exit_price=90.0,
+        realised_profit=-20.0,
+    )
+
+    assert trade.return_percent == pytest.approx(
+        -10.0
+    )

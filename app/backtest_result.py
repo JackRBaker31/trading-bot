@@ -29,6 +29,12 @@ class BacktestResult:
     expectancy: float
     final_cash: float
     final_positions: dict[str, int]
+    completed_trade_returns_percent: list[float] = field(
+        default_factory=list
+    )
+    completed_trade_profits: list[float] = field(
+    default_factory=list
+)
     equity_curve: list[EquityPoint] = field(
         default_factory=list
     )
