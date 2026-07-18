@@ -17,3 +17,9 @@ research/experiments/*.jsonl
 
 data/monte_carlo_comparison.csv
 data/research_prices.csv
+
+# Research outputs
+data/*.png
+data/research_report.json
+data/research_report.csv
+data/monte_carlo_comparison.csv
