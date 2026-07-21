@@ -62,23 +62,50 @@ def write_config(tmp_path) -> str:
     return str(path)
 
 
-def test_reports_recent_worker_as_idle(tmp_path) -> None:
+def register_heartbeat(
+    repository: WorkerHeartbeatRepository,
+    *,
+    worker_name: str,
+    now: datetime,
+    status: str = "IDLE",
+    heartbeat_age_seconds: float = 3.0,
+    current_job_id: str | None = None,
+    current_job_type: str | None = None,
+    jobs_processed: int = 0,
+) -> None:
+    repository.register(
+        heartbeat=WorkerHeartbeat(
+            worker_name=worker_name,
+            process_id=321,
+            status=status,
+            started_at=now - timedelta(minutes=5),
+            last_heartbeat_at=(
+                now - timedelta(seconds=heartbeat_age_seconds)
+            ),
+            current_job_id=current_job_id,
+            current_job_type=current_job_type,
+            jobs_processed=jobs_processed,
+        )
+    )
+
+
+def test_reports_recent_worker_and_scheduler_as_idle(tmp_path) -> None:
     now = datetime(2026, 7, 20, 14, 0, tzinfo=timezone.utc)
     repository = WorkerHeartbeatRepository(
         database_path=str(tmp_path / "app.db")
     )
     repository.initialize()
-    repository.register(
-        heartbeat=WorkerHeartbeat(
-            worker_name="primary-job-worker",
-            process_id=321,
-            status="IDLE",
-            started_at=now - timedelta(minutes=5),
-            last_heartbeat_at=now - timedelta(seconds=3),
-            current_job_id=None,
-            current_job_type=None,
-            jobs_processed=7,
-        )
+    register_heartbeat(
+        repository,
+        worker_name="primary-job-worker",
+        now=now,
+        jobs_processed=7,
+    )
+    register_heartbeat(
+        repository,
+        worker_name="primary-scheduler",
+        now=now,
+        jobs_processed=4,
     )
     signal = SimpleNamespace(
         published_at=now - timedelta(minutes=10)
@@ -98,6 +125,11 @@ def test_reports_recent_worker_as_idle(tmp_path) -> None:
     assert worker["status"] == "IDLE"
     assert worker["metadata"]["jobs_processed"] == 7
 
+    scheduler = status["services"]["scheduler"]
+    assert scheduler["online"] is True
+    assert scheduler["status"] == "IDLE"
+    assert scheduler["metadata"]["tasks_processed"] == 4
+
 
 def test_reports_stale_worker_offline(tmp_path) -> None:
     now = datetime(2026, 7, 20, 14, 0, tzinfo=timezone.utc)
@@ -105,17 +137,17 @@ def test_reports_stale_worker_offline(tmp_path) -> None:
         database_path=str(tmp_path / "app.db")
     )
     repository.initialize()
-    repository.register(
-        heartbeat=WorkerHeartbeat(
-            worker_name="primary-job-worker",
-            process_id=321,
-            status="IDLE",
-            started_at=now - timedelta(hours=1),
-            last_heartbeat_at=now - timedelta(minutes=2),
-            current_job_id=None,
-            current_job_type=None,
-            jobs_processed=7,
-        )
+    register_heartbeat(
+        repository,
+        worker_name="primary-job-worker",
+        now=now,
+        heartbeat_age_seconds=120,
+        jobs_processed=7,
+    )
+    register_heartbeat(
+        repository,
+        worker_name="primary-scheduler",
+        now=now,
     )
     service = InfrastructureStatusService(
         heartbeat_repository=repository,
@@ -129,3 +161,61 @@ def test_reports_stale_worker_offline(tmp_path) -> None:
     assert status["overall_status"] == "DEGRADED"
     assert status["services"]["job_worker"]["status"] == "STALE"
     assert status["services"]["job_worker"]["online"] is False
+
+
+def test_reports_busy_scheduler_with_current_schedule(tmp_path) -> None:
+    now = datetime(2026, 7, 20, 14, 0, tzinfo=timezone.utc)
+    repository = WorkerHeartbeatRepository(
+        database_path=str(tmp_path / "app.db")
+    )
+    repository.initialize()
+    register_heartbeat(
+        repository,
+        worker_name="primary-scheduler",
+        now=now,
+        status="BUSY",
+        current_job_id="schedule-123",
+        current_job_type="NEWS_RESEARCH_CYCLE",
+        jobs_processed=2,
+    )
+    service = InfrastructureStatusService(
+        heartbeat_repository=repository,
+        config_path=write_config(tmp_path),
+        news_signal_store=FakeNewsStore([]),
+        now_provider=lambda: now,
+    )
+
+    scheduler = service.get_scheduler_status().to_dictionary()
+
+    assert scheduler["name"] == "scheduler"
+    assert scheduler["status"] == "BUSY"
+    assert scheduler["online"] is True
+    assert scheduler["metadata"]["current_schedule_id"] == "schedule-123"
+    assert scheduler["metadata"]["current_task_type"] == "NEWS_RESEARCH_CYCLE"
+    assert scheduler["metadata"]["tasks_processed"] == 2
+
+
+def test_missing_scheduler_degrades_infrastructure(tmp_path) -> None:
+    now = datetime(2026, 7, 20, 14, 0, tzinfo=timezone.utc)
+    repository = WorkerHeartbeatRepository(
+        database_path=str(tmp_path / "app.db")
+    )
+    repository.initialize()
+    register_heartbeat(
+        repository,
+        worker_name="primary-job-worker",
+        now=now,
+    )
+    service = InfrastructureStatusService(
+        heartbeat_repository=repository,
+        config_path=write_config(tmp_path),
+        news_signal_store=FakeNewsStore([]),
+        now_provider=lambda: now,
+    )
+
+    status = service.get_status().to_dictionary()
+
+    assert status["overall_status"] == "DEGRADED"
+    scheduler = status["services"]["scheduler"]
+    assert scheduler["status"] == "NOT_SEEN"
+    assert scheduler["online"] is False

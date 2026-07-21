@@ -221,6 +221,7 @@ class JobExecutor:
         return result.to_dictionary(), False
 
     def _resolve_symbols(
+        self,
         payload: Mapping[str, Any],
     ) -> list[str]:
         watchlist = payload.get("watchlist")

@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Callable
 
 from app.config import load_config
@@ -8,6 +7,7 @@ from app.infrastructure_status import (
     ServiceHealth,
 )
 from app.news_signal_store import NewsSignalStore
+from app.worker_heartbeat import WorkerHeartbeat
 from app.worker_heartbeat_repository import (
     WorkerHeartbeatRepository,
 )
@@ -21,13 +21,19 @@ class InfrastructureStatusService:
         config_path: str = "config.json",
         news_signal_store: NewsSignalStore | None = None,
         worker_name: str = "primary-job-worker",
+        scheduler_name: str = "primary-scheduler",
         worker_stale_after_seconds: float = 30.0,
+        scheduler_stale_after_seconds: float = 30.0,
         news_stale_after_seconds: float = 24 * 60 * 60,
         now_provider: Callable[[], datetime] | None = None,
     ) -> None:
         if worker_stale_after_seconds <= 0:
             raise ValueError(
                 "Worker stale threshold must be positive."
+            )
+        if scheduler_stale_after_seconds <= 0:
+            raise ValueError(
+                "Scheduler stale threshold must be positive."
             )
         if news_stale_after_seconds <= 0:
             raise ValueError(
@@ -39,8 +45,12 @@ class InfrastructureStatusService:
             news_signal_store or NewsSignalStore()
         )
         self._worker_name = worker_name
+        self._scheduler_name = scheduler_name
         self._worker_stale_after_seconds = (
             worker_stale_after_seconds
+        )
+        self._scheduler_stale_after_seconds = (
+            scheduler_stale_after_seconds
         )
         self._news_stale_after_seconds = (
             news_stale_after_seconds
@@ -62,6 +72,7 @@ class InfrastructureStatusService:
             ),
             self._storage_health(now=now),
             self._worker_health(now=now),
+            self._scheduler_health(now=now),
             ServiceHealth(
                 name="broker",
                 status=(
@@ -108,6 +119,7 @@ class InfrastructureStatusService:
                 "api",
                 "storage",
                 "job_worker",
+                "scheduler",
             }
         )
 
@@ -123,6 +135,11 @@ class InfrastructureStatusService:
 
     def get_worker_status(self) -> ServiceHealth:
         return self._worker_health(
+            now=self._utc_now()
+        )
+
+    def get_scheduler_status(self) -> ServiceHealth:
+        return self._scheduler_health(
             now=self._utc_now()
         )
 
@@ -152,12 +169,55 @@ class InfrastructureStatusService:
         heartbeat = self._heartbeat_repository.get(
             worker_name=self._worker_name
         )
+        return self._process_health(
+            heartbeat=heartbeat,
+            now=now,
+            service_name="job_worker",
+            display_name="job worker",
+            stale_after_seconds=self._worker_stale_after_seconds,
+            activity_label="Processing",
+            processed_metadata_name="jobs_processed",
+        )
+
+    def _scheduler_health(
+        self,
+        *,
+        now: datetime,
+    ) -> ServiceHealth:
+        heartbeat = self._heartbeat_repository.get(
+            worker_name=self._scheduler_name
+        )
+        return self._process_health(
+            heartbeat=heartbeat,
+            now=now,
+            service_name="scheduler",
+            display_name="scheduler",
+            stale_after_seconds=(
+                self._scheduler_stale_after_seconds
+            ),
+            activity_label="Processing schedule",
+            processed_metadata_name="tasks_processed",
+        )
+
+    @staticmethod
+    def _process_health(
+        *,
+        heartbeat: WorkerHeartbeat | None,
+        now: datetime,
+        service_name: str,
+        display_name: str,
+        stale_after_seconds: float,
+        activity_label: str,
+        processed_metadata_name: str,
+    ) -> ServiceHealth:
         if heartbeat is None:
             return ServiceHealth(
-                name="job_worker",
+                name=service_name,
                 status="NOT_SEEN",
                 online=False,
-                detail="No job-worker heartbeat has been recorded.",
+                detail=(
+                    f"No {display_name} heartbeat has been recorded."
+                ),
             )
 
         age_seconds = max(
@@ -168,8 +228,7 @@ class InfrastructureStatusService:
         )
         online = (
             heartbeat.status != "STOPPED"
-            and age_seconds
-            <= self._worker_stale_after_seconds
+            and age_seconds <= stale_after_seconds
         )
 
         if not online:
@@ -179,38 +238,50 @@ class InfrastructureStatusService:
                 else "STALE"
             )
             detail = (
-                "The job worker is stopped."
+                f"The {display_name} is stopped."
                 if status == "STOPPED"
-                else "The job-worker heartbeat is stale."
+                else f"The {display_name} heartbeat is stale."
             )
         elif heartbeat.current_job_id:
             status = "BUSY"
             detail = (
-                f"Processing {heartbeat.current_job_type}."
+                f"{activity_label} "
+                f"{heartbeat.current_job_type}."
             )
         else:
             status = "IDLE"
-            detail = "The job worker is online and waiting for work."
+            detail = (
+                f"The {display_name} is online and waiting for work."
+            )
+
+        metadata = {
+            "worker_name": heartbeat.worker_name,
+            "process_id": heartbeat.process_id,
+            "heartbeat_age_seconds": round(
+                age_seconds,
+                2,
+            ),
+            "current_job_id": heartbeat.current_job_id,
+            "current_job_type": heartbeat.current_job_type,
+            processed_metadata_name: heartbeat.jobs_processed,
+            "started_at": heartbeat.started_at.isoformat(),
+            "last_error": heartbeat.last_error,
+        }
+        if service_name == "scheduler":
+            metadata["current_schedule_id"] = (
+                heartbeat.current_job_id
+            )
+            metadata["current_task_type"] = (
+                heartbeat.current_job_type
+            )
 
         return ServiceHealth(
-            name="job_worker",
+            name=service_name,
             status=status,
             online=online,
             detail=detail,
             last_updated_at=heartbeat.last_heartbeat_at,
-            metadata={
-                "worker_name": heartbeat.worker_name,
-                "process_id": heartbeat.process_id,
-                "heartbeat_age_seconds": round(
-                    age_seconds,
-                    2,
-                ),
-                "current_job_id": heartbeat.current_job_id,
-                "current_job_type": heartbeat.current_job_type,
-                "jobs_processed": heartbeat.jobs_processed,
-                "started_at": heartbeat.started_at.isoformat(),
-                "last_error": heartbeat.last_error,
-            },
+            metadata=metadata,
         )
 
     def _news_health(
@@ -262,6 +333,6 @@ class InfrastructureStatusService:
         value = self._now_provider()
         if value.tzinfo is None:
             raise ValueError(
-                "Infrastructure clock must be timezone-aware."
+                "Infrastructure status requires timezone-aware time."
             )
         return value.astimezone(timezone.utc)
