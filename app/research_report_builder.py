@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import datetime
 from typing import Protocol
 
@@ -5,6 +6,9 @@ from app.backtest_result import BacktestResult
 from app.execution_cost import ExecutionCostModel
 from app.monte_carlo_summary import (
     MonteCarloSummary,
+)
+from app.news_research_summary import (
+    NewsResearchSummary,
 )
 from app.research_report import ResearchReport
 from app.research_decision import (
@@ -38,6 +42,7 @@ def build_research_report(
     net_cost_model: ExecutionCostModel,
     walk_forward_result: WalkForwardResultLike,
     rolling_summary: RollingSummaryLike,
+    news_summary: NewsResearchSummary | None = None,
     generated_at: str | None = None,
 ) -> ResearchReport:
     cleaned_strategy_name = (
@@ -188,5 +193,56 @@ def build_research_report(
         rolling_worst_return_percent=(
             rolling_summary
             .worst_return_percent
+        ),
+        news_signal_count=(
+            0
+            if news_summary is None
+            else news_summary.signal_count
+        ),
+        news_outcome_count=(
+            0
+            if news_summary is None
+            else news_summary.outcome_count
+        ),
+        news_unmatched_outcome_count=(
+            0
+            if news_summary is None
+            else (
+                news_summary
+                .unmatched_outcome_count
+            )
+        ),
+        news_sentiment_group_count=(
+            0
+            if news_summary is None
+            else len(
+                news_summary.sentiment_groups
+            )
+        ),
+        news_materiality_group_count=(
+            0
+            if news_summary is None
+            else len(
+                news_summary.materiality_groups
+            )
+        ),
+        news_event_type_group_count=(
+            0
+            if news_summary is None
+            else len(
+                news_summary.event_type_groups
+            )
+        ),
+        news_confidence_group_count=(
+            0
+            if news_summary is None
+            else len(
+                news_summary.confidence_groups
+            )
+        ),
+        news_research_details=(
+            None
+            if news_summary is None
+            else asdict(news_summary)
         ),
     )

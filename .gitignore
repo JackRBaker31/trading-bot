@@ -1,25 +1,54 @@
 # Python
+
 .venv/
-__pycache__/
+**pycache**/
 .pytest_cache/
 *.pyc
+*.pyo
+*.pyd
 
 # Secrets
+
 .env
+.env.*
+!.env.example
 
 # Runtime trading journals
+
 order_journal*.jsonl
 data/*.jsonl
 
+# Runtime databases
+
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Runtime logs
+
+data/*.log
+*.log
+
+# Runtime worker and process control files
+
+*.pid
+*.lock
+*.stop
+
 # Generated AI research output
+
 research/reports/*.json
 research/experiments/*.jsonl
 
-data/monte_carlo_comparison.csv
-data/research_prices.csv
-
 # Research outputs
+
 data/*.png
 data/research_report.json
 data/research_report.csv
 data/monte_carlo_comparison.csv
+data/research_prices.csv
+
+# Local IDE settings
+
+.vscode/
+.idea/

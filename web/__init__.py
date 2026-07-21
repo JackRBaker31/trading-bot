@@ -1,0 +1,1 @@
+"""Read-only FastAPI interface for the trading platform."""

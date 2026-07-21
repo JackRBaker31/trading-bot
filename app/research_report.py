@@ -40,11 +40,31 @@ class ResearchReport:
     rolling_positive_window_percent: float
     rolling_average_return_percent: float
     rolling_worst_return_percent: float
+    news_signal_count: int = 0
+    news_outcome_count: int = 0
+    news_unmatched_outcome_count: int = 0
+    news_sentiment_group_count: int = 0
+    news_materiality_group_count: int = 0
+    news_event_type_group_count: int = 0
+    news_confidence_group_count: int = 0
+    news_research_details: (
+        dict[str, object] | None
+    ) = None
 
     def to_dictionary(
         self,
     ) -> dict[str, object]:
         return asdict(self)
+
+    def to_csv_dictionary(
+        self,
+    ) -> dict[str, object]:
+        data = self.to_dictionary()
+        data.pop(
+            "news_research_details",
+            None,
+        )
+        return data
 
 
 def save_research_report_json(
@@ -83,7 +103,7 @@ def save_research_report_csv(
         exist_ok=True,
     )
 
-    data = report.to_dictionary()
+    data = report.to_csv_dictionary()
 
     with path.open(
         mode="w",
