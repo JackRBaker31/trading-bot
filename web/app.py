@@ -328,6 +328,10 @@ class NewsResearchJobRequest(BaseModel):
         return payload
 
 
+class IntelligenceCycleJobRequest(NewsResearchJobRequest):
+    pass
+
+
 class StrategyReportJobRequest(BaseModel):
     force: bool = False
 
@@ -888,6 +892,35 @@ def create_app(
         )
         audit_factory().record(
             action="NEWS_RESEARCH_JOB_QUEUED",
+            outcome="SUCCEEDED",
+            username=user.username,
+            source_ip=source_ip(http_request),
+            target_id=job.job_id,
+            metadata={
+                "provider": request.provider,
+            },
+        )
+        return job.to_dictionary()
+
+    @app.post(
+        "/api/jobs/intelligence-cycle",
+        status_code=202,
+        tags=["jobs"],
+    )
+    def queue_intelligence_cycle(
+        request: IntelligenceCycleJobRequest,
+        http_request: Request,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_csrf_user),
+        ],
+    ) -> dict[str, object]:
+        job = jobs_factory().enqueue(
+            job_type=JobType.INTELLIGENCE_CYCLE,
+            payload=request.to_payload(),
+        )
+        audit_factory().record(
+            action="INTELLIGENCE_CYCLE_JOB_QUEUED",
             outcome="SUCCEEDED",
             username=user.username,
             source_ip=source_ip(http_request),

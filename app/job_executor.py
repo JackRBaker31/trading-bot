@@ -1,6 +1,10 @@
 from typing import Any, Mapping
 
 from app.config import load_config
+from app.daily_briefing_service import DailyBriefingService
+from app.intelligence_cycle_service import IntelligenceCycleService
+from app.intelligence_graduation_service import IntelligenceGraduationService
+from app.shadow_performance_service import ShadowPerformanceService
 from app.job import JobRecord, JobType
 from app.market_data_factory import (
     create_market_data_provider,
@@ -59,6 +63,9 @@ class JobExecutor:
 
         if job.job_type == JobType.SHADOW_ANALYSIS:
             return self._execute_shadow_analysis(job.payload)
+
+        if job.job_type == JobType.INTELLIGENCE_CYCLE:
+            return self._execute_intelligence_cycle(job.payload)
 
         raise ValueError(
             f"Unsupported job type: {job.job_type.value}."
@@ -198,8 +205,6 @@ class JobExecutor:
             False,
         )
 
-    @staticmethod
-
     def _execute_shadow_analysis(
         self,
         payload: Mapping[str, Any],
@@ -220,11 +225,98 @@ class JobExecutor:
         result = service.run_analysis()
         return result.to_dictionary(), False
 
+    def _execute_intelligence_cycle(
+        self,
+        payload: Mapping[str, Any],
+    ) -> tuple[dict[str, object], bool]:
+        symbols = self._resolve_symbols(payload)
+        provider = str(
+            payload.get("provider", "TWELVE_DATA")
+        )
+        max_price_requests = int(
+            payload.get("max_price_requests", 5)
+        )
+
+        intelligence_service = IntelligenceService(
+            system_status_service=SystemStatusService(),
+            research_query_service=ResearchQueryService(),
+            operations_query_service=OperationsQueryService(),
+            paper_trading_controller=(
+                PaperTradingProcessController()
+            ),
+        )
+        shadow_repository = ShadowDecisionRepository(
+            database_path=self._application_database_path
+        )
+        shadow_repository.initialize()
+        shadow_service = ShadowTradingService(
+            intelligence_service=intelligence_service,
+            repository=shadow_repository,
+        )
+        performance_service = ShadowPerformanceService(
+            repository=shadow_repository
+        )
+        graduation_service = IntelligenceGraduationService(
+            performance_service=performance_service,
+            intelligence_service=intelligence_service,
+        )
+        briefing_service = DailyBriefingService(
+            intelligence_service=intelligence_service,
+            shadow_performance_service=performance_service,
+            graduation_service=graduation_service,
+        )
+        news_service = NewsResearchCycleService(
+            observation_service_factory=(
+                lambda store_path: create_observation_service(
+                    store_path=store_path
+                )
+            ),
+            market_data_provider_factory=(
+                lambda provider_name, requested_symbols: (
+                    create_market_data_provider(
+                        provider_name=provider_name,
+                        symbols=requested_symbols,
+                    )
+                )
+            ),
+            run_history_service=(
+                self._create_run_history_service()
+            ),
+        )
+
+        result = IntelligenceCycleService(
+            news_cycle_runner=lambda: news_service.run(
+                request=NewsResearchCycleRequest(
+                    symbols=tuple(symbols),
+                    provider_name=provider,
+                    max_price_requests=max_price_requests,
+                )
+            ),
+            shadow_analysis_runner=shadow_service.run_analysis,
+            shadow_performance_runner=(
+                performance_service.get_report
+            ),
+            graduation_status_runner=(
+                graduation_service.get_status
+            ),
+            intelligence_snapshot_runner=(
+                intelligence_service.get_snapshot
+            ),
+            daily_briefing_runner=(
+                briefing_service.get_briefing
+            ),
+        ).run()
+
+        return result.to_dictionary(), result.has_warnings
+
     def _resolve_symbols(
         self,
         payload: Mapping[str, Any],
     ) -> list[str]:
-        watchlist = payload.get("watchlist")
+        watchlist = payload.get(
+            "watchlist",
+            payload.get("watchlist_path"),
+        )
 
         if watchlist is not None:
             return load_watchlist(

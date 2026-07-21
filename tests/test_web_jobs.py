@@ -245,3 +245,21 @@ def test_job_queue_requires_authentication() -> None:
     assert response.json()["error"]["code"] == (
         "AUTH_REQUIRED"
     )
+
+
+def test_queues_intelligence_cycle_job() -> None:
+    jobs = FakeJobService()
+    response = create_client(jobs).post(
+        "/api/jobs/intelligence-cycle",
+        json={
+            "symbols": ["aapl", "MSFT"],
+            "provider": "twelve_data",
+            "max_price_requests": 5,
+        },
+    )
+
+    assert response.status_code == 202
+    job_type, payload = jobs.enqueued[0]
+    assert job_type == JobType.INTELLIGENCE_CYCLE
+    assert payload["symbols"] == ["AAPL", "MSFT"]
+    assert payload["provider"] == "TWELVE_DATA"
