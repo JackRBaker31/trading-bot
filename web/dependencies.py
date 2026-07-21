@@ -39,6 +39,8 @@ from app.run_history_service import (
 from app.system_status_service import (
     SystemStatusService,
 )
+from app.scheduled_task_repository import ScheduledTaskRepository
+from app.schedule_management_service import ScheduleManagementService
 
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
@@ -214,3 +216,14 @@ def create_infrastructure_status_service(
     return InfrastructureStatusService(
         heartbeat_repository=repository
     )
+
+
+def create_schedule_management_service(
+    *, database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+) -> ScheduleManagementService:
+    service = ScheduleManagementService(
+        repository=ScheduledTaskRepository(database_path=database_path),
+        job_service=create_job_service(database_path=database_path),
+    )
+    service.initialize()
+    return service

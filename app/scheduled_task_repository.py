@@ -112,6 +112,77 @@ class ScheduledTaskRepository:
             ) from error
         return tuple(self._row_to_task(row) for row in rows)
 
+
+    def update(self, *, task: ScheduledTask) -> bool:
+        try:
+            with self._connect() as connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE scheduled_tasks
+                    SET task_type = ?, enabled = ?, schedule_kind = ?,
+                        timezone_name = ?, interval_seconds = ?, local_hour = ?,
+                        local_minute = ?, weekday = ?, next_run_at = ?,
+                        last_run_at = ?, last_job_id = ?, last_status = ?,
+                        payload_json = ?, catch_up_policy = ?,
+                        catch_up_window_seconds = ?, updated_at = ?,
+                        claim_token = NULL, claimed_until = NULL
+                    WHERE schedule_id = ?
+                    """,
+                    (
+                        task.task_type.value, int(task.enabled),
+                        task.schedule_kind.value, task.timezone_name,
+                        task.interval_seconds, task.local_hour,
+                        task.local_minute, task.weekday,
+                        task.next_run_at.isoformat(), _iso(task.last_run_at),
+                        task.last_job_id, task.last_status, task.payload_json(),
+                        task.catch_up_policy.value,
+                        task.catch_up_window_seconds,
+                        (_iso(task.updated_at) or task.next_run_at.isoformat()),
+                        task.schedule_id,
+                    ),
+                )
+                return cursor.rowcount == 1
+        except sqlite3.Error as error:
+            raise DataStoreError(
+                "Schedule could not be updated.",
+                code="SCHEDULE_UPDATE_FAILED",
+            ) from error
+
+    def set_enabled(
+        self, *, schedule_id: str, enabled: bool, updated_at: datetime
+    ) -> bool:
+        try:
+            with self._connect() as connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE scheduled_tasks
+                    SET enabled = ?, updated_at = ?, claim_token = NULL,
+                        claimed_until = NULL
+                    WHERE schedule_id = ?
+                    """,
+                    (int(enabled), updated_at.isoformat(), schedule_id),
+                )
+                return cursor.rowcount == 1
+        except sqlite3.Error as error:
+            raise DataStoreError(
+                "Schedule state could not be updated.",
+                code="SCHEDULE_STATE_UPDATE_FAILED",
+            ) from error
+
+    def delete(self, *, schedule_id: str) -> bool:
+        try:
+            with self._connect() as connection:
+                cursor = connection.execute(
+                    "DELETE FROM scheduled_tasks WHERE schedule_id = ?",
+                    (schedule_id,),
+                )
+                return cursor.rowcount == 1
+        except sqlite3.Error as error:
+            raise DataStoreError(
+                "Schedule could not be deleted.",
+                code="SCHEDULE_DELETE_FAILED",
+            ) from error
+
     def claim_next_due(
         self,
         *,

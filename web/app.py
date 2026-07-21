@@ -56,6 +56,7 @@ from app.job import (
     JobStatus,
     JobType,
 )
+from app.scheduled_task import CatchUpPolicy, ScheduleKind, ScheduledTask
 from app.shadow_decision import ShadowAction
 from app.paper_trading_process import (
     PaperTradingProcessStatus,
@@ -82,6 +83,7 @@ from web.dependencies import (
     create_infrastructure_status_service,
     create_daily_briefing_service,
     create_system_status_service,
+    create_schedule_management_service,
 )
 
 
@@ -199,6 +201,16 @@ class JobServiceLike(Protocol):
     ):
         ...
 
+
+
+class ScheduleManagementServiceLike(Protocol):
+    def list(self): ...
+    def get(self, *, schedule_id: str): ...
+    def create(self, **kwargs): ...
+    def update(self, *, schedule_id: str, **kwargs): ...
+    def set_enabled(self, *, schedule_id: str, enabled: bool): ...
+    def delete(self, *, schedule_id: str): ...
+    def run_now(self, *, schedule_id: str): ...
 
 class PaperTradingControllerLike(Protocol):
     def get_status(
@@ -340,6 +352,41 @@ class ShadowAnalysisJobRequest(BaseModel):
     force: bool = False
 
 
+
+class ScheduleWriteRequest(BaseModel):
+    schedule_id: str | None = None
+    task_type: JobType
+    enabled: bool = True
+    schedule_kind: ScheduleKind
+    timezone_name: str = "UTC"
+    interval_seconds: int | None = Field(default=None, gt=0)
+    local_hour: int | None = Field(default=None, ge=0, le=23)
+    local_minute: int | None = Field(default=None, ge=0, le=59)
+    weekday: int | None = Field(default=None, ge=0, le=6)
+    payload: dict[str, object] = Field(default_factory=dict)
+    catch_up_policy: CatchUpPolicy = CatchUpPolicy.RUN_ONCE
+    catch_up_window_seconds: int | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def validate_schedule(self):
+        if self.task_type not in {JobType.NEWS_RESEARCH_CYCLE, JobType.STRATEGY_REPORT, JobType.SHADOW_ANALYSIS, JobType.INTELLIGENCE_CYCLE}:
+            raise ValueError("This job type cannot be scheduled.")
+        if self.schedule_kind == ScheduleKind.INTERVAL and self.interval_seconds is None:
+            raise ValueError("Interval schedules require interval_seconds.")
+        if self.schedule_kind != ScheduleKind.INTERVAL and (self.local_hour is None or self.local_minute is None):
+            raise ValueError("Calendar schedules require local_hour and local_minute.")
+        if self.schedule_kind == ScheduleKind.WEEKLY and self.weekday is None:
+            raise ValueError("Weekly schedules require weekday.")
+        if self.catch_up_policy == CatchUpPolicy.RUN_IF_WITHIN_WINDOW and self.catch_up_window_seconds is None:
+            raise ValueError("Catch-up window is required.")
+        return self
+
+    def service_values(self) -> dict[str, object]:
+        return self.model_dump(exclude={"schedule_id"})
+
+class ScheduleUpdateRequest(ScheduleWriteRequest):
+    schedule_id: str | None = Field(default=None, exclude=True)
+
 class PaperTradingStartRequest(BaseModel):
     confirm_demo_paper_trading: bool
 
@@ -442,6 +489,9 @@ def create_app(
         Callable[[], OperationsQueryServiceLike]
         | None
     ) = None,
+    schedule_management_service_factory: (
+        Callable[[], ScheduleManagementServiceLike] | None
+    ) = None,
     paper_trading_controller_factory: (
         Callable[[], PaperTradingControllerLike]
         | None
@@ -499,6 +549,10 @@ def create_app(
         operations_query_service_factory
         or create_operations_query_service
     )
+    schedules_factory = (
+        schedule_management_service_factory
+        or create_schedule_management_service
+    )
     paper_trading_factory = (
         paper_trading_controller_factory
         or create_paper_trading_controller
@@ -528,7 +582,7 @@ def create_app(
             r"|http://127\.0\.0\.1(:\d+)?"
         ),
         allow_credentials=True,
-        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "X-CSRF-Token", "X-Session-Token"],
         expose_headers=["Set-Cookie"],
     )
@@ -998,6 +1052,85 @@ def create_app(
             )
 
         return record.to_dictionary()
+
+
+    def schedule_dictionary(task: ScheduledTask) -> dict[str, object]:
+        return {
+            "schedule_id": task.schedule_id, "task_type": task.task_type.value,
+            "enabled": task.enabled, "schedule_kind": task.schedule_kind.value,
+            "timezone_name": task.timezone_name, "interval_seconds": task.interval_seconds,
+            "local_hour": task.local_hour, "local_minute": task.local_minute,
+            "weekday": task.weekday, "next_run_at": task.next_run_at.isoformat(),
+            "last_run_at": None if task.last_run_at is None else task.last_run_at.isoformat(),
+            "last_job_id": task.last_job_id, "last_status": task.last_status,
+            "payload": dict(task.payload), "catch_up_policy": task.catch_up_policy.value,
+            "catch_up_window_seconds": task.catch_up_window_seconds,
+            "created_at": None if task.created_at is None else task.created_at.isoformat(),
+            "updated_at": None if task.updated_at is None else task.updated_at.isoformat(),
+        }
+
+    @app.get("/api/schedules", tags=["schedules"])
+    def list_schedules(user: Annotated[AuthenticatedUser, Depends(require_authenticated_user)]) -> dict[str, object]:
+        del user
+        items = schedules_factory().list()
+        return {"count": len(items), "items": [schedule_dictionary(item) for item in items]}
+
+    @app.get("/api/schedules/{schedule_id}", tags=["schedules"])
+    def get_schedule(schedule_id: str, user: Annotated[AuthenticatedUser, Depends(require_authenticated_user)]):
+        del user
+        item = schedules_factory().get(schedule_id=schedule_id)
+        if item is None:
+            return JSONResponse(status_code=404, content={"error": {"code": "SCHEDULE_NOT_FOUND", "message": "Schedule was not found.", "retryable": False}})
+        return schedule_dictionary(item)
+
+    @app.post("/api/schedules", status_code=201, tags=["schedules"])
+    def create_schedule(request: ScheduleWriteRequest, http_request: Request, user: Annotated[AuthenticatedUser, Depends(require_csrf_user)]):
+        item = schedules_factory().create(schedule_id=request.schedule_id, **request.service_values())
+        audit_factory().record(action="SCHEDULE_CREATED", outcome="SUCCEEDED", username=user.username, source_ip=source_ip(http_request), target_id=item.schedule_id, metadata={"task_type": item.task_type.value})
+        return schedule_dictionary(item)
+
+    @app.put("/api/schedules/{schedule_id}", tags=["schedules"])
+    def update_schedule(schedule_id: str, request: ScheduleUpdateRequest, http_request: Request, user: Annotated[AuthenticatedUser, Depends(require_csrf_user)]):
+        item = schedules_factory().update(schedule_id=schedule_id, **request.service_values())
+        if item is None:
+            return JSONResponse(status_code=404, content={"error": {"code": "SCHEDULE_NOT_FOUND", "message": "Schedule was not found.", "retryable": False}})
+        audit_factory().record(action="SCHEDULE_UPDATED", outcome="SUCCEEDED", username=user.username, source_ip=source_ip(http_request), target_id=schedule_id)
+        return schedule_dictionary(item)
+
+    def change_schedule_state(schedule_id: str, enabled: bool, http_request: Request, user: AuthenticatedUser):
+        item = schedules_factory().set_enabled(schedule_id=schedule_id, enabled=enabled)
+        if item is None:
+            return JSONResponse(status_code=404, content={"error": {"code": "SCHEDULE_NOT_FOUND", "message": "Schedule was not found.", "retryable": False}})
+        audit_factory().record(action="SCHEDULE_ENABLED" if enabled else "SCHEDULE_DISABLED", outcome="SUCCEEDED", username=user.username, source_ip=source_ip(http_request), target_id=schedule_id)
+        return schedule_dictionary(item)
+
+    @app.post("/api/schedules/{schedule_id}/enable", tags=["schedules"])
+    def enable_schedule(schedule_id: str, http_request: Request, user: Annotated[AuthenticatedUser, Depends(require_csrf_user)]):
+        return change_schedule_state(schedule_id, True, http_request, user)
+
+    @app.post("/api/schedules/{schedule_id}/disable", tags=["schedules"])
+    def disable_schedule(schedule_id: str, http_request: Request, user: Annotated[AuthenticatedUser, Depends(require_csrf_user)]):
+        return change_schedule_state(schedule_id, False, http_request, user)
+
+    @app.post("/api/schedules/{schedule_id}/run-now", status_code=202, tags=["schedules"])
+    def run_schedule_now(schedule_id: str, http_request: Request, user: Annotated[AuthenticatedUser, Depends(require_csrf_user)]):
+        job = schedules_factory().run_now(schedule_id=schedule_id)
+        if job is None:
+            return JSONResponse(status_code=404, content={"error": {"code": "SCHEDULE_NOT_FOUND", "message": "Schedule was not found.", "retryable": False}})
+        audit_factory().record(action="SCHEDULE_RUN_NOW_QUEUED", outcome="SUCCEEDED", username=user.username, source_ip=source_ip(http_request), target_id=schedule_id, metadata={"job_id": job.job_id})
+        return job.to_dictionary()
+
+    @app.delete("/api/schedules/{schedule_id}", status_code=204, tags=["schedules"])
+    def delete_schedule(schedule_id: str, http_request: Request, user: Annotated[AuthenticatedUser, Depends(require_csrf_user)]):
+        if not schedules_factory().delete(schedule_id=schedule_id):
+            return JSONResponse(status_code=404, content={"error": {"code": "SCHEDULE_NOT_FOUND", "message": "Schedule was not found.", "retryable": False}})
+        audit_factory().record(action="SCHEDULE_DELETED", outcome="SUCCEEDED", username=user.username, source_ip=source_ip(http_request), target_id=schedule_id)
+        return Response(status_code=204)
+
+    @app.get("/api/scheduler/status", tags=["schedules"])
+    def scheduler_status(user: Annotated[AuthenticatedUser, Depends(require_authenticated_user)]):
+        del user
+        return infrastructure_factory().get_scheduler_status().to_dictionary()
 
     @app.get(
         "/api/research/latest",
