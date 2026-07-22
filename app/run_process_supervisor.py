@@ -9,6 +9,8 @@ from pathlib import Path
 from app.environment import load_environment
 from app.health_monitor import HealthMonitor, HealthMonitorConfig
 from app.process_supervisor import ProcessSupervisor, default_processes
+from app.supervisor_diagnostics import build_diagnostics
+from app.supervisor_logging import LogRotationConfig, SupervisorEventLogger
 from app.worker_heartbeat_repository import WorkerHeartbeatRepository
 
 
@@ -30,6 +32,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--startup-grace-seconds", type=float, default=15.0)
     parser.add_argument("--heartbeat-stale-seconds", type=float, default=20.0)
     parser.add_argument("--persistent-failure-count", type=int, default=3)
+    parser.add_argument("--max-log-bytes", type=int, default=10 * 1024 * 1024)
+    parser.add_argument("--log-backup-count", type=int, default=5)
+    parser.add_argument("--event-log", default="data/supervisor/supervisor.log")
+    parser.add_argument("--diagnostics", action="store_true", help="Print supervisor diagnostics and exit.")
+    parser.add_argument("--diagnostic-log-lines", type=int, default=10)
     parser.add_argument("--no-restart", action="store_true")
     parser.add_argument(
         "--status",
@@ -42,6 +49,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     load_environment()
     args = parse_args(argv)
+
+    if args.diagnostics:
+        payload = build_diagnostics(
+            status_path=args.status_file,
+            database_path=args.database,
+            api_ready_url=args.api_health_url,
+            recent_log_lines=args.diagnostic_log_lines,
+        )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
 
     if args.status:
         path = Path(args.status_file)
@@ -81,6 +98,17 @@ def main(argv: list[str] | None = None) -> int:
         restart_window_seconds=args.restart_window_seconds,
         recovery_grace_seconds=args.recovery_grace_seconds,
         health_monitor=health_monitor,
+        log_rotation=LogRotationConfig(
+            max_bytes=args.max_log_bytes,
+            backup_count=args.log_backup_count,
+        ),
+        event_logger=SupervisorEventLogger(
+            args.event_log,
+            rotation=LogRotationConfig(
+                max_bytes=args.max_log_bytes,
+                backup_count=args.log_backup_count,
+            ),
+        ),
     )
 
     def request_stop(signum, frame) -> None:

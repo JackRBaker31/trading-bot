@@ -13,6 +13,7 @@ from typing import Callable, Protocol, TextIO
 
 from app.health_monitor import HealthMonitor, ServiceHealth
 from app.restart_policy import RestartPolicy, RestartPolicyConfig
+from app.supervisor_logging import LogRotationConfig, SupervisorEventLogger, rotate_file
 
 
 class SpawnedProcess(Protocol):
@@ -111,6 +112,8 @@ class ProcessSupervisor:
         popen_factory: PopenFactory = subprocess.Popen,
         clock: Clock = time.monotonic,
         sleeper: Sleeper = time.sleep,
+        log_rotation: LogRotationConfig | None = None,
+        event_logger: SupervisorEventLogger | None = None,
     ) -> None:
         if not processes:
             raise ValueError("At least one managed process is required.")
@@ -137,11 +140,17 @@ class ProcessSupervisor:
         self._popen_factory = popen_factory
         self._clock = clock
         self._sleeper = sleeper
+        self._log_rotation = log_rotation or LogRotationConfig()
+        self._event_logger = event_logger
         self._states = {
             config.name: ManagedProcessState(config=config)
             for config in processes
         }
         self._stopping = False
+
+    def _event(self, event_type: str, **fields: object) -> None:
+        if self._event_logger is not None:
+            self._event_logger.log(event_type, **fields)
 
     def acquire(self) -> None:
         self._pid_path.parent.mkdir(parents=True, exist_ok=True)
@@ -159,9 +168,11 @@ class ProcessSupervisor:
         )
         with os.fdopen(descriptor, "w", encoding="utf-8") as file:
             file.write(str(os.getpid()))
+        self._event("supervisor_acquired", pid=os.getpid())
 
     def release(self) -> None:
         self._pid_path.unlink(missing_ok=True)
+        self._event("supervisor_released", pid=os.getpid())
 
     def start_all(self) -> None:
         for state in self._states.values():
@@ -224,6 +235,7 @@ class ProcessSupervisor:
 
     def _start(self, state: ManagedProcessState, *, recovering: bool) -> None:
         state.config.log_path.parent.mkdir(parents=True, exist_ok=True)
+        rotate_file(state.config.log_path, self._log_rotation)
         state.log_handle = state.config.log_path.open(
             "a", encoding="utf-8", buffering=1
         )
@@ -251,6 +263,7 @@ class ProcessSupervisor:
         state.started_at = datetime.now(timezone.utc)
         state.last_exit_code = None
         state.restart_state = "RECOVERING" if recovering else "HEALTHY"
+        self._event("process_started", name=state.config.name, process_id=state.process.pid, recovering=recovering, log_path=str(state.config.log_path))
 
     def _check_process(self, state: ManagedProcessState) -> None:
         process = state.process
@@ -263,6 +276,7 @@ class ProcessSupervisor:
             return
 
         state.last_exit_code = int(exit_code)
+        self._event("process_exited", name=state.config.name, exit_code=int(exit_code))
         self._close_log(state)
         state.process = None
         self._restart(state, reason=f"process exited with code {exit_code}")
@@ -287,6 +301,7 @@ class ProcessSupervisor:
                 state.restart_state = "RECOVERED"
                 state.recovered_at = datetime.now(timezone.utc)
                 self._write_log_banner(state, "RECOVERED")
+                self._event("process_recovered", name=state.config.name, process_id=process.pid)
             elif state.restart_state not in {"RECOVERED", "FAILED"}:
                 state.restart_state = "HEALTHY"
             return
@@ -296,6 +311,7 @@ class ProcessSupervisor:
 
         if not health.persistent_fault:
             state.restart_state = "FAULT_DETECTED"
+            self._event("health_fault_detected", name=state.config.name, health_status=health.health_status, persistent=False, detail=health.health_detail)
             return
 
         if not self._health_pid_matches_owned_process(state, health):
@@ -304,8 +320,10 @@ class ProcessSupervisor:
                 state,
                 "HEALTH FAULT NOT RESTARTED - HEARTBEAT PID DOES NOT MATCH OWNED PROCESS",
             )
+            self._event("health_fault_pid_mismatch", name=state.config.name, heartbeat_process_id=health.heartbeat_process_id, owned_process_id=process.pid)
             return
 
+        self._event("persistent_health_fault", name=state.config.name, health_status=health.health_status, detail=health.health_detail)
         self._restart(
             state,
             reason=(
@@ -351,9 +369,11 @@ class ProcessSupervisor:
                 state,
                 "RESTART LIMIT REACHED - MANUAL REVIEW REQUIRED",
             )
+            self._event("restart_limit_reached", name=state.config.name, reason=reason, restart_count=state.restart_count)
             return
 
         state.restart_state = "RESTART_PENDING"
+        self._event("restart_pending", name=state.config.name, reason=reason, delay_seconds=decision.delay_seconds)
         self._write_log_banner(
             state,
             f"RESTARTING IN {decision.delay_seconds:.0f}s ({reason})",
@@ -371,6 +391,7 @@ class ProcessSupervisor:
             now=now,
         )
         state.restart_count += 1
+        self._event("process_restarting", name=state.config.name, reason=reason, restart_count=state.restart_count)
         state.last_restart_at = datetime.now(timezone.utc)
         self._start(state, recovering=True)
 
@@ -422,6 +443,7 @@ class ProcessSupervisor:
         state.last_exit_code = None if polled is None else int(polled)
         state.process = None
         self._write_log_banner(state, "STOPPED")
+        self._event("process_stopped", name=state.config.name, exit_code=state.last_exit_code)
         self._close_log(state)
 
     def _status_for(self, state: ManagedProcessState) -> ProcessStatus:
