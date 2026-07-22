@@ -10,8 +10,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Protocol, TextIO
-from urllib.error import URLError
-from urllib.request import urlopen
+
+from app.health_monitor import HealthMonitor, ServiceHealth
+from app.restart_policy import RestartPolicy, RestartPolicyConfig
 
 
 class SpawnedProcess(Protocol):
@@ -29,7 +30,6 @@ class SpawnedProcess(Protocol):
 PopenFactory = Callable[..., SpawnedProcess]
 Clock = Callable[[], float]
 Sleeper = Callable[[float], None]
-HealthProbe = Callable[[], bool]
 
 
 @dataclass(frozen=True)
@@ -37,16 +37,12 @@ class ManagedProcessConfig:
     name: str
     command: tuple[str, ...]
     log_path: Path
-    health_probe: HealthProbe | None = None
-    startup_grace_seconds: float = 15.0
 
     def __post_init__(self) -> None:
         if not self.name.strip():
             raise ValueError("Managed process name is required.")
         if not self.command:
             raise ValueError("Managed process command is required.")
-        if self.startup_grace_seconds < 0:
-            raise ValueError("Startup grace cannot be negative.")
 
 
 @dataclass
@@ -58,9 +54,11 @@ class ManagedProcessState:
     started_at: datetime | None = None
     last_exit_code: int | None = None
     restart_count: int = 0
-    consecutive_health_failures: int = 0
-    last_health_ok: bool | None = None
     restart_times: deque[float] = field(default_factory=deque)
+    restart_state: str = "HEALTHY"
+    last_restart_reason: str | None = None
+    last_restart_at: datetime | None = None
+    recovered_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -69,8 +67,12 @@ class ProcessStatus:
     status: str
     process_id: int | None
     restart_count: int
+    restart_state: str
+    last_restart_reason: str | None
+    last_restart_at: str | None
+    recovered_at: str | None
     last_exit_code: int | None
-    health_ok: bool | None
+    health: dict[str, object] | None
     started_at: str | None
     log_path: str
 
@@ -80,8 +82,12 @@ class ProcessStatus:
             "status": self.status,
             "process_id": self.process_id,
             "restart_count": self.restart_count,
+            "restart_state": self.restart_state,
+            "last_restart_reason": self.last_restart_reason,
+            "last_restart_at": self.last_restart_at,
+            "recovered_at": self.recovered_at,
             "last_exit_code": self.last_exit_code,
-            "health_ok": self.health_ok,
+            "health": self.health,
             "started_at": self.started_at,
             "log_path": self.log_path,
         }
@@ -99,7 +105,9 @@ class ProcessSupervisor:
         restart_enabled: bool = True,
         max_restarts: int = 5,
         restart_window_seconds: float = 300.0,
-        health_failure_limit: int = 3,
+        recovery_grace_seconds: float = 15.0,
+        health_monitor: HealthMonitor | None = None,
+        restart_policy: RestartPolicy | None = None,
         popen_factory: PopenFactory = subprocess.Popen,
         clock: Clock = time.monotonic,
         sleeper: Sleeper = time.sleep,
@@ -108,13 +116,6 @@ class ProcessSupervisor:
             raise ValueError("At least one managed process is required.")
         if check_seconds <= 0:
             raise ValueError("Check interval must be positive.")
-        if max_restarts < 0:
-            raise ValueError("Maximum restarts cannot be negative.")
-        if restart_window_seconds <= 0:
-            raise ValueError("Restart window must be positive.")
-        if health_failure_limit <= 0:
-            raise ValueError("Health failure limit must be positive.")
-
         names = [item.name for item in processes]
         if len(names) != len(set(names)):
             raise ValueError("Managed process names must be unique.")
@@ -124,9 +125,15 @@ class ProcessSupervisor:
         self._pid_path = Path(pid_path)
         self._check_seconds = check_seconds
         self._restart_enabled = restart_enabled
-        self._max_restarts = max_restarts
-        self._restart_window_seconds = restart_window_seconds
-        self._health_failure_limit = health_failure_limit
+        self._health_monitor = health_monitor
+        self._health_results: dict[str, ServiceHealth] = {}
+        self._restart_policy = restart_policy or RestartPolicy(
+            RestartPolicyConfig(
+                max_restarts=max_restarts,
+                restart_window_seconds=restart_window_seconds,
+                recovery_grace_seconds=recovery_grace_seconds,
+            )
+        )
         self._popen_factory = popen_factory
         self._clock = clock
         self._sleeper = sleeper
@@ -158,12 +165,20 @@ class ProcessSupervisor:
 
     def start_all(self) -> None:
         for state in self._states.values():
-            self._start(state)
+            self._start(state, recovering=False)
         self.write_status()
 
     def run_once(self) -> None:
         for state in self._states.values():
-            self._check(state)
+            self._check_process(state)
+
+        if self._health_monitor is not None:
+            self._health_results = self._health_monitor.check_all()
+            for state in self._states.values():
+                health = self._health_results.get(state.config.name)
+                if health is not None:
+                    self._apply_health_result(state, health)
+
         self.write_status()
 
     def run_forever(self) -> None:
@@ -207,7 +222,7 @@ class ProcessSupervisor:
         )
         temporary.replace(self._status_path)
 
-    def _start(self, state: ManagedProcessState) -> None:
+    def _start(self, state: ManagedProcessState, *, recovering: bool) -> None:
         state.config.log_path.parent.mkdir(parents=True, exist_ok=True)
         state.log_handle = state.config.log_path.open(
             "a", encoding="utf-8", buffering=1
@@ -235,75 +250,154 @@ class ProcessSupervisor:
         state.started_monotonic = self._clock()
         state.started_at = datetime.now(timezone.utc)
         state.last_exit_code = None
-        state.consecutive_health_failures = 0
-        state.last_health_ok = None
+        state.restart_state = "RECOVERING" if recovering else "HEALTHY"
 
-    def _check(self, state: ManagedProcessState) -> None:
+    def _check_process(self, state: ManagedProcessState) -> None:
         process = state.process
         if process is None:
-            self._restart(state, reason="not running")
+            self._restart(state, reason="process is not running")
             return
 
         exit_code = process.poll()
-        if exit_code is not None:
-            state.last_exit_code = int(exit_code)
-            self._close_log(state)
-            state.process = None
-            self._restart(state, reason=f"exited with code {exit_code}")
+        if exit_code is None:
             return
 
-        probe = state.config.health_probe
-        if probe is None:
-            state.last_health_ok = True
+        state.last_exit_code = int(exit_code)
+        self._close_log(state)
+        state.process = None
+        self._restart(state, reason=f"process exited with code {exit_code}")
+
+    def _apply_health_result(
+        self,
+        state: ManagedProcessState,
+        health: ServiceHealth,
+    ) -> None:
+        process = state.process
+        if process is None or process.poll() is not None:
             return
 
-        elapsed = self._clock() - (state.started_monotonic or self._clock())
-        if elapsed < state.config.startup_grace_seconds:
+        now = self._clock()
+        in_recovery_grace = self._restart_policy.within_recovery_grace(
+            started_monotonic=state.started_monotonic,
+            now=now,
+        )
+
+        if health.healthy:
+            if state.restart_state == "RECOVERING":
+                state.restart_state = "RECOVERED"
+                state.recovered_at = datetime.now(timezone.utc)
+                self._write_log_banner(state, "RECOVERED")
+            elif state.restart_state not in {"RECOVERED", "FAILED"}:
+                state.restart_state = "HEALTHY"
             return
 
-        try:
-            healthy = bool(probe())
-        except Exception:
-            healthy = False
-        state.last_health_ok = healthy
-        if healthy:
-            state.consecutive_health_failures = 0
+        if in_recovery_grace or health.health_status == "STARTING":
             return
 
-        state.consecutive_health_failures += 1
-        if state.consecutive_health_failures < self._health_failure_limit:
+        if not health.persistent_fault:
+            state.restart_state = "FAULT_DETECTED"
             return
 
-        self._write_log_banner(state, "HEALTH CHECK FAILED")
-        self._stop(state, terminate_timeout=5.0)
-        self._restart(state, reason="health check failed")
+        if not self._health_pid_matches_owned_process(state, health):
+            state.restart_state = "FAULT_DETECTED"
+            self._write_log_banner(
+                state,
+                "HEALTH FAULT NOT RESTARTED - HEARTBEAT PID DOES NOT MATCH OWNED PROCESS",
+            )
+            return
 
-    def _restart(self, state: ManagedProcessState, *, reason: str) -> None:
+        self._restart(
+            state,
+            reason=(
+                f"persistent health fault: {health.health_status} - "
+                f"{health.health_detail}"
+            ),
+            terminate_running=True,
+        )
+
+    @staticmethod
+    def _health_pid_matches_owned_process(
+        state: ManagedProcessState,
+        health: ServiceHealth,
+    ) -> bool:
+        process = state.process
+        if process is None:
+            return False
+        if state.config.name == "api":
+            return True
+        return health.heartbeat_process_id == process.pid
+
+    def _restart(
+        self,
+        state: ManagedProcessState,
+        *,
+        reason: str,
+        terminate_running: bool = False,
+    ) -> None:
         if self._stopping or not self._restart_enabled:
             return
 
         now = self._clock()
-        while state.restart_times and (
-            now - state.restart_times[0] > self._restart_window_seconds
-        ):
-            state.restart_times.popleft()
+        decision = self._restart_policy.decide(
+            restart_times=state.restart_times,
+            now=now,
+            reason=reason,
+        )
+        state.last_restart_reason = reason
 
-        if len(state.restart_times) >= self._max_restarts:
+        if not decision.allowed:
+            state.restart_state = "FAILED"
             self._write_log_banner(
                 state,
                 "RESTART LIMIT REACHED - MANUAL REVIEW REQUIRED",
             )
             return
 
-        state.restart_times.append(now)
-        state.restart_count += 1
-        delay = min(30.0, float(2 ** min(state.restart_count - 1, 4)))
+        state.restart_state = "RESTART_PENDING"
         self._write_log_banner(
             state,
-            f"RESTARTING IN {delay:.0f}s ({reason})",
+            f"RESTARTING IN {decision.delay_seconds:.0f}s ({reason})",
         )
-        self._sleeper(delay)
-        self._start(state)
+        self._sleeper(decision.delay_seconds)
+        if self._stopping:
+            return
+
+        state.restart_state = "RESTARTING"
+        if terminate_running:
+            self._terminate_for_restart(state)
+
+        self._restart_policy.record_restart(
+            restart_times=state.restart_times,
+            now=now,
+        )
+        state.restart_count += 1
+        state.last_restart_at = datetime.now(timezone.utc)
+        self._start(state, recovering=True)
+
+    def _terminate_for_restart(
+        self,
+        state: ManagedProcessState,
+        *,
+        terminate_timeout: float = 10.0,
+    ) -> None:
+        process = state.process
+        if process is None:
+            self._close_log(state)
+            return
+
+        if process.poll() is None:
+            try:
+                process.terminate()
+                process.wait(timeout=terminate_timeout)
+            except (subprocess.TimeoutExpired, TimeoutError):
+                process.kill()
+                process.wait(timeout=5.0)
+
+        polled = process.poll()
+        state.last_exit_code = None if polled is None else int(polled)
+        state.process = None
+        self._write_log_banner(state, "TERMINATED FOR HEALTH RECOVERY")
+        self._close_log(state)
 
     def _stop(
         self,
@@ -334,11 +428,9 @@ class ProcessSupervisor:
         process = state.process
         exit_code = None if process is None else process.poll()
         running = process is not None and exit_code is None
-        if running and state.last_health_ok is False:
-            status = "UNHEALTHY"
-        elif running:
+        if running:
             status = "RUNNING"
-        elif len(state.restart_times) >= self._max_restarts:
+        elif state.restart_state == "FAILED":
             status = "FAILED"
         else:
             status = "STOPPED"
@@ -348,8 +440,24 @@ class ProcessSupervisor:
             status=status,
             process_id=process.pid if running else None,
             restart_count=state.restart_count,
+            restart_state=state.restart_state,
+            last_restart_reason=state.last_restart_reason,
+            last_restart_at=(
+                None
+                if state.last_restart_at is None
+                else state.last_restart_at.isoformat()
+            ),
+            recovered_at=(
+                None
+                if state.recovered_at is None
+                else state.recovered_at.isoformat()
+            ),
             last_exit_code=state.last_exit_code,
-            health_ok=state.last_health_ok,
+            health=(
+                None
+                if state.config.name not in self._health_results
+                else self._health_results[state.config.name].to_dict()
+            ),
             started_at=(
                 None if state.started_at is None else state.started_at.isoformat()
             ),
@@ -387,25 +495,6 @@ class ProcessSupervisor:
             state.log_handle = None
 
 
-def http_health_probe(
-    url: str,
-    *,
-    timeout_seconds: float = 2.0,
-) -> HealthProbe:
-    cleaned = url.strip()
-    if not cleaned:
-        raise ValueError("Health-check URL is required.")
-
-    def probe() -> bool:
-        try:
-            with urlopen(cleaned, timeout=timeout_seconds) as response:
-                return 200 <= int(response.status) < 300
-        except (OSError, URLError, ValueError):
-            return False
-
-    return probe
-
-
 def default_processes(
     *,
     python_executable: str | None = None,
@@ -418,10 +507,6 @@ def default_processes(
             name="api",
             command=(python, "run_web.py"),
             log_path=logs / "api.log",
-            health_probe=http_health_probe(
-                "http://127.0.0.1:8000/health/ready"
-            ),
-            startup_grace_seconds=15.0,
         ),
         ManagedProcessConfig(
             name="job_worker",

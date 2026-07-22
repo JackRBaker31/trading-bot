@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from app.health_monitor import ServiceHealth
 from app.process_supervisor import ManagedProcessConfig, ProcessSupervisor
 
 
@@ -35,35 +36,81 @@ class FakeProcess:
 class FakePopenFactory:
     def __init__(self) -> None:
         self.processes: list[FakeProcess] = []
-        self.calls: list[dict] = []
 
     def __call__(self, command, **kwargs):
+        del command, kwargs
         process = FakeProcess()
         self.processes.append(process)
-        self.calls.append({"command": command, **kwargs})
         return process
 
 
-def make_config(tmp_path: Path, *, health_probe=None):
+class FakeHealthMonitor:
+    def __init__(self, result: ServiceHealth, *, name: str = "worker") -> None:
+        self.result = result
+        self.name = name
+        self.calls = 0
+
+    def check_all(self):
+        self.calls += 1
+        return {self.name: self.result}
+
+
+def make_config(tmp_path: Path, *, name: str = "worker"):
     return ManagedProcessConfig(
-        name="worker",
+        name=name,
         command=("python", "-m", "example"),
-        log_path=tmp_path / "worker.log",
-        health_probe=health_probe,
-        startup_grace_seconds=0,
+        log_path=tmp_path / f"{name}.log",
+    )
+
+
+def make_health(
+    *,
+    name: str = "worker",
+    healthy: bool,
+    persistent_fault: bool,
+    heartbeat_process_id: int | None = None,
+) -> ServiceHealth:
+    return ServiceHealth(
+        name=name,
+        health_status="HEALTHY" if healthy else "STALE",
+        healthy=healthy,
+        persistent_fault=persistent_fault,
+        consecutive_health_failures=3 if persistent_fault else 0,
+        last_health_check_at="2026-07-22T12:00:00+00:00",
+        last_healthy_at=None,
+        health_detail="test result",
+        heartbeat_process_id=heartbeat_process_id,
+    )
+
+
+def make_supervisor(
+    tmp_path: Path,
+    *,
+    config: ManagedProcessConfig | None = None,
+    factory: FakePopenFactory | None = None,
+    health_monitor=None,
+    clock=lambda: 100.0,
+    max_restarts: int = 5,
+    recovery_grace_seconds: float = 0.0,
+):
+    actual_factory = factory or FakePopenFactory()
+    return ProcessSupervisor(
+        processes=[config or make_config(tmp_path)],
+        working_directory=tmp_path,
+        status_path=tmp_path / "status.json",
+        pid_path=tmp_path / "supervisor.pid",
+        popen_factory=actual_factory,
+        sleeper=lambda seconds: None,
+        clock=clock,
+        max_restarts=max_restarts,
+        recovery_grace_seconds=recovery_grace_seconds,
+        health_monitor=health_monitor,
     )
 
 
 def test_starts_process_and_writes_status(tmp_path):
     factory = FakePopenFactory()
-    supervisor = ProcessSupervisor(
-        processes=[make_config(tmp_path)],
-        working_directory=tmp_path,
-        status_path=tmp_path / "status.json",
-        pid_path=tmp_path / "supervisor.pid",
-        popen_factory=factory,
-        sleeper=lambda seconds: None,
-    )
+    supervisor = make_supervisor(tmp_path, factory=factory)
 
     supervisor.start_all()
 
@@ -76,14 +123,7 @@ def test_starts_process_and_writes_status(tmp_path):
 
 def test_restarts_process_after_unexpected_exit(tmp_path):
     factory = FakePopenFactory()
-    supervisor = ProcessSupervisor(
-        processes=[make_config(tmp_path)],
-        working_directory=tmp_path,
-        status_path=tmp_path / "status.json",
-        pid_path=tmp_path / "supervisor.pid",
-        popen_factory=factory,
-        sleeper=lambda seconds: None,
-    )
+    supervisor = make_supervisor(tmp_path, factory=factory)
     supervisor.start_all()
     factory.processes[0].exit_code = 1
 
@@ -91,21 +131,154 @@ def test_restarts_process_after_unexpected_exit(tmp_path):
 
     assert len(factory.processes) == 2
     status = supervisor.statuses()[0]
-    assert status.status == "RUNNING"
     assert status.restart_count == 1
+    assert status.restart_state == "RECOVERING"
+    supervisor.stop_all()
+
+
+def test_persistent_api_fault_restarts_owned_api(tmp_path):
+    factory = FakePopenFactory()
+    health_monitor = FakeHealthMonitor(
+        make_health(name="api", healthy=False, persistent_fault=True),
+        name="api",
+    )
+    supervisor = make_supervisor(
+        tmp_path,
+        config=make_config(tmp_path, name="api"),
+        factory=factory,
+        health_monitor=health_monitor,
+    )
+    supervisor.start_all()
+
+    supervisor.run_once()
+
+    assert factory.processes[0].terminated is True
+    assert len(factory.processes) == 2
+    status = supervisor.statuses()[0]
+    assert status.restart_count == 1
+    assert status.restart_state == "RECOVERING"
+    assert "persistent health fault" in status.last_restart_reason
+    supervisor.stop_all()
+
+
+def test_persistent_worker_fault_requires_matching_heartbeat_pid(tmp_path):
+    factory = FakePopenFactory()
+    supervisor = make_supervisor(tmp_path, factory=factory)
+    supervisor.start_all()
+    owned_pid = factory.processes[0].pid
+    supervisor._health_monitor = FakeHealthMonitor(
+        make_health(
+            healthy=False,
+            persistent_fault=True,
+            heartbeat_process_id=owned_pid,
+        )
+    )
+
+    supervisor.run_once()
+
+    assert factory.processes[0].terminated is True
+    assert len(factory.processes) == 2
+    supervisor.stop_all()
+
+
+def test_pid_mismatch_reports_fault_without_restart(tmp_path):
+    factory = FakePopenFactory()
+    health_monitor = FakeHealthMonitor(
+        make_health(
+            healthy=False,
+            persistent_fault=True,
+            heartbeat_process_id=999999,
+        )
+    )
+    supervisor = make_supervisor(
+        tmp_path,
+        factory=factory,
+        health_monitor=health_monitor,
+    )
+    supervisor.start_all()
+
+    supervisor.run_once()
+
+    assert len(factory.processes) == 1
+    assert factory.processes[0].terminated is False
+    assert supervisor.statuses()[0].restart_state == "FAULT_DETECTED"
+    supervisor.stop_all()
+
+
+def test_non_persistent_health_fault_does_not_restart(tmp_path):
+    factory = FakePopenFactory()
+    health_monitor = FakeHealthMonitor(
+        make_health(healthy=False, persistent_fault=False)
+    )
+    supervisor = make_supervisor(
+        tmp_path,
+        factory=factory,
+        health_monitor=health_monitor,
+    )
+    supervisor.start_all()
+
+    supervisor.run_once()
+
+    assert len(factory.processes) == 1
+    assert supervisor.statuses()[0].restart_state == "FAULT_DETECTED"
+    supervisor.stop_all()
+
+
+def test_recovery_grace_prevents_immediate_health_restart(tmp_path):
+    factory = FakePopenFactory()
+    clock = [100.0]
+    health_monitor = FakeHealthMonitor(
+        make_health(name="api", healthy=False, persistent_fault=True),
+        name="api",
+    )
+    supervisor = make_supervisor(
+        tmp_path,
+        config=make_config(tmp_path, name="api"),
+        factory=factory,
+        health_monitor=health_monitor,
+        clock=lambda: clock[0],
+        recovery_grace_seconds=15.0,
+    )
+    supervisor.start_all()
+
+    clock[0] = 110.0
+    supervisor.run_once()
+
+    assert len(factory.processes) == 1
+    supervisor.stop_all()
+
+
+def test_healthy_check_marks_recovery_complete(tmp_path):
+    factory = FakePopenFactory()
+    health_monitor = FakeHealthMonitor(
+        make_health(name="api", healthy=False, persistent_fault=True),
+        name="api",
+    )
+    supervisor = make_supervisor(
+        tmp_path,
+        config=make_config(tmp_path, name="api"),
+        factory=factory,
+        health_monitor=health_monitor,
+    )
+    supervisor.start_all()
+    supervisor.run_once()
+    health_monitor.result = make_health(
+        name="api", healthy=True, persistent_fault=False
+    )
+
+    supervisor.run_once()
+
+    assert supervisor.statuses()[0].restart_state == "RECOVERED"
+    assert supervisor.statuses()[0].recovered_at is not None
     supervisor.stop_all()
 
 
 def test_restart_limit_prevents_crash_loop(tmp_path):
     factory = FakePopenFactory()
     now = [0.0]
-    supervisor = ProcessSupervisor(
-        processes=[make_config(tmp_path)],
-        working_directory=tmp_path,
-        status_path=tmp_path / "status.json",
-        pid_path=tmp_path / "supervisor.pid",
-        popen_factory=factory,
-        sleeper=lambda seconds: None,
+    supervisor = make_supervisor(
+        tmp_path,
+        factory=factory,
         clock=lambda: now[0],
         max_restarts=2,
     )
@@ -120,41 +293,13 @@ def test_restart_limit_prevents_crash_loop(tmp_path):
 
     assert len(factory.processes) == 3
     assert supervisor.statuses()[0].status == "FAILED"
-    supervisor.stop_all()
-
-
-def test_restarts_after_repeated_health_failures(tmp_path):
-    factory = FakePopenFactory()
-    supervisor = ProcessSupervisor(
-        processes=[make_config(tmp_path, health_probe=lambda: False)],
-        working_directory=tmp_path,
-        status_path=tmp_path / "status.json",
-        pid_path=tmp_path / "supervisor.pid",
-        popen_factory=factory,
-        sleeper=lambda seconds: None,
-        health_failure_limit=2,
-    )
-    supervisor.start_all()
-
-    supervisor.run_once()
-    assert len(factory.processes) == 1
-    supervisor.run_once()
-
-    assert len(factory.processes) == 2
-    assert supervisor.statuses()[0].restart_count == 1
+    assert supervisor.statuses()[0].restart_state == "FAILED"
     supervisor.stop_all()
 
 
 def test_stop_all_terminates_children(tmp_path):
     factory = FakePopenFactory()
-    supervisor = ProcessSupervisor(
-        processes=[make_config(tmp_path)],
-        working_directory=tmp_path,
-        status_path=tmp_path / "status.json",
-        pid_path=tmp_path / "supervisor.pid",
-        popen_factory=factory,
-        sleeper=lambda seconds: None,
-    )
+    supervisor = make_supervisor(tmp_path, factory=factory)
     supervisor.start_all()
 
     supervisor.stop_all()

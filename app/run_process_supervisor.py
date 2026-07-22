@@ -7,7 +7,9 @@ import sys
 from pathlib import Path
 
 from app.environment import load_environment
+from app.health_monitor import HealthMonitor, HealthMonitorConfig
 from app.process_supervisor import ProcessSupervisor, default_processes
+from app.worker_heartbeat_repository import WorkerHeartbeatRepository
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -15,11 +17,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Start and supervise the KAIRO backend processes."
     )
     parser.add_argument("--working-directory", default=".")
+    parser.add_argument("--database", default="data/application.db")
     parser.add_argument("--status-file", default="data/supervisor_status.json")
     parser.add_argument("--pid-file", default="data/kairo_supervisor.pid")
     parser.add_argument("--log-directory", default="data/supervisor")
-    parser.add_argument("--check-seconds", type=float, default=2.0)
+    parser.add_argument("--check-seconds", type=float, default=5.0)
     parser.add_argument("--max-restarts", type=int, default=5)
+    parser.add_argument("--restart-window-seconds", type=float, default=300.0)
+    parser.add_argument("--recovery-grace-seconds", type=float, default=15.0)
+    parser.add_argument("--api-health-url", default="http://127.0.0.1:8000/health/ready")
+    parser.add_argument("--api-timeout-seconds", type=float, default=2.0)
+    parser.add_argument("--startup-grace-seconds", type=float, default=15.0)
+    parser.add_argument("--heartbeat-stale-seconds", type=float, default=20.0)
+    parser.add_argument("--persistent-failure-count", type=int, default=3)
     parser.add_argument("--no-restart", action="store_true")
     parser.add_argument(
         "--status",
@@ -42,6 +52,21 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
 
+    heartbeat_repository = WorkerHeartbeatRepository(
+        database_path=args.database,
+    )
+    heartbeat_repository.initialize()
+    health_monitor = HealthMonitor(
+        heartbeat_repository=heartbeat_repository,
+        config=HealthMonitorConfig(
+            api_url=args.api_health_url,
+            api_timeout_seconds=args.api_timeout_seconds,
+            startup_grace_seconds=args.startup_grace_seconds,
+            heartbeat_stale_seconds=args.heartbeat_stale_seconds,
+            persistent_failure_count=args.persistent_failure_count,
+        ),
+    )
+
     supervisor = ProcessSupervisor(
         processes=default_processes(
             python_executable=sys.executable,
@@ -53,6 +78,9 @@ def main(argv: list[str] | None = None) -> int:
         check_seconds=args.check_seconds,
         restart_enabled=not args.no_restart,
         max_restarts=args.max_restarts,
+        restart_window_seconds=args.restart_window_seconds,
+        recovery_grace_seconds=args.recovery_grace_seconds,
+        health_monitor=health_monitor,
     )
 
     def request_stop(signum, frame) -> None:
@@ -65,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print("KAIRO PROCESS SUPERVISOR STARTED")
     print("Managing: API, Job Worker, Scheduler")
+    print("Health monitoring: automatic recovery enabled")
     print("Paper trading remains controlled by the existing API.")
     try:
         supervisor.run_forever()
