@@ -272,7 +272,13 @@ class LoginRequest(BaseModel):
 
 
 class NewsResearchJobRequest(BaseModel):
-    provider: str = "TWELVE_DATA"
+    market_data_provider: str = Field(
+        default="TWELVE_DATA",
+        validation_alias=AliasChoices(
+            "market_data_provider",
+            "provider",
+        ),
+    )
     symbols: list[str] | None = None
     watchlist_path: str | None = Field(
         default=None,
@@ -283,9 +289,9 @@ class NewsResearchJobRequest(BaseModel):
     )
     max_price_requests: int = Field(default=5, ge=0)
 
-    @field_validator("provider")
+    @field_validator("market_data_provider")
     @classmethod
-    def normalize_provider(
+    def normalize_market_data_provider(
         cls,
         value: str,
     ) -> str:
@@ -330,7 +336,7 @@ class NewsResearchJobRequest(BaseModel):
 
     def to_payload(self) -> dict:
         payload: dict = {
-            "provider": self.provider,
+            "market_data_provider": self.market_data_provider,
             "max_price_requests": self.max_price_requests,
         }
         if self.symbols is not None:
@@ -951,7 +957,7 @@ def create_app(
             source_ip=source_ip(http_request),
             target_id=job.job_id,
             metadata={
-                "provider": request.provider,
+                "market_data_provider": request.market_data_provider,
             },
         )
         return job.to_dictionary()
@@ -980,7 +986,7 @@ def create_app(
             source_ip=source_ip(http_request),
             target_id=job.job_id,
             metadata={
-                "provider": request.provider,
+                "market_data_provider": request.market_data_provider,
             },
         )
         return job.to_dictionary()

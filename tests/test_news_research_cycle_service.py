@@ -212,7 +212,7 @@ def test_request_normalises_symbols_and_provider() -> None:
         "AAPL",
         "MSFT",
     )
-    assert request.provider_name == "TWELVE_DATA"
+    assert request.market_data_provider == "TWELVE_DATA"
 
 
 @pytest.mark.parametrize(

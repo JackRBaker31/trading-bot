@@ -90,7 +90,10 @@ class JobExecutor:
     ) -> tuple[dict[str, object], bool]:
         symbols = self._resolve_symbols(payload)
         provider = str(
-            payload.get("provider", "TWELVE_DATA")
+            payload.get(
+                "market_data_provider",
+                payload.get("provider", "TWELVE_DATA"),
+            )
         )
         max_price_requests = int(
             payload.get("max_price_requests", 5)
@@ -120,7 +123,7 @@ class JobExecutor:
         result = service.run(
             request=NewsResearchCycleRequest(
                 symbols=tuple(symbols),
-                provider_name=provider,
+                market_data_provider=provider,
                 max_price_requests=max_price_requests,
             )
         )
@@ -231,7 +234,10 @@ class JobExecutor:
     ) -> tuple[dict[str, object], bool]:
         symbols = self._resolve_symbols(payload)
         provider = str(
-            payload.get("provider", "TWELVE_DATA")
+            payload.get(
+                "market_data_provider",
+                payload.get("provider", "TWELVE_DATA"),
+            )
         )
         max_price_requests = int(
             payload.get("max_price_requests", 5)

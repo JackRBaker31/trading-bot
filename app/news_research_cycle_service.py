@@ -46,7 +46,6 @@ MarketDataProviderFactory = Callable[
     MarketDataProvider,
 ]
 
-
 @dataclass(frozen=True)
 class NewsResearchCycleRequest:
     symbols: tuple[str, ...]
@@ -115,6 +114,9 @@ class NewsResearchCycleRequest:
             cleaned_provider,
         )
 
+    @property
+    def market_data_provider(self) -> str:
+        return self.provider_name
 
 @dataclass(frozen=True)
 class NewsResearchCycleResult:
@@ -171,7 +173,7 @@ class NewsResearchCycleService:
                     run_type=(
                         RunType.NEWS_RESEARCH_CYCLE
                     ),
-                    provider=request.provider_name,
+                    provider=request.market_data_provider,
                     symbols=request.symbols,
                     metadata={
                         "signals_path": request.signals_path,
@@ -361,7 +363,7 @@ class NewsResearchCycleService:
             try:
                 market_data_provider = (
                     self._market_data_provider_factory(
-                        request.provider_name,
+                        request.market_data_provider,
                         signal_symbols,
                     )
                 )
@@ -377,7 +379,7 @@ class NewsResearchCycleService:
                     ),
                     context={
                         "provider": (
-                            request.provider_name
+                            request.market_data_provider
                         ),
                         "symbols": (
                             signal_symbols
@@ -442,7 +444,7 @@ class NewsResearchCycleService:
                             "price_measurement"
                         ),
                         "provider": (
-                            request.provider_name
+                            request.market_data_provider
                         ),
                     },
                 ) from error
@@ -471,7 +473,7 @@ class NewsResearchCycleService:
             ) from error
 
         return NewsResearchCycleResult(
-            provider_name=request.provider_name,
+            provider_name=request.market_data_provider,
             symbols=observation_summary.symbols,
             observation_summary=(
                 observation_summary

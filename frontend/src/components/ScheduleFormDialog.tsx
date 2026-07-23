@@ -127,7 +127,7 @@ export function buildPayload(values: FormValues): Record<string, unknown> {
   if (values.task_type === "INTELLIGENCE_CYCLE") {
     const p: Record<string, unknown> = {};
     if (values.ic_watchlist_path?.trim()) p.watchlist_path = values.ic_watchlist_path.trim();
-    if (values.ic_provider?.trim()) p.provider = values.ic_provider.trim().toUpperCase();
+    if (values.ic_provider?.trim()) p.market_data_provider = values.ic_provider.trim().toUpperCase();
     if (values.ic_max_price_requests != null) p.max_price_requests = values.ic_max_price_requests;
     return p;
   }
@@ -138,7 +138,7 @@ export function buildPayload(values: FormValues): Record<string, unknown> {
     } else if (values.nr_watchlist_path?.trim()) {
       p.watchlist_path = values.nr_watchlist_path.trim();
     }
-    if (values.nr_provider?.trim()) p.provider = values.nr_provider.trim().toUpperCase();
+    if (values.nr_provider?.trim()) p.market_data_provider = values.nr_provider.trim().toUpperCase();
     if (values.nr_max_price_requests != null) p.max_price_requests = values.nr_max_price_requests;
     return p;
   }
@@ -189,11 +189,21 @@ function defaultsFromSchedule(s: ScheduledTask | null): Partial<FormValues> {
     weekday: s.weekday,
     catch_up_window_minutes: s.catch_up_window_seconds ? s.catch_up_window_seconds / 60 : null,
     ic_watchlist_path: typeof pl.watchlist_path === "string" ? pl.watchlist_path : "",
-    ic_provider: typeof pl.provider === "string" ? pl.provider : "",
+    ic_provider:
+      typeof pl.market_data_provider === "string"
+        ? pl.market_data_provider
+        : typeof pl.provider === "string"
+          ? pl.provider
+          : "TWELVE_DATA",
     ic_max_price_requests: typeof pl.max_price_requests === "number" ? pl.max_price_requests : null,
     nr_symbols: Array.isArray(pl.symbols) ? (pl.symbols as string[]).join(", ") : "",
     nr_watchlist_path: typeof pl.watchlist_path === "string" ? pl.watchlist_path : "",
-    nr_provider: typeof pl.provider === "string" ? pl.provider : "",
+    nr_provider:
+      typeof pl.market_data_provider === "string"
+        ? pl.market_data_provider
+        : typeof pl.provider === "string"
+          ? pl.provider
+          : "TWELVE_DATA",
     nr_max_price_requests: typeof pl.max_price_requests === "number" ? pl.max_price_requests : null,
   };
 }
@@ -489,7 +499,7 @@ export function ScheduleFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                        Provider (optional)
+                        Market Data Provider
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -579,7 +589,7 @@ export function ScheduleFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                        Provider (optional)
+                        Market Data Provider
                       </FormLabel>
                       <FormControl>
                         <Input

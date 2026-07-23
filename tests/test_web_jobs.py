@@ -179,7 +179,7 @@ def test_queues_news_research_job() -> None:
         "/api/jobs/news-research",
         json={
             "symbols": ["aapl", "MSFT"],
-            "provider": "twelve_data",
+            "market_data_provider": "twelve_data",
             "max_price_requests": 5,
         },
     )
@@ -189,8 +189,25 @@ def test_queues_news_research_job() -> None:
     job_type, payload = jobs.enqueued[0]
     assert job_type == JobType.NEWS_RESEARCH_CYCLE
     assert payload["symbols"] == ["AAPL", "MSFT"]
-    assert payload["provider"] == "TWELVE_DATA"
+    assert payload["market_data_provider"] == "TWELVE_DATA"
 
+
+
+def test_accepts_legacy_provider_alias_for_news_job() -> None:
+    jobs = FakeJobService()
+    response = create_client(jobs).post(
+        "/api/jobs/news-research",
+        json={
+            "symbols": ["AAPL"],
+            "provider": "twelve_data",
+            "max_price_requests": 5,
+        },
+    )
+
+    assert response.status_code == 202
+    _, payload = jobs.enqueued[0]
+    assert payload["market_data_provider"] == "TWELVE_DATA"
+    assert "provider" not in payload
 
 def test_rejects_news_job_with_both_sources() -> None:
     response = create_client(FakeJobService()).post(
@@ -253,7 +270,7 @@ def test_queues_intelligence_cycle_job() -> None:
         "/api/jobs/intelligence-cycle",
         json={
             "symbols": ["aapl", "MSFT"],
-            "provider": "twelve_data",
+            "market_data_provider": "twelve_data",
             "max_price_requests": 5,
         },
     )
@@ -262,4 +279,4 @@ def test_queues_intelligence_cycle_job() -> None:
     job_type, payload = jobs.enqueued[0]
     assert job_type == JobType.INTELLIGENCE_CYCLE
     assert payload["symbols"] == ["AAPL", "MSFT"]
-    assert payload["provider"] == "TWELVE_DATA"
+    assert payload["market_data_provider"] == "TWELVE_DATA"
