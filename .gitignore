@@ -52,3 +52,18 @@ data/research_prices.csv
 
 .vscode/
 .idea/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+frontend/.replit-artifact/
+frontend/*.tsbuildinfo
+
+# Frontend local environment
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Runtime state
+data/position_states.json
+data/supervisor_status.json

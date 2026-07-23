@@ -112,8 +112,13 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     def request_stop(signum, frame) -> None:
-        del signum, frame
-        supervisor.request_stop()
+        del frame
+
+        print(f"\nSUPERVISOR STOP REQUESTED (signal={signum})")
+
+        supervisor.request_stop(
+            reason=f"signal {signum}"
+        )
 
     signal.signal(signal.SIGINT, request_stop)
     if hasattr(signal, "SIGTERM"):
@@ -127,6 +132,11 @@ def main(argv: list[str] | None = None) -> int:
         supervisor.run_forever()
     except RuntimeError as error:
         print(f"ERROR: {error}")
+        return 1
+    except Exception as error:
+        import traceback
+
+        traceback.print_exc()
         return 1
     finally:
         print("KAIRO PROCESS SUPERVISOR STOPPED")

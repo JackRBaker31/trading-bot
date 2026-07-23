@@ -196,14 +196,35 @@ class ProcessSupervisor:
         self.acquire()
         try:
             self.start_all()
+
+            self._event("supervisor_loop_started")
+
             while not self._stopping:
-                self.run_once()
+                self._event("supervisor_loop_iteration")
+
+                try:
+                    self.run_once()
+                except Exception as error:
+                    self._event(
+                        "supervisor_exception",
+                        error_type=type(error).__name__,
+                        error=str(error),
+                    )
+                    raise
+
                 self._sleeper(self._check_seconds)
+
+            self._event("supervisor_loop_exited")
+
         finally:
             self.stop_all()
             self.release()
 
-    def request_stop(self) -> None:
+    def request_stop(self, reason: str = "unknown") -> None:
+        self._event(
+            "supervisor_stop_requested",
+            reason=reason,
+        )
         self._stopping = True
 
     def stop_all(self, *, terminate_timeout: float = 10.0) -> None:
