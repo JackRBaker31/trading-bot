@@ -19,6 +19,33 @@ import { server } from "@/test/handlers";
 const BASE =
   "http://127.0.0.1:8000";
 
+const healthyOverview = {
+  generated_at:
+    "2026-07-24T08:00:00+00:00",
+  overall_status: "HEALTHY",
+  platform: {
+    overall_status: "HEALTHY",
+    online_services: 5,
+    required_services: 5,
+  },
+  activity: {
+    running_jobs: 1,
+    queued_jobs: 2,
+    active_jobs: 3,
+  },
+  schedule: {
+    task_type:
+      "INTELLIGENCE_CYCLE",
+    next_run_at:
+      "2026-07-24T09:30:00+00:00",
+    schedule_id: "schedule-001",
+  },
+  failures: {
+    recent_count: 0,
+    latest: null,
+  },
+  attention_items: [],
+};
 
 describe(
   "KAIRO Copilot page",
@@ -37,6 +64,13 @@ describe(
                 ],
               }),
           ),
+          http.get(
+            `${BASE}/api/copilot/overview`,
+            () =>
+                HttpResponse.json(
+                healthyOverview,
+                ),
+            ),
         );
 
         render(
@@ -73,6 +107,13 @@ describe(
                 items: [],
               }),
           ),
+          http.get(
+            `${BASE}/api/copilot/overview`,
+            () =>
+                HttpResponse.json(
+                healthyOverview,
+                ),
+            ),
 
           http.post(
             `${BASE}/api/copilot/query`,
@@ -173,6 +214,13 @@ describe(
                 ],
               }),
           ),
+          http.get(
+            `${BASE}/api/copilot/overview`,
+            () =>
+                HttpResponse.json(
+                healthyOverview,
+                ),
+            ),
 
           http.post(
             `${BASE}/api/copilot/query`,
@@ -226,5 +274,61 @@ describe(
         ).toBeInTheDocument();
       },
     );
+  },
+);
+
+it(
+  "renders the live intelligence overview",
+  async () => {
+    server.use(
+      http.get(
+        `${BASE}/api/copilot/suggestions`,
+        () =>
+          HttpResponse.json({
+            items: [],
+          }),
+      ),
+      http.get(
+        `${BASE}/api/copilot/overview`,
+        () =>
+          HttpResponse.json(
+            healthyOverview,
+          ),
+      ),
+    );
+
+    render(
+      <CopilotPage />,
+    );
+
+    expect(
+      await screen.findByText(
+        "Live Intelligence Overview",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "5 of 5 required services online.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "1 running, 2 queued.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "Intelligence Cycle",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "No recent job failures.",
+      ),
+    ).toBeInTheDocument();
   },
 );

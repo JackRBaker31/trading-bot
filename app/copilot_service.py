@@ -13,7 +13,15 @@ from app.job import (
     JobStatus,
 )
 from app.scheduled_task import ScheduledTask
-
+from app.copilot_overview_models import (
+    CopilotActivityOverview,
+    CopilotAttentionItem,
+    CopilotFailuresOverview,
+    CopilotLatestFailure,
+    CopilotOverview,
+    CopilotPlatformOverview,
+    CopilotScheduleOverview,
+)
 
 InfrastructureStatusProvider = Callable[
     [],
@@ -84,6 +92,261 @@ class CopilotService:
             return self.upcoming_work()
 
         return self.operational_overview()
+
+    def dashboard_overview(
+        self,
+    ) -> CopilotOverview:
+        now = self._utc_now()
+
+        infrastructure = (
+            self._infrastructure_status_provider()
+        )
+
+        jobs = tuple(
+            self._recent_jobs_provider()
+        )
+
+        schedules = tuple(
+            self._schedules_provider()
+        )
+
+        required_service_names = {
+            "api",
+            "storage",
+            "supervisor",
+            "job_worker",
+            "scheduler",
+        }
+
+        required_services = tuple(
+            service
+            for service
+            in infrastructure.services
+            if service.name
+            in required_service_names
+        )
+
+        online_services = sum(
+            1
+            for service
+            in required_services
+            if service.online
+        )
+
+        running_jobs = tuple(
+            job
+            for job
+            in jobs
+            if job.status
+            == JobStatus.RUNNING
+        )
+
+        queued_jobs = tuple(
+            job
+            for job
+            in jobs
+            if job.status
+            == JobStatus.QUEUED
+        )
+
+        failed_jobs = tuple(
+            job
+            for job
+            in jobs
+            if job.status
+            == JobStatus.FAILED
+        )
+
+        enabled_schedules = tuple(
+            sorted(
+                (
+                    schedule
+                    for schedule
+                    in schedules
+                    if schedule.enabled
+                ),
+                key=lambda item: (
+                    item.next_run_at
+                ),
+            )
+        )
+
+        schedule_overview = None
+
+        if enabled_schedules:
+            next_schedule = (
+                enabled_schedules[0]
+            )
+
+            schedule_overview = (
+                CopilotScheduleOverview(
+                    task_type=(
+                        next_schedule
+                        .task_type
+                        .value
+                    ),
+                    next_run_at=(
+                        next_schedule
+                        .next_run_at
+                    ),
+                    schedule_id=(
+                        next_schedule
+                        .schedule_id
+                    ),
+                )
+            )
+
+        latest_failure = None
+
+        if failed_jobs:
+            latest_job = max(
+                failed_jobs,
+                key=lambda job: (
+                    job.finished_at
+                    or job.started_at
+                    or job.created_at
+                ),
+            )
+
+            latest_failure = (
+                CopilotLatestFailure(
+                    job_id=latest_job.job_id,
+                    job_type=(
+                        latest_job
+                        .job_type
+                        .value
+                    ),
+                    error_code=(
+                        latest_job.error_code
+                    ),
+                    error_summary=(
+                        latest_job
+                        .error_summary
+                    ),
+                    finished_at=(
+                        latest_job.finished_at
+                    ),
+                )
+            )
+
+        attention_items: list[
+            CopilotAttentionItem
+        ] = []
+
+        offline_services = tuple(
+            service
+            for service
+            in required_services
+            if not service.online
+        )
+
+        if offline_services:
+            service_names = ", ".join(
+                self._display_name(
+                    service.name
+                )
+                for service
+                in offline_services
+            )
+
+            attention_items.append(
+                CopilotAttentionItem(
+                    code=(
+                        "INFRASTRUCTURE_DEGRADED"
+                    ),
+                    title=(
+                        "Infrastructure requires "
+                        "attention"
+                    ),
+                    detail=(
+                        "Unavailable required "
+                        f"services: {service_names}."
+                    ),
+                    severity="WARNING",
+                )
+            )
+
+        if failed_jobs:
+            attention_items.append(
+                CopilotAttentionItem(
+                    code="RECENT_JOB_FAILURES",
+                    title=(
+                        "Review recent job failures"
+                    ),
+                    detail=(
+                        f"{len(failed_jobs)} recent "
+                        "job failure(s) were found."
+                    ),
+                    severity="WARNING",
+                )
+            )
+
+        if not enabled_schedules:
+            attention_items.append(
+                CopilotAttentionItem(
+                    code="NO_ENABLED_SCHEDULES",
+                    title=(
+                        "No enabled schedules"
+                    ),
+                    detail=(
+                        "KAIRO will remain idle "
+                        "unless a job is manually "
+                        "queued."
+                    ),
+                    severity="INFO",
+                )
+            )
+
+        overall_status = (
+            "HEALTHY"
+            if (
+                infrastructure.overall_status
+                == "HEALTHY"
+                and not failed_jobs
+            )
+            else "ATTENTION"
+        )
+
+        return CopilotOverview(
+            generated_at=now,
+            overall_status=overall_status,
+            platform=(
+                CopilotPlatformOverview(
+                    overall_status=(
+                        infrastructure
+                        .overall_status
+                    ),
+                    online_services=(
+                        online_services
+                    ),
+                    required_services=(
+                        len(required_services)
+                    ),
+                )
+            ),
+            activity=(
+                CopilotActivityOverview(
+                    running_jobs=(
+                        len(running_jobs)
+                    ),
+                    queued_jobs=(
+                        len(queued_jobs)
+                    ),
+                )
+            ),
+            schedule=schedule_overview,
+            failures=(
+                CopilotFailuresOverview(
+                    recent_count=(
+                        len(failed_jobs)
+                    ),
+                    latest=latest_failure,
+                )
+            ),
+            attention_items=tuple(
+                attention_items
+            ),
+        )
 
     def operational_overview(
         self,

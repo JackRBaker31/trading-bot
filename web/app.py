@@ -278,6 +278,11 @@ class CopilotServiceLike(Protocol):
     ):
         ...
 
+    def dashboard_overview(
+        self,
+    ):
+        ...
+
 # ─── Request / response models (unchanged) ───────────────────────────────────
 
 class CopilotQueryRequest(BaseModel):
@@ -944,6 +949,27 @@ def create_app(
             .get_worker_status()
             .to_dictionary()
         )
+
+    @app.get(
+        "/api/copilot/overview",
+        tags=["copilot"],
+    )
+    def copilot_overview(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            copilot_factory()
+            .dashboard_overview()
+            .to_dictionary()
+        )
+
 
     @app.get(
         "/api/copilot/suggestions",

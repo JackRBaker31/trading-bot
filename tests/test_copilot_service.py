@@ -396,3 +396,185 @@ def test_naive_clock_is_rejected(
         match="timezone-aware",
     ):
         service.upcoming_work()
+        
+def test_dashboard_overview_reports_healthy_platform(
+) -> None:
+    overview = create_service(
+        schedules=(next_schedule(),),
+    ).dashboard_overview()
+
+    assert (
+        overview.overall_status
+        == "HEALTHY"
+    )
+
+    assert (
+        overview.platform
+        .online_services
+        == 5
+    )
+
+    assert (
+        overview.platform
+        .required_services
+        == 5
+    )
+
+    assert (
+        overview.activity.active_jobs
+        == 0
+    )
+
+    assert overview.schedule is not None
+
+    assert (
+        overview.schedule.task_type
+        == "INTELLIGENCE_CYCLE"
+    )
+
+    assert (
+        overview.failures.recent_count
+        == 0
+    )
+
+    assert (
+        overview.attention_items
+        == ()
+    )
+
+
+def test_dashboard_overview_reports_activity_and_failure(
+) -> None:
+    overview = create_service(
+        jobs=(
+            running_job(),
+            failed_job(),
+        ),
+        schedules=(next_schedule(),),
+    ).dashboard_overview()
+
+    assert (
+        overview.overall_status
+        == "ATTENTION"
+    )
+
+    assert (
+        overview.activity.running_jobs
+        == 1
+    )
+
+    assert (
+        overview.activity.queued_jobs
+        == 0
+    )
+
+    assert (
+        overview.failures.recent_count
+        == 1
+    )
+
+    assert (
+        overview.failures.latest
+        is not None
+    )
+
+    assert (
+        overview.failures.latest.job_id
+        == "job-failed-001"
+    )
+
+    codes = {
+        item.code
+        for item
+        in overview.attention_items
+    }
+
+    assert (
+        "RECENT_JOB_FAILURES"
+        in codes
+    )
+
+
+def test_dashboard_overview_reports_degraded_infrastructure(
+) -> None:
+    overview = create_service(
+        infrastructure=(
+            degraded_infrastructure()
+        ),
+        schedules=(next_schedule(),),
+    ).dashboard_overview()
+
+    assert (
+        overview.overall_status
+        == "ATTENTION"
+    )
+
+    assert (
+        overview.platform
+        .online_services
+        == 4
+    )
+
+    codes = {
+        item.code
+        for item
+        in overview.attention_items
+    }
+
+    assert (
+        "INFRASTRUCTURE_DEGRADED"
+        in codes
+    )
+
+
+def test_dashboard_overview_reports_missing_schedule(
+) -> None:
+    overview = create_service(
+    ).dashboard_overview()
+
+    assert overview.schedule is None
+
+    codes = {
+        item.code
+        for item
+        in overview.attention_items
+    }
+
+    assert (
+        "NO_ENABLED_SCHEDULES"
+        in codes
+    )
+
+
+def test_dashboard_overview_serialises_to_dictionary(
+) -> None:
+    payload = create_service(
+        schedules=(next_schedule(),),
+    ).dashboard_overview(
+    ).to_dictionary()
+
+    assert payload[
+        "overall_status"
+    ] == "HEALTHY"
+
+    assert payload[
+        "platform"
+    ] == {
+        "overall_status": "HEALTHY",
+        "online_services": 5,
+        "required_services": 5,
+    }
+
+    assert payload[
+        "activity"
+    ] == {
+        "running_jobs": 0,
+        "queued_jobs": 0,
+        "active_jobs": 0,
+    }
+
+    assert payload[
+        "schedule"
+    ][
+        "task_type"
+    ] == "INTELLIGENCE_CYCLE"

@@ -11,6 +11,17 @@ from app.copilot_models import (
     CopilotSuggestion,
 )
 from web.app import create_app
+from datetime import (
+    datetime,
+    timezone,
+)
+
+from app.copilot_overview_models import (
+    CopilotActivityOverview,
+    CopilotFailuresOverview,
+    CopilotOverview,
+    CopilotPlatformOverview,
+)
 
 
 class FakeAuthenticationService:
@@ -92,7 +103,81 @@ class FakeCopilotService:
                 "Give me an operational overview."
             )
         )
+        
+    def dashboard_overview(
+        self,
+    ) -> CopilotOverview:
+        return CopilotOverview(
+            generated_at=datetime(
+                2026,
+                7,
+                24,
+                8,
+                0,
+                tzinfo=timezone.utc,
+            ),
+            overall_status="HEALTHY",
+            platform=(
+                CopilotPlatformOverview(
+                    overall_status="HEALTHY",
+                    online_services=5,
+                    required_services=5,
+                )
+            ),
+            activity=(
+                CopilotActivityOverview(
+                    running_jobs=0,
+                    queued_jobs=0,
+                )
+            ),
+            schedule=None,
+            failures=(
+                CopilotFailuresOverview(
+                    recent_count=0,
+                    latest=None,
+                )
+            ),
+        )
 
+def test_gets_copilot_overview(
+) -> None:
+    response = create_client(
+        FakeCopilotService()
+    ).get(
+        "/api/copilot/overview"
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert (
+        payload["overall_status"]
+        == "HEALTHY"
+    )
+
+    assert payload["platform"] == {
+        "overall_status": "HEALTHY",
+        "online_services": 5,
+        "required_services": 5,
+    }
+
+    assert payload["activity"] == {
+        "running_jobs": 0,
+        "queued_jobs": 0,
+        "active_jobs": 0,
+    }
+
+    assert payload["schedule"] is None
+
+    assert payload["failures"] == {
+        "recent_count": 0,
+        "latest": None,
+    }
+
+    assert payload[
+        "attention_items"
+    ] == []
 
 def create_client(
     service: FakeCopilotService,
