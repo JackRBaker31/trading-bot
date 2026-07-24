@@ -51,7 +51,7 @@ describe("News Research dialog", () => {
     await waitFor(() => expect(capturedBody).not.toBeNull());
 
     expect(capturedBody).toEqual({
-      watchlist: "data/watchlists/us_large_cap.txt",
+      watchlist: "data/watchlists/core_universe.txt",
       market_data_provider: "TWELVE_DATA",
       max_price_requests: 5,
     });

@@ -112,6 +112,13 @@ export interface ReconciliationStatus {
 
 // ─── News ─────────────────────────────────────────────────────────────────────
 
+export interface NewsConfidenceFactor {
+  code: string;
+  label: string;
+  contribution: number;
+  detail: string;
+}
+
 export interface NewsSignal {
   article_id: string;
   symbol: string;
@@ -120,6 +127,7 @@ export interface NewsSignal {
   sentiment: number;
   relevance: number;
   confidence: number;
+  confidence_breakdown: NewsConfidenceFactor[];
   event_type: string;
   is_material: boolean;
   published_at: string;

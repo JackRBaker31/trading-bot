@@ -35,7 +35,7 @@ const RESEARCH_INVALIDATION_KEYS = [
 
 const WATCHLIST_OPTIONS = [
   {
-    value: "data/watchlists/us_large_cap.txt",
+    value: "data/watchlists/core_universe.txt",
     label: "US Large Cap",
   },
 ] as const;
@@ -65,7 +65,7 @@ export function RunNewsResearchDialog({
   const [targetType, setTargetType] =
     useState<"watchlist" | "symbols">("watchlist");
   const [watchlist, setWatchlist] =
-    useState("data/watchlists/us_large_cap.txt");
+    useState("data/watchlists/core_universe.txt");
   const [symbolInput, setSymbolInput] = useState("");
   const [maxRequests, setMaxRequests] = useState("5");
   const [formError, setFormError] = useState<string | null>(null);
@@ -85,7 +85,7 @@ export function RunNewsResearchDialog({
       setOpen(false);
       setMarketDataProvider("TWELVE_DATA");
       setTargetType("watchlist");
-      setWatchlist("data/watchlists/us_large_cap.txt");
+      setWatchlist("data/watchlists/core_universe.txt");
       setSymbolInput("");
       setMaxRequests("5");
       setFormError(null);

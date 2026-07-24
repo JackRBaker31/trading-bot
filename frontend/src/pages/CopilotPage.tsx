@@ -4,6 +4,44 @@ import React, {
 } from "react";
 
 import {
+  useIntelligenceHealth,
+} from "@/hooks/useIntelligenceObservability";
+
+import {
+  useAdvancedIntelligence,
+} from "@/hooks/useAdvancedIntelligence";
+
+import {
+  useAdaptiveIntelligence,
+  useProposeStrategyEvolution,
+} from "@/hooks/useAdaptiveIntelligence";
+
+import {
+  useCaptureDecisionOutcomes,
+  useDecisionOutcomes,
+} from "@/hooks/useDecisionOutcomes";
+
+import {
+  useDecisionMemory,
+} from "@/hooks/useDecisionMemory";
+
+import {
+  useMacroAnalysis,
+} from "@/hooks/useMacroAnalysis";
+
+import {
+  useTechnicalAnalysis,
+} from "@/hooks/useTechnicalAnalysis";
+
+import {
+  useInvestmentTheses,
+} from "@/hooks/useInvestmentTheses";
+
+import {
+  useDecisionIntelligence,
+} from "@/hooks/useDecisionIntelligence";
+
+import {
   AlertTriangle,
   Bot,
   CheckCircle2,
@@ -38,6 +76,33 @@ import {
 import {
   DecisionTimelinePanel,
 } from "@/components/copilot/DecisionTimelinePanel";
+import {
+  DecisionIntelligencePanel,
+} from "@/components/copilot/DecisionIntelligencePanel";
+import {
+  InvestmentThesisPanel,
+} from "@/components/copilot/InvestmentThesisPanel";
+import {
+  DecisionMemoryPanel,
+} from "@/components/copilot/DecisionMemoryPanel";
+import {
+  DecisionOutcomePanel,
+} from "@/components/copilot/DecisionOutcomePanel";
+import {
+  AdaptiveIntelligencePanel,
+} from "@/components/copilot/AdaptiveIntelligencePanel";
+import {
+  AdvancedIntelligencePanel,
+} from "@/components/copilot/AdvancedIntelligencePanel";
+import {
+  IntelligenceHealthPanel,
+} from "@/components/copilot/IntelligenceHealthPanel";
+import {
+  TechnicalAnalysisPanel,
+} from "@/components/copilot/TechnicalAnalysisPanel";
+import {
+  MacroAnalysisPanel,
+} from "@/components/copilot/MacroAnalysisPanel";
 import {
   SymbolDecisionPanel,
 } from "@/components/copilot/SymbolDecisionPanel";
@@ -275,6 +340,44 @@ export default function CopilotPage() {
 
   const overviewQuery =
     useCopilotOverview();
+
+  const decisionIntelligenceQuery =
+    useDecisionIntelligence();
+
+  const investmentThesesQuery =
+    useInvestmentTheses();
+
+  const decisionMemoryQuery =
+    useDecisionMemory();
+
+  const decisionOutcomesQuery =
+    useDecisionOutcomes();
+
+  const adaptiveIntelligenceQuery =
+    useAdaptiveIntelligence();
+
+  const advancedIntelligenceQuery =
+    useAdvancedIntelligence();
+
+  const intelligenceHealthQuery =
+    useIntelligenceHealth();
+
+  const proposeStrategyEvolution =
+    useProposeStrategyEvolution();
+
+  const captureDecisionOutcomes =
+    useCaptureDecisionOutcomes();
+
+  const technicalSymbol =
+    investmentThesesQuery.data?.theses[0]?.symbol ?? null;
+
+  const technicalAnalysisQuery =
+    useTechnicalAnalysis(
+      technicalSymbol,
+    );
+
+  const macroAnalysisQuery =
+    useMacroAnalysis();
 
   const decisionTraceQuery =
     useLatestDecisionTrace();
@@ -695,6 +798,166 @@ export default function CopilotPage() {
               }
               onRefresh={() => {
                 void decisionTraceQuery.refetch();
+              }}
+            />
+          )}
+
+          {decisionIntelligenceQuery.data && (
+            <DecisionIntelligencePanel
+              report={
+                decisionIntelligenceQuery.data
+              }
+              refreshing={
+                decisionIntelligenceQuery
+                  .isFetching
+              }
+              onRefresh={() => {
+                void decisionIntelligenceQuery
+                  .refetch();
+              }}
+            />
+          )}
+
+          {investmentThesesQuery.data && (
+            <InvestmentThesisPanel
+              report={
+                investmentThesesQuery.data
+              }
+              refreshing={
+                investmentThesesQuery
+                  .isFetching
+              }
+              onRefresh={() => {
+                void investmentThesesQuery
+                  .refetch();
+              }}
+            />
+          )}
+
+          {technicalAnalysisQuery.data && (
+            <TechnicalAnalysisPanel
+              analysis={
+                technicalAnalysisQuery.data
+              }
+              refreshing={
+                technicalAnalysisQuery
+                  .isFetching
+              }
+              onRefresh={() => {
+                void technicalAnalysisQuery
+                  .refetch();
+              }}
+            />
+          )}
+
+          {macroAnalysisQuery.data && (
+            <MacroAnalysisPanel
+              analysis={
+                macroAnalysisQuery.data
+              }
+              refreshing={
+                macroAnalysisQuery
+                  .isFetching
+              }
+              onRefresh={() => {
+                void macroAnalysisQuery
+                  .refetch();
+              }}
+            />
+          )}
+
+          {decisionMemoryQuery.data && (
+            <DecisionMemoryPanel
+              overview={
+                decisionMemoryQuery.data
+              }
+              refreshing={
+                decisionMemoryQuery
+                  .isFetching
+              }
+              onRefresh={() => {
+                void decisionMemoryQuery
+                  .refetch();
+              }}
+            />
+          )}
+
+          {decisionOutcomesQuery.data && (
+            <DecisionOutcomePanel
+              overview={
+                decisionOutcomesQuery.data
+              }
+              refreshing={
+                decisionOutcomesQuery
+                  .isFetching
+              }
+              capturing={
+                captureDecisionOutcomes
+                  .isPending
+              }
+              onRefresh={() => {
+                void decisionOutcomesQuery
+                  .refetch();
+              }}
+              onCapture={() => {
+                captureDecisionOutcomes
+                  .mutate();
+              }}
+            />
+          )}
+
+          {adaptiveIntelligenceQuery.data && (
+            <AdaptiveIntelligencePanel
+              report={
+                adaptiveIntelligenceQuery.data
+              }
+              refreshing={
+                adaptiveIntelligenceQuery
+                  .isFetching
+              }
+              proposing={
+                proposeStrategyEvolution
+                  .isPending
+              }
+              onRefresh={() => {
+                void adaptiveIntelligenceQuery
+                  .refetch();
+              }}
+              onPropose={() => {
+                proposeStrategyEvolution
+                  .mutate();
+              }}
+            />
+          )}
+
+          {advancedIntelligenceQuery.data && (
+            <AdvancedIntelligencePanel
+              report={
+                advancedIntelligenceQuery.data
+              }
+              refreshing={
+                advancedIntelligenceQuery
+                  .isFetching
+              }
+              onRefresh={() => {
+                void advancedIntelligenceQuery
+                  .refetch();
+              }}
+            />
+          )}
+
+          {intelligenceHealthQuery.data && (
+            <IntelligenceHealthPanel
+              overview={
+                intelligenceHealthQuery.data
+              }
+              refreshing={
+                intelligenceHealthQuery
+                  .isFetching
+              }
+              onRefresh={() => {
+                void intelligenceHealthQuery
+                  .refetch();
               }}
             />
           )}

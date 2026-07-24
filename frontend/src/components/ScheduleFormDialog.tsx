@@ -483,7 +483,7 @@ export function ScheduleFormDialog({
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="data/watchlists/us_large_cap.txt"
+                          placeholder="data/watchlists/core_universe.txt"
                           data-testid="input-ic-watchlist"
                           {...field}
                           value={field.value ?? ""}
@@ -573,7 +573,7 @@ export function ScheduleFormDialog({
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="data/watchlists/us_large_cap.txt"
+                          placeholder="data/watchlists/core_universe.txt"
                           data-testid="input-nr-watchlist"
                           {...field}
                           value={field.value ?? ""}

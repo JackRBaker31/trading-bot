@@ -172,6 +172,43 @@ function SignalDetailDrawer({
                 </div>
               </div>
 
+              {/* Confidence breakdown */}
+              {signal.confidence_breakdown?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                    Confidence Breakdown
+                  </p>
+                  <div className="space-y-2">
+                    {signal.confidence_breakdown.map((factor) => (
+                      <div
+                        key={factor.code}
+                        className="flex items-start justify-between gap-4 rounded-lg bg-muted/30 p-2.5"
+                      >
+                        <div>
+                          <p className="text-xs font-medium">{factor.label}</p>
+                          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">
+                            {factor.detail}
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 font-mono text-xs font-bold",
+                            factor.contribution > 0
+                              ? "text-emerald-400"
+                              : factor.contribution < 0
+                                ? "text-destructive"
+                                : "text-muted-foreground",
+                          )}
+                        >
+                          {factor.contribution > 0 ? "+" : ""}
+                          {(factor.contribution * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Reasoning summary */}
               {signal.reasoning_summary && (
                 <div>

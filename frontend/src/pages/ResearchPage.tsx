@@ -176,7 +176,7 @@ function NewsResearchForm({
         .filter(Boolean);
     } else {
       payload.watchlist =
-        inputValue.trim() || "data/watchlists/us_large_cap.txt";
+        inputValue.trim() || "data/watchlists/core_universe.txt";
     }
 
     mutation.mutate(payload);
@@ -242,7 +242,7 @@ function NewsResearchForm({
           placeholder={
             inputType === "symbols"
               ? "AAPL, MSFT, TSLA"
-              : "data/watchlists/us_large_cap.txt"
+              : "data/watchlists/core_universe.txt"
           }
           data-testid="input-target"
           className={cn(
@@ -252,7 +252,7 @@ function NewsResearchForm({
         {inputType === "watchlist" && !inputValue && (
           <p className="text-[11px] text-muted-foreground">
             Defaults to{" "}
-            <span className="font-mono">data/watchlists/us_large_cap.txt</span>
+            <span className="font-mono">data/watchlists/core_universe.txt</span>
           </p>
         )}
       </div>
