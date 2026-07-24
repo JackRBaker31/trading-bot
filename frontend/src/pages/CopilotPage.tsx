@@ -16,11 +16,6 @@ import {
   ShieldCheck,
   Sparkles,
   WandSparkles,
-  Activity, 
-  CalendarClock,
-  RefreshCw,
-  Server,
-  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,12 +24,29 @@ import {
   CopilotResponse,
   CopilotSuggestion,
   CopilotSuggestionKind,
+  useCopilotChangeSummary,
+  useCopilotOverview,
+  useLatestDecisionTrace,
+  useSymbolDecisions,
+  useSymbolDecisionChangeSummary,
   useCopilotQuery,
   useCopilotSuggestions,
-  CopilotAttentionItem,
-  CopilotOverview,
-  useCopilotOverview,
 } from "@/hooks/useCopilot";
+import {
+  ExecutiveCopilotDashboard,
+} from "@/components/copilot/ExecutiveCopilotDashboard";
+import {
+  DecisionTimelinePanel,
+} from "@/components/copilot/DecisionTimelinePanel";
+import {
+  SymbolDecisionPanel,
+} from "@/components/copilot/SymbolDecisionPanel";
+import {
+  SymbolDecisionHistoryPanel,
+} from "@/components/copilot/SymbolDecisionHistoryPanel";
+import {
+  ChangeIntelligencePanel,
+} from "@/components/copilot/ChangeIntelligencePanel";
 import { cn } from "@/lib/utils";
 
 
@@ -94,110 +106,33 @@ function suggestionIcon(
   return Info;
 }
 
-function displayName(
-  value: string,
-): string {
-  return value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(
-      /\b\w/g,
-      (character) =>
-        character.toUpperCase(),
-    );
-}
-
-
-function formatTimestamp(
-  value: string,
-): string {
-  const date = new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(
-    "en-GB",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-      day: "2-digit",
-      month: "short",
-    },
-  ).format(date);
-}
-
-
-function relativeTimestamp(
-  value: string,
-): string {
-  const timestamp =
-    new Date(value).getTime();
-
-  if (
-    Number.isNaN(timestamp)
-  ) {
-    return "";
-  }
-
-  const seconds = Math.max(
-    0,
-    Math.round(
-      (
-        timestamp -
-        Date.now()
-      ) / 1000,
-    ),
-  );
-
-  if (seconds < 60) {
-    return `in ${seconds}s`;
-  }
-
-  const minutes =
-    Math.floor(seconds / 60);
-
-  if (minutes < 60) {
-    return `in ${minutes}m`;
-  }
-
-  const hours =
-    Math.floor(minutes / 60);
-
-  const remainingMinutes =
-    minutes % 60;
-
-  if (remainingMinutes === 0) {
-    return `in ${hours}h`;
-  }
-
-  return (
-    `in ${hours}h ` +
-    `${remainingMinutes}m`
-  );
-}
 
 function CopilotSuggestionCard({
   suggestion,
 }: {
   suggestion: CopilotSuggestion;
 }) {
-  const Icon = suggestionIcon(
-    suggestion.kind,
-  );
+  const Icon =
+    suggestion.kind === "success"
+      ? CheckCircle2
+      : suggestion.kind === "warning"
+        ? AlertTriangle
+        : suggestion.kind === "action"
+          ? WandSparkles
+          : Info;
 
   return (
     <div
       className={cn(
         "rounded-lg border p-4",
-        suggestionClasses(
-          suggestion.kind,
-        ),
+        suggestion.kind === "success" &&
+          "border-emerald-500/25 bg-emerald-500/5",
+        suggestion.kind === "warning" &&
+          "border-amber-500/30 bg-amber-500/5",
+        suggestion.kind === "action" &&
+          "border-[#D4AF37]/30 bg-[#D4AF37]/5",
+        suggestion.kind === "info" &&
+          "border-primary/20 bg-primary/5",
       )}
       data-testid="copilot-suggestion-card"
     >
@@ -232,311 +167,6 @@ function CopilotSuggestionCard({
   );
 }
 
-function OverviewMetricCard({
-  title,
-  value,
-  detail,
-  icon: Icon,
-  status = "info",
-}: {
-  title: string;
-  value: string;
-  detail: string;
-  icon: typeof Server;
-  status?:
-    | "healthy"
-    | "warning"
-    | "danger"
-    | "info";
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border bg-card p-5",
-        status === "healthy" &&
-          "border-emerald-500/25",
-        status === "warning" &&
-          "border-amber-500/25",
-        status === "danger" &&
-          "border-destructive/30",
-        status === "info" &&
-          "border-border",
-      )}
-      data-testid="copilot-overview-card"
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            {title}
-          </p>
-
-          <p className="mt-2 text-2xl font-semibold">
-            {value}
-          </p>
-        </div>
-
-        <div
-          className={cn(
-            "rounded-lg border p-2.5",
-            status === "healthy" &&
-              "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
-            status === "warning" &&
-              "border-amber-500/20 bg-amber-500/10 text-amber-400",
-            status === "danger" &&
-              "border-destructive/20 bg-destructive/10 text-destructive",
-            status === "info" &&
-              "border-primary/20 bg-primary/10 text-primary",
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-
-      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-        {detail}
-      </p>
-    </div>
-  );
-}
-
-
-function AttentionItemCard({
-  item,
-}: {
-  item: CopilotAttentionItem;
-}) {
-  const isWarning =
-    item.severity.toUpperCase() ===
-    "WARNING";
-
-  return (
-    <div
-      className={cn(
-        "rounded-lg border p-4",
-        isWarning
-          ? "border-amber-500/25 bg-amber-500/5"
-          : "border-primary/20 bg-primary/5",
-      )}
-    >
-      <div className="flex items-start gap-3">
-        {isWarning ? (
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-        ) : (
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        )}
-
-        <div>
-          <p className="text-sm font-medium">
-            {item.title}
-          </p>
-
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            {item.detail}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-function CopilotOverviewPanel({
-  overview,
-  refreshing,
-  onRefresh,
-}: {
-  overview: CopilotOverview;
-  refreshing: boolean;
-  onRefresh: () => void;
-}) {
-  const platformHealthy =
-    overview.platform.overall_status ===
-    "HEALTHY";
-
-  const noFailures =
-    overview.failures.recent_count === 0;
-
-  return (
-    <section className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[#D4AF37]" />
-
-            <h3 className="text-sm font-medium">
-              Live Intelligence Overview
-            </h3>
-
-            <span
-              className={cn(
-                "rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
-                overview.overall_status ===
-                  "HEALTHY"
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-400",
-              )}
-            >
-              {overview.overall_status}
-            </span>
-          </div>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            Updated{" "}
-            {formatTimestamp(
-              overview.generated_at,
-            )}
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          disabled={refreshing}
-        >
-          <RefreshCw
-            className={cn(
-              "mr-2 h-3.5 w-3.5",
-              refreshing &&
-                "animate-spin",
-            )}
-          />
-
-          Refresh
-        </Button>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <OverviewMetricCard
-          title="Platform Health"
-          value={
-            platformHealthy
-              ? "Healthy"
-              : overview.platform
-                  .overall_status
-          }
-          detail={
-            `${overview.platform.online_services}` +
-            ` of ${overview.platform.required_services}` +
-            " required services online."
-          }
-          icon={Server}
-          status={
-            platformHealthy
-              ? "healthy"
-              : "warning"
-          }
-        />
-
-        <OverviewMetricCard
-          title="Current Activity"
-          value={String(
-            overview.activity.active_jobs,
-          )}
-          detail={
-            `${overview.activity.running_jobs}` +
-            " running, " +
-            `${overview.activity.queued_jobs}` +
-            " queued."
-          }
-          icon={Activity}
-          status={
-            overview.activity.active_jobs > 0
-              ? "info"
-              : "healthy"
-          }
-        />
-
-        <OverviewMetricCard
-          title="Next Automation"
-          value={
-            overview.schedule
-              ? displayName(
-                  overview.schedule
-                    .task_type,
-                )
-              : "None"
-          }
-          detail={
-            overview.schedule
-              ? (
-                  `${formatTimestamp(
-                    overview.schedule
-                      .next_run_at,
-                  )} · ` +
-                  relativeTimestamp(
-                    overview.schedule
-                      .next_run_at,
-                  )
-                )
-              : (
-                  "No enabled schedules are configured."
-                )
-          }
-          icon={CalendarClock}
-          status={
-            overview.schedule
-              ? "info"
-              : "warning"
-          }
-        />
-
-        <OverviewMetricCard
-          title="Recent Failures"
-          value={String(
-            overview.failures.recent_count,
-          )}
-          detail={
-            noFailures
-              ? "No recent job failures."
-              : (
-                  overview.failures.latest
-                    ?.error_summary ||
-                  overview.failures.latest
-                    ?.error_code ||
-                  "Recent failures require review."
-                )
-          }
-          icon={
-            noFailures
-              ? CheckCircle2
-              : XCircle
-          }
-          status={
-            noFailures
-              ? "healthy"
-              : "danger"
-          }
-        />
-      </div>
-
-      {overview.attention_items.length >
-        0 && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
-
-            <h4 className="text-sm font-medium">
-              Attention Required
-            </h4>
-          </div>
-
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {overview.attention_items.map(
-              (item) => (
-                <AttentionItemCard
-                  key={item.code}
-                  item={item}
-                />
-              ),
-            )}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
 
 function AnswerPanel({
   entry,
@@ -643,13 +273,30 @@ export default function CopilotPage() {
   const suggestionsQuery =
     useCopilotSuggestions();
 
-    const overviewQuery =
+  const overviewQuery =
     useCopilotOverview();
+
+  const decisionTraceQuery =
+    useLatestDecisionTrace();
+
+  const symbolDecisionsQuery =
+    useSymbolDecisions();
+
+  const selectedHistorySymbol =
+    symbolDecisionsQuery.data?.items[0]?.symbol ?? null;
+
+  const symbolDecisionChangeQuery =
+    useSymbolDecisionChangeSummary(
+      selectedHistorySymbol,
+    );
+
+  const changeSummaryQuery =
+    useCopilotChangeSummary();
 
   const copilotQuery =
     useCopilotQuery();
 
-    async function askQuestion(
+  async function askQuestion(
     value: string,
   ): Promise<void> {
     const cleaned = value
@@ -903,7 +550,7 @@ export default function CopilotPage() {
             )}
 
             {overviewQuery.data && (
-            <CopilotOverviewPanel
+            <ExecutiveCopilotDashboard
                 overview={overviewQuery.data}
                 refreshing={
                 overviewQuery.isFetching
@@ -912,6 +559,55 @@ export default function CopilotPage() {
                 void overviewQuery.refetch();
                 }}
             />
+            )}
+
+            {changeSummaryQuery.data && (
+              <ChangeIntelligencePanel
+                summary={changeSummaryQuery.data}
+                refreshing={changeSummaryQuery.isFetching}
+                onRefresh={() => {
+                  void changeSummaryQuery.refetch();
+                }}
+              />
+            )}
+
+
+            {symbolDecisionsQuery.data && (
+              <SymbolDecisionPanel
+                traces={
+                  symbolDecisionsQuery
+                    .data.items
+                }
+                refreshing={
+                  symbolDecisionsQuery
+                    .isFetching
+                }
+                onRefresh={() => {
+                  void symbolDecisionsQuery
+                    .refetch();
+                }}
+              />
+            )}
+
+
+            {symbolDecisionChangeQuery
+              .data?.available &&
+              symbolDecisionChangeQuery
+                .data.summary && (
+              <SymbolDecisionHistoryPanel
+                summary={
+                  symbolDecisionChangeQuery
+                    .data.summary
+                }
+                refreshing={
+                  symbolDecisionChangeQuery
+                    .isFetching
+                }
+                onRefresh={() => {
+                  void symbolDecisionChangeQuery
+                    .refetch();
+                }}
+              />
             )}
 
 
@@ -988,6 +684,20 @@ export default function CopilotPage() {
               Conversation
             </h3>
           </div>
+
+          {decisionTraceQuery.data && (
+            <DecisionTimelinePanel
+              trace={
+                decisionTraceQuery.data
+              }
+              refreshing={
+                decisionTraceQuery.isFetching
+              }
+              onRefresh={() => {
+                void decisionTraceQuery.refetch();
+              }}
+            />
+          )}
 
           {conversation.map(
             (

@@ -42,6 +42,13 @@ from app.system_status_service import (
 from app.scheduled_task_repository import ScheduledTaskRepository
 from app.schedule_management_service import ScheduleManagementService
 from app.copilot_service import CopilotService
+from app.symbol_decision_service import SymbolDecisionService
+from app.symbol_decision_history_service import SymbolDecisionHistoryService
+from app.symbol_decision_repository import SymbolDecisionRepository
+from app.decision_intelligence_service import DecisionIntelligenceService
+from app.decision_trace_repository import DecisionTraceRepository
+from app.copilot_change_service import CopilotChangeService
+from app.copilot_history_repository import CopilotHistoryRepository
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
     "data/application.db"
@@ -251,3 +258,89 @@ def create_copilot_service(
             create_graduation_snapshot
         ),
     )
+
+
+def create_copilot_change_service(
+    *,
+    database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+) -> CopilotChangeService:
+    service = CopilotChangeService(
+        repository=CopilotHistoryRepository(
+            database_path=database_path
+        ),
+        overview_provider=(
+            lambda: create_copilot_service(
+                database_path=database_path
+            ).dashboard_overview()
+        ),
+    )
+    service.initialize()
+    return service
+
+
+
+def create_decision_intelligence_service(
+    *,
+    database_path: str = (
+        DEFAULT_APPLICATION_DATABASE_PATH
+    ),
+) -> DecisionIntelligenceService:
+    service = DecisionIntelligenceService(
+        repository=DecisionTraceRepository(
+            database_path=database_path
+        ),
+        overview_provider=(
+            lambda: create_copilot_service(
+                database_path=database_path
+            ).dashboard_overview()
+        ),
+    )
+    service.initialize()
+    return service
+
+
+
+def create_symbol_decision_service(
+    *,
+    database_path: str = (
+        DEFAULT_APPLICATION_DATABASE_PATH
+    ),
+) -> SymbolDecisionService:
+    intelligence_service = (
+        create_intelligence_service()
+    )
+    graduation_service = (
+        create_intelligence_graduation_service(
+            database_path=database_path
+        )
+    )
+
+    service = SymbolDecisionService(
+        repository=SymbolDecisionRepository(
+            database_path=database_path
+        ),
+        snapshot_provider=(
+            intelligence_service.get_snapshot
+        ),
+        graduation_provider=(
+            graduation_service.get_status
+        ),
+    )
+    service.initialize()
+    return service
+
+
+
+def create_symbol_decision_history_service(
+    *,
+    database_path: str = (
+        DEFAULT_APPLICATION_DATABASE_PATH
+    ),
+) -> SymbolDecisionHistoryService:
+    service = SymbolDecisionHistoryService(
+        repository=SymbolDecisionRepository(
+            database_path=database_path
+        ),
+    )
+    service.initialize()
+    return service

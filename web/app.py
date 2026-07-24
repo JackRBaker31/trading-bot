@@ -86,6 +86,10 @@ from web.dependencies import (
     create_system_status_service,
     create_schedule_management_service,
     create_copilot_service,
+    create_symbol_decision_service,
+    create_symbol_decision_history_service,
+    create_decision_intelligence_service,
+    create_copilot_change_service,
     )
 
 
@@ -949,6 +953,236 @@ def create_app(
             .get_worker_status()
             .to_dictionary()
         )
+
+    @app.get(
+        "/api/copilot/history",
+        tags=["copilot"],
+    )
+    def copilot_history(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> dict[str, object]:
+        del user
+        items = create_copilot_change_service().list_history(
+            limit=limit
+        )
+        return {
+            "items": [
+                item.to_dictionary()
+                for item in items
+            ]
+        }
+
+    @app.get(
+        "/api/copilot/change-summary",
+        tags=["copilot"],
+    )
+    def copilot_change_summary(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+    ) -> dict[str, object]:
+        del user
+        return (
+            create_copilot_change_service()
+            .change_summary()
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/copilot/decision-trace/latest",
+        tags=["copilot"],
+    )
+    def latest_decision_trace(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_decision_intelligence_service()
+            .latest()
+            .to_dictionary()
+        )
+
+    @app.get(
+        "/api/copilot/decision-traces",
+        tags=["copilot"],
+    )
+    def list_decision_traces(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+        limit: int = Query(
+            default=50,
+            ge=1,
+            le=250,
+        ),
+    ) -> dict[str, object]:
+        del user
+
+        items = (
+            create_decision_intelligence_service()
+            .list_recent(
+                limit=limit
+            )
+        )
+
+        return {
+            "items": [
+                item.to_dictionary()
+                for item in items
+            ]
+        }
+
+
+    @app.get(
+        "/api/copilot/symbol-decisions",
+        tags=["copilot"],
+    )
+    def list_symbol_decisions(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        items = (
+            create_symbol_decision_service()
+            .list_current()
+        )
+
+        return {
+            "items": [
+                item.to_dictionary()
+                for item in items
+            ]
+        }
+
+    @app.get(
+        "/api/copilot/symbol-decisions/{symbol}/history",
+        tags=["copilot"],
+    )
+    def get_symbol_decision_history(
+        symbol: str,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+        limit: int = Query(
+            default=100,
+            ge=1,
+            le=500,
+        ),
+    ) -> dict[str, object]:
+        del user
+
+        items = (
+            create_symbol_decision_history_service()
+            .list_history(
+                symbol=symbol,
+                limit=limit,
+            )
+        )
+
+        return {
+            "symbol": symbol.upper(),
+            "items": [
+                item.to_dictionary()
+                for item in items
+            ],
+        }
+
+    @app.get(
+        "/api/copilot/symbol-decisions/{symbol}/change-summary",
+        tags=["copilot"],
+    )
+    def get_symbol_decision_change_summary(
+        symbol: str,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        summary = (
+            create_symbol_decision_history_service()
+            .compare_latest(
+                symbol=symbol
+            )
+        )
+
+        if summary is None:
+            return {
+                "available": False,
+                "symbol": symbol.upper(),
+                "summary": None,
+            }
+
+        return {
+            "available": True,
+            "symbol": summary.symbol,
+            "summary": (
+                summary.to_dictionary()
+            ),
+        }
+
+
+    @app.get(
+        "/api/copilot/symbol-decisions/{symbol}",
+        tags=["copilot"],
+    )
+    def get_symbol_decision(
+        symbol: str,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        trace = (
+            create_symbol_decision_service()
+            .get_current(
+                symbol=symbol
+            )
+        )
+
+        if trace is None:
+            return {
+                "available": False,
+                "symbol": symbol.upper(),
+                "trace": None,
+            }
+
+        return {
+            "available": True,
+            "symbol": trace.symbol,
+            "trace": trace.to_dictionary(),
+        }
+
 
     @app.get(
         "/api/copilot/overview",

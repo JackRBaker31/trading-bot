@@ -21,6 +21,10 @@ from app.scheduled_task import (
     ScheduleKind,
     ScheduledTask,
 )
+from app.copilot_intelligence_models import (
+    CopilotGraduationOverview,
+    CopilotIntelligenceOverview,
+)
 
 
 NOW = datetime(
@@ -207,10 +211,46 @@ def create_service(
             )
         ),
         recent_jobs_provider=lambda: jobs,
-        schedules_provider=lambda: (
-            schedules
-        ),
+        schedules_provider=lambda: schedules,
         now_provider=lambda: NOW,
+        intelligence_snapshot_provider=(
+            lambda: {
+                "trading_readiness": (
+                    "NOT_READY"
+                ),
+                "market_outlook": (
+                    "CAUTIOUS"
+                ),
+                "confidence": 63.5,
+                "signal_count": 12,
+                "actionable_signal_count": 2,
+                "evidence_quality": "LOW",
+            }
+        ),
+        graduation_status_provider=(
+            lambda: {
+                "ready": False,
+                "checks": [
+                    {
+                        "name": (
+                            "Decision sample"
+                        ),
+                        "passed": False,
+                        "reason": (
+                            "More shadow decisions "
+                            "are required."
+                        ),
+                    },
+                    {
+                        "name": (
+                            "Loss containment"
+                        ),
+                        "passed": True,
+                        "reason": None,
+                    },
+                ],
+            }
+        ),
     )
 
 
@@ -578,3 +618,151 @@ def test_dashboard_overview_serialises_to_dictionary(
     ][
         "task_type"
     ] == "INTELLIGENCE_CYCLE"
+    
+def test_builds_trading_intelligence(
+) -> None:
+    state = (
+        create_service()
+        .trading_intelligence()
+    )
+
+    assert (
+        state.intelligence
+        .trading_readiness
+        == "NOT_READY"
+    )
+
+    assert (
+        state.intelligence
+        .confidence
+        == 63.5
+    )
+
+    assert (
+        state.intelligence
+        .actionable_signal_count
+        == 2
+    )
+
+    assert not state.graduation.ready
+
+    assert (
+        state.graduation
+        .passed_checks
+        == 1
+    )
+
+    assert (
+        len(
+            state.graduation
+            .failed_checks
+        )
+        == 1
+    )
+
+
+def test_answers_intelligence_question(
+) -> None:
+    response = (
+        create_service().answer(
+            question=(
+                "How strong is current "
+                "intelligence?"
+            )
+        )
+    )
+
+    assert (
+        "Confidence is 63.5"
+        in response.summary
+    )
+
+    assert any(
+        suggestion.title
+        == "Evidence quality"
+        for suggestion
+        in response.suggestions
+    )
+
+
+def test_answers_graduation_question(
+) -> None:
+    response = (
+        create_service().answer(
+            question=(
+                "What is blocking "
+                "graduation?"
+            )
+        )
+    )
+
+    assert (
+        "not ready to graduate"
+        in response.summary
+    )
+
+    assert (
+        response.suggestions[0]
+        .title
+        == "Decision sample"
+    )
+
+
+def test_explains_why_no_trade(
+) -> None:
+    response = (
+        create_service().answer(
+            question=(
+                "Why didn't we trade "
+                "today?"
+            )
+        )
+    )
+
+    assert (
+        "requirements remain blocked"
+        in response.summary
+    )
+
+    messages = {
+        suggestion.message
+        for suggestion
+        in response.suggestions
+    }
+
+    assert (
+        "Trading readiness has not "
+        "reached READY."
+        in messages
+    )
+
+    assert (
+        "More shadow decisions are "
+        "required."
+        in messages
+    )
+
+
+def test_trading_intelligence_serialises(
+) -> None:
+    payload = (
+        create_service()
+        .trading_intelligence()
+        .to_dictionary()
+    )
+
+    assert payload[
+        "intelligence"
+    ][
+        "trading_readiness"
+    ] == "NOT_READY"
+
+    assert payload[
+        "graduation"
+    ][
+        "failed_checks"
+    ] == 1
+
+    assert (
+        payload["blockers"]
+    )
