@@ -1,35 +1,24 @@
 @echo off
 setlocal
 
-title KAIRO Master Launcher
-color 0B
+cd /d "%~dp0"
 
-set "ROOT=C:\Users\Jack\Documents\trading-bot"
+if not exist ".venv\Scripts\python.exe" (
+    echo KAIRO virtual environment was not found.
+    echo Expected:
+    echo %CD%\.venv\Scripts\python.exe
+    echo.
+    pause
+    exit /b 1
+)
 
-echo ============================================================
-echo              STARTING THE KAIRO PLATFORM
-echo ============================================================
-echo.
+".venv\Scripts\python.exe" ".\run_kairo.py" --foreground
 
-echo Launching API + Frontend...
-start "" "%ROOT%\Start KAIRO.bat"
+if errorlevel 1 (
+    echo.
+    echo KAIRO failed to start.
+    pause
+)
 
-timeout /t 2 /nobreak >nul
-
-echo Launching Worker + Scheduler...
-start "" "%ROOT%\Start KAIRO Services.bat"
-
-echo.
-echo ============================================================
-echo KAIRO launch initiated.
-echo.
-echo Four windows should open:
-echo.
-echo   - KAIRO API
-echo   - KAIRO Frontend
-echo   - KAIRO Job Worker
-echo   - KAIRO Scheduler
-echo ============================================================
-echo.
-
-exit
+endlocal
+exit /b %errorlevel%
