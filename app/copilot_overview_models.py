@@ -5,6 +5,11 @@ from dataclasses import (
 )
 from datetime import datetime
 
+from app.copilot_intelligence_models import (
+    CopilotGraduationOverview,
+    CopilotIntelligenceOverview,
+)
+
 
 @dataclass(frozen=True)
 class CopilotPlatformOverview:
@@ -34,9 +39,11 @@ class CopilotActivityOverview:
         self,
     ) -> dict[str, object]:
         payload = asdict(self)
+
         payload["active_jobs"] = (
             self.active_jobs
         )
+
         return payload
 
 
@@ -128,6 +135,10 @@ class CopilotOverview:
         | None
     )
     failures: CopilotFailuresOverview
+    trading_intelligence: (
+        CopilotIntelligenceOverview
+    )
+    graduation: CopilotGraduationOverview
     attention_items: tuple[
         CopilotAttentionItem,
         ...
@@ -156,6 +167,14 @@ class CopilotOverview:
             ),
             "failures": (
                 self.failures.to_dictionary()
+            ),
+            "trading_intelligence": (
+                self.trading_intelligence
+                .to_dictionary()
+            ),
+            "graduation": (
+                self.graduation
+                .to_dictionary()
             ),
             "attention_items": [
                 item.to_dictionary()

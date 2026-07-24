@@ -22,6 +22,10 @@ from app.copilot_overview_models import (
     CopilotOverview,
     CopilotPlatformOverview,
 )
+from app.copilot_intelligence_models import (
+    CopilotGraduationOverview,
+    CopilotIntelligenceOverview,
+)
 
 
 class FakeAuthenticationService:
@@ -137,6 +141,24 @@ class FakeCopilotService:
                     latest=None,
                 )
             ),
+            trading_intelligence=(
+                CopilotIntelligenceOverview(
+                    trading_readiness="NOT_READY",
+                    market_outlook="NEUTRAL",
+                    confidence=0.0,
+                    signal_count=0,
+                    actionable_signal_count=0,
+                    evidence_quality="UNKNOWN",
+                )
+            ),
+            graduation=(
+                CopilotGraduationOverview(
+                    ready=False,
+                    passed_checks=0,
+                    total_checks=0,
+                    checks=(),
+                )
+            ),
         )
 
 def test_gets_copilot_overview(
@@ -178,6 +200,23 @@ def test_gets_copilot_overview(
     assert payload[
         "attention_items"
     ] == []
+    
+    assert payload["trading_intelligence"] == {
+        "trading_readiness": "NOT_READY",
+        "market_outlook": "NEUTRAL",
+        "confidence": 0.0,
+        "signal_count": 0,
+        "actionable_signal_count": 0,
+        "evidence_quality": "UNKNOWN",
+    }
+
+    assert payload["graduation"] == {
+        "ready": False,
+        "passed_checks": 0,
+        "total_checks": 0,
+        "failed_checks": 0,
+        "checks": [],
+    }
 
 def create_client(
     service: FakeCopilotService,

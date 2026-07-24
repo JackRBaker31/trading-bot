@@ -1,4 +1,9 @@
-from collections.abc import Callable, Sequence
+from collections.abc import (
+    Callable,
+    Mapping,
+    Sequence,
+)
+from typing import Any
 from datetime import datetime, timezone
 
 from app.copilot_models import (
@@ -22,6 +27,12 @@ from app.copilot_overview_models import (
     CopilotPlatformOverview,
     CopilotScheduleOverview,
 )
+from app.copilot_intelligence_models import (
+    CopilotGraduationCheck,
+    CopilotGraduationOverview,
+    CopilotIntelligenceOverview,
+    CopilotTradingIntelligence,
+)
 
 InfrastructureStatusProvider = Callable[
     [],
@@ -40,6 +51,16 @@ SchedulesProvider = Callable[
 
 NowProvider = Callable[[], datetime]
 
+IntelligenceSnapshotProvider = Callable[
+    [],
+    Mapping[str, Any],
+]
+
+GraduationStatusProvider = Callable[
+    [],
+    Mapping[str, Any],
+]
+
 
 class CopilotService:
     def __init__(
@@ -51,6 +72,14 @@ class CopilotService:
         recent_jobs_provider: RecentJobsProvider,
         schedules_provider: SchedulesProvider,
         now_provider: NowProvider | None = None,
+        intelligence_snapshot_provider: (
+            IntelligenceSnapshotProvider
+            | None
+        ) = None,
+        graduation_status_provider: (
+            GraduationStatusProvider
+            | None
+        ) = None,
     ) -> None:
         self._infrastructure_status_provider = (
             infrastructure_status_provider
@@ -60,8 +89,19 @@ class CopilotService:
         )
         self._schedules_provider = schedules_provider
         self._now_provider = now_provider or (
-            lambda: datetime.now(timezone.utc)
+            lambda: datetime.now(
+                timezone.utc
+            )
         )
+
+        self._intelligence_snapshot_provider = (
+            intelligence_snapshot_provider
+        )
+
+        self._graduation_status_provider = (
+            graduation_status_provider
+        )
+        
 
     def answer(
         self,
@@ -91,6 +131,26 @@ class CopilotService:
         if self._asks_about_schedule(lowered):
             return self.upcoming_work()
 
+        if self._asks_why_no_trade(
+            lowered
+        ):
+            return (
+                self.no_trade_explanation()
+            )
+
+        if self._asks_about_graduation(
+            lowered
+        ):
+            return (
+                self.graduation_explanation()
+            )
+
+        if self._asks_about_intelligence(
+            lowered
+        ):
+            return (
+                self.intelligence_explanation()
+            )
         return self.operational_overview()
 
     def dashboard_overview(
@@ -306,7 +366,9 @@ class CopilotService:
             )
             else "ATTENTION"
         )
-
+        trading = (
+            self.trading_intelligence()
+        )
         return CopilotOverview(
             generated_at=now,
             overall_status=overall_status,
@@ -345,6 +407,13 @@ class CopilotService:
             ),
             attention_items=tuple(
                 attention_items
+            ),
+            trading_intelligence=(
+                trading.intelligence
+            ),
+
+            graduation=(
+                trading.graduation
             ),
         )
 
@@ -809,6 +878,56 @@ class CopilotService:
         )
 
     @staticmethod
+    def _asks_about_intelligence(
+        question: str,
+    ) -> bool:
+        return any(
+            phrase in question
+            for phrase in (
+                "intelligence",
+                "signal strength",
+                "signals",
+                "confidence",
+                "market outlook",
+                "research strength",
+            )
+        )
+
+
+    @staticmethod
+    def _asks_about_graduation(
+        question: str,
+    ) -> bool:
+        return any(
+            phrase in question
+            for phrase in (
+                "graduation",
+                "graduate",
+                "not ready to trade",
+                "ready to trade",
+                "blocking graduation",
+                "graduation blockers",
+            )
+        )
+
+
+    @staticmethod
+    def _asks_why_no_trade(
+        question: str,
+    ) -> bool:
+        return any(
+            phrase in question
+            for phrase in (
+                "why was no trade",
+                "why no trade",
+                "why didn't we trade",
+                "why did we not trade",
+                "why haven't we traded",
+                "no trade placed",
+            )
+        )
+
+    @staticmethod
     def _display_name(
         value: str,
     ) -> str:
@@ -862,6 +981,43 @@ class CopilotService:
             )
 
         return f"in {hours} hours"
+    
+    @staticmethod
+    def _as_int(
+        value: object,
+    ) -> int:
+        try:
+            return int(value)
+        except (
+            TypeError,
+            ValueError,
+        ):
+            return 0
+
+
+    @staticmethod
+    def _as_float(
+        value: object,
+    ) -> float:
+        try:
+            return float(value)
+        except (
+            TypeError,
+            ValueError,
+        ):
+            return 0.0
+
+
+    @staticmethod
+    def _optional_text(
+        value: object,
+    ) -> str | None:
+        if value is None:
+            return None
+
+        cleaned = str(value).strip()
+
+        return cleaned or None
 
     def _utc_now(
         self,
@@ -876,4 +1032,452 @@ class CopilotService:
 
         return value.astimezone(
             timezone.utc
+        )
+        
+    def trading_intelligence(
+        self,
+    ) -> CopilotTradingIntelligence:
+        if (
+            self
+            ._intelligence_snapshot_provider
+            is None
+        ):
+            raise ValueError(
+                "Intelligence snapshot provider "
+                "is not configured."
+            )
+
+        if (
+            self
+            ._graduation_status_provider
+            is None
+        ):
+            raise ValueError(
+                "Graduation status provider "
+                "is not configured."
+            )
+
+        snapshot = dict(
+            self
+            ._intelligence_snapshot_provider()
+        )
+
+        graduation_payload = dict(
+            self
+            ._graduation_status_provider()
+        )
+
+        confidence = self._as_float(
+            snapshot.get(
+                "confidence",
+                snapshot.get(
+                    "overall_confidence",
+                    0.0,
+                ),
+            )
+        )
+
+        signal_count = self._as_int(
+            snapshot.get(
+                "signal_count",
+                snapshot.get(
+                    "total_signals",
+                    0,
+                ),
+            )
+        )
+
+        actionable_signal_count = (
+            self._as_int(
+                snapshot.get(
+                    "actionable_signal_count",
+                    snapshot.get(
+                        "actionable_signals",
+                        0,
+                    ),
+                )
+            )
+        )
+
+        raw_checks = (
+            graduation_payload.get(
+                "checks",
+                (),
+            )
+            or ()
+        )
+
+        checks: list[
+            CopilotGraduationCheck
+        ] = []
+
+        for raw_check in raw_checks:
+            if not isinstance(
+                raw_check,
+                Mapping,
+            ):
+                continue
+
+            checks.append(
+                CopilotGraduationCheck(
+                    name=str(
+                        raw_check.get(
+                            "name",
+                            raw_check.get(
+                                "code",
+                                "Requirement",
+                            ),
+                        )
+                    ),
+                    passed=bool(
+                        raw_check.get(
+                            "passed",
+                            False,
+                        )
+                    ),
+                    reason=self._optional_text(
+                        raw_check.get(
+                            "reason",
+                            raw_check.get(
+                                "detail",
+                            ),
+                        )
+                    ),
+                )
+            )
+
+        ready = bool(
+            graduation_payload.get(
+                "ready",
+                graduation_payload.get(
+                    "graduated",
+                    False,
+                ),
+            )
+        )
+
+        passed_checks = sum(
+            1
+            for check in checks
+            if check.passed
+        )
+
+        blockers: list[str] = []
+
+        trading_readiness = str(
+            snapshot.get(
+                "trading_readiness",
+                "UNKNOWN",
+            )
+        ).upper()
+
+        evidence_quality = str(
+            snapshot.get(
+                "evidence_quality",
+                "UNKNOWN",
+            )
+        ).upper()
+
+        if trading_readiness != "READY":
+            blockers.append(
+                "Trading readiness has not "
+                "reached READY."
+            )
+
+        if actionable_signal_count <= 0:
+            blockers.append(
+                "No actionable signals are "
+                "currently available."
+            )
+
+        if confidence <= 0:
+            blockers.append(
+                "Intelligence confidence is "
+                "unavailable or zero."
+            )
+
+        if evidence_quality in {
+            "LOW",
+            "INSUFFICIENT",
+            "UNKNOWN",
+        }:
+            blockers.append(
+                "Evidence quality is not "
+                "strong enough."
+            )
+
+        blockers.extend(
+            check.reason
+            or (
+                f"{check.name} has not "
+                "passed."
+            )
+            for check in checks
+            if not check.passed
+        )
+
+        return CopilotTradingIntelligence(
+            intelligence=(
+                CopilotIntelligenceOverview(
+                    trading_readiness=(
+                        trading_readiness
+                    ),
+                    market_outlook=str(
+                        snapshot.get(
+                            "market_outlook",
+                            "UNKNOWN",
+                        )
+                    ).upper(),
+                    confidence=confidence,
+                    signal_count=signal_count,
+                    actionable_signal_count=(
+                        actionable_signal_count
+                    ),
+                    evidence_quality=(
+                        evidence_quality
+                    ),
+                )
+            ),
+            graduation=(
+                CopilotGraduationOverview(
+                    ready=ready,
+                    passed_checks=(
+                        passed_checks
+                    ),
+                    total_checks=len(
+                        checks
+                    ),
+                    checks=tuple(
+                        checks
+                    ),
+                )
+            ),
+            blockers=tuple(
+                dict.fromkeys(
+                    blocker
+                    for blocker in blockers
+                    if blocker
+                )
+            ),
+        )
+        
+    def intelligence_explanation(
+    self,
+) -> CopilotResponse:
+        state = (
+            self.trading_intelligence()
+        )
+
+        intelligence = (
+            state.intelligence
+        )
+
+        suggestions = [
+            CopilotSuggestion(
+                title="Trading readiness",
+                message=(
+                    intelligence
+                    .trading_readiness
+                ),
+                kind=(
+                    "success"
+                    if (
+                        intelligence
+                        .trading_readiness
+                        == "READY"
+                    )
+                    else "warning"
+                ),
+            ),
+            CopilotSuggestion(
+                title="Confidence",
+                message=(
+                    f"{intelligence.confidence:.1f}"
+                ),
+                kind=(
+                    "success"
+                    if (
+                        intelligence.confidence
+                        >= 80
+                    )
+                    else "info"
+                ),
+            ),
+            CopilotSuggestion(
+                title="Signals",
+                message=(
+                    f"{intelligence.signal_count} "
+                    "total signal(s), "
+                    f"{intelligence.actionable_signal_count} "
+                    "actionable."
+                ),
+                kind=(
+                    "success"
+                    if (
+                        intelligence
+                        .actionable_signal_count
+                        > 0
+                    )
+                    else "warning"
+                ),
+            ),
+            CopilotSuggestion(
+                title="Evidence quality",
+                message=(
+                    intelligence
+                    .evidence_quality
+                ),
+                kind=(
+                    "success"
+                    if (
+                        intelligence
+                        .evidence_quality
+                        in {
+                            "HIGH",
+                            "STRONG",
+                        }
+                    )
+                    else "warning"
+                ),
+            ),
+        ]
+
+        return CopilotResponse(
+        summary=(
+            "Current intelligence is "
+            f"{intelligence.trading_readiness}. "
+            f"Confidence is "
+            f"{intelligence.confidence:.1f}, "
+            f"with "
+            f"{intelligence.actionable_signal_count} "
+            "actionable signal(s)."
+        ),
+        suggestions=tuple(
+            suggestions
+        ),
+    )
+
+
+    def graduation_explanation(
+        self,
+    ) -> CopilotResponse:
+        state = (
+            self.trading_intelligence()
+        )
+
+        graduation = state.graduation
+
+        if graduation.ready:
+            return CopilotResponse(
+                summary=(
+                    "Intelligence currently "
+                    "meets the graduation "
+                    "requirements."
+                ),
+                suggestions=(
+                    CopilotSuggestion(
+                        title="Graduation",
+                        message=(
+                            f"{graduation.passed_checks} "
+                            f"of "
+                            f"{graduation.total_checks} "
+                            "checks passed."
+                        ),
+                        kind="success",
+                    ),
+                ),
+            )
+
+        failed_checks = (
+            graduation.failed_checks
+        )
+
+        suggestions = tuple(
+            CopilotSuggestion(
+                title=check.name,
+                message=(
+                    check.reason
+                    or (
+                        "This graduation "
+                        "requirement has not "
+                        "passed."
+                    )
+                ),
+                kind="warning",
+            )
+            for check in failed_checks
+        )
+
+        return CopilotResponse(
+            summary=(
+                "Intelligence is not ready "
+                "to graduate. "
+                f"{len(failed_checks)} of "
+                f"{graduation.total_checks} "
+                "requirement(s) remain "
+                "blocked."
+            ),
+            suggestions=(
+                suggestions
+                or (
+                    CopilotSuggestion(
+                        title="Graduation",
+                        message=(
+                            "Graduation status is "
+                            "not ready, but no "
+                            "individual failed "
+                            "checks were supplied."
+                        ),
+                        kind="warning",
+                    ),
+                )
+            ),
+        )
+
+
+    def no_trade_explanation(
+        self,
+    ) -> CopilotResponse:
+        state = (
+            self.trading_intelligence()
+        )
+
+        if not state.blockers:
+            return CopilotResponse(
+                summary=(
+                    "No intelligence or "
+                    "graduation blocker was "
+                    "identified. Order, risk "
+                    "and market-session evidence "
+                    "must also be reviewed."
+                ),
+                suggestions=(
+                    CopilotSuggestion(
+                        title="Further evidence",
+                        message=(
+                            "Review risk decisions, "
+                            "order history and market "
+                            "session status."
+                        ),
+                        kind="info",
+                    ),
+                ),
+            )
+
+        return CopilotResponse(
+            summary=(
+                "No trade was justified by "
+                "the current intelligence "
+                "state because one or more "
+                "requirements remain blocked."
+            ),
+            suggestions=tuple(
+                CopilotSuggestion(
+                    title="Trading blocker",
+                    message=blocker,
+                    kind="warning",
+                )
+                for blocker
+                in state.blockers
+            ),
         )

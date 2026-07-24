@@ -236,26 +236,18 @@ def create_copilot_service(
 ) -> CopilotService:
     return CopilotService(
         infrastructure_status_provider=(
-            lambda: (
-                create_infrastructure_status_service(
-                    database_path=database_path
-                ).get_status()
-            )
+            create_infrastructure_status_service
         ),
         recent_jobs_provider=(
-            lambda: (
-                create_job_service(
-                    database_path=database_path
-                ).list_recent(
-                    limit=100
-                )
-            )
+            create_recent_jobs_provider()
         ),
         schedules_provider=(
-            lambda: (
-                create_schedule_management_service(
-                    database_path=database_path
-                ).list()
-            )
+            create_schedule_provider()
+        ),
+        intelligence_snapshot_provider=(
+            create_intelligence_snapshot
+        ),
+        graduation_status_provider=(
+            create_graduation_snapshot
         ),
     )
