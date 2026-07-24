@@ -41,7 +41,7 @@ from app.system_status_service import (
 )
 from app.scheduled_task_repository import ScheduledTaskRepository
 from app.schedule_management_service import ScheduleManagementService
-
+from app.copilot_service import CopilotService
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
     "data/application.db"
@@ -227,3 +227,35 @@ def create_schedule_management_service(
     )
     service.initialize()
     return service
+
+def create_copilot_service(
+    *,
+    database_path: str = (
+        DEFAULT_APPLICATION_DATABASE_PATH
+    ),
+) -> CopilotService:
+    return CopilotService(
+        infrastructure_status_provider=(
+            lambda: (
+                create_infrastructure_status_service(
+                    database_path=database_path
+                ).get_status()
+            )
+        ),
+        recent_jobs_provider=(
+            lambda: (
+                create_job_service(
+                    database_path=database_path
+                ).list_recent(
+                    limit=100
+                )
+            )
+        ),
+        schedules_provider=(
+            lambda: (
+                create_schedule_management_service(
+                    database_path=database_path
+                ).list()
+            )
+        ),
+    )

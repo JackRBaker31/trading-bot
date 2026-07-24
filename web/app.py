@@ -20,6 +20,7 @@ Minimal .env required:
 """
 
 import os
+from dataclasses import asdict
 from collections.abc import Callable
 from typing import Annotated, Protocol
 
@@ -84,7 +85,8 @@ from web.dependencies import (
     create_daily_briefing_service,
     create_system_status_service,
     create_schedule_management_service,
-)
+    create_copilot_service,
+    )
 
 
 # ─── CORS / cookie helpers ────────────────────────────────────────────────────
@@ -263,8 +265,43 @@ class ResearchQueryServiceLike(Protocol):
     def get_news_summary(self):
         ...
 
+class CopilotServiceLike(Protocol):
+    def answer(
+        self,
+        *,
+        question: str,
+    ):
+        ...
+
+    def operational_overview(
+        self,
+    ):
+        ...
 
 # ─── Request / response models (unchanged) ───────────────────────────────────
+
+class CopilotQueryRequest(BaseModel):
+    question: str = Field(
+        min_length=1,
+        max_length=500,
+    )
+
+    @field_validator("question")
+    @classmethod
+    def normalize_question(
+        cls,
+        value: str,
+    ) -> str:
+        cleaned = " ".join(
+            value.strip().split()
+        )
+
+        if not cleaned:
+            raise ValueError(
+                "Copilot question is required."
+            )
+
+        return cleaned
 
 class LoginRequest(BaseModel):
     username: str
@@ -498,6 +535,10 @@ def create_app(
     schedule_management_service_factory: (
         Callable[[], ScheduleManagementServiceLike] | None
     ) = None,
+    copilot_service_factory: (
+        Callable[[], CopilotServiceLike]
+        | None
+    ) = None,   
     paper_trading_controller_factory: (
         Callable[[], PaperTradingControllerLike]
         | None
@@ -558,6 +599,10 @@ def create_app(
     schedules_factory = (
         schedule_management_service_factory
         or create_schedule_management_service
+    )
+    copilot_factory = (
+        copilot_service_factory
+        or create_copilot_service
     )
     paper_trading_factory = (
         paper_trading_controller_factory
@@ -899,6 +944,47 @@ def create_app(
             .get_worker_status()
             .to_dictionary()
         )
+
+    @app.get(
+        "/api/copilot/suggestions",
+        tags=["copilot"],
+    )
+    def copilot_suggestions(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return {
+            "items": [
+                "Is KAIRO healthy?",
+                "What failed recently?",
+                "What is running now?",
+                "What happens next?",
+                "Give me an operational overview.",
+            ]
+        }
+
+    @app.post(
+        "/api/copilot/query",
+        tags=["copilot"],
+    )
+    def copilot_query(
+        request: CopilotQueryRequest,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        response = copilot_factory().answer(
+            question=request.question
+        )
+
+        return asdict(response)
 
     @app.get("/api/status", tags=["system"])
     def system_status() -> dict[str, object]:
