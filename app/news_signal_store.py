@@ -3,6 +3,9 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
+from app.news_confidence_models import (
+    NewsConfidenceFactor,
+)
 from app.news_signal import NewsSignal
 
 
@@ -145,5 +148,20 @@ class NewsSignalStore:
             ),
             reasoning_summary=str(
                 payload["reasoning_summary"]
+            ),
+            confidence_breakdown=tuple(
+                NewsConfidenceFactor(
+                    code=str(item["code"]),
+                    label=str(item["label"]),
+                    contribution=float(
+                        item["contribution"]
+                    ),
+                    detail=str(item["detail"]),
+                )
+                for item in payload.get(
+                    "confidence_breakdown",
+                    (),
+                )
+                if isinstance(item, dict)
             ),
         )

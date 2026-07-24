@@ -29,13 +29,13 @@ def test_parses_watchlist_argument() -> None:
     args = parse_args(
         [
             "--watchlist",
-            "data/watchlists/us_large_cap.txt",
+            "data/watchlists/core_universe.txt",
         ]
     )
 
     assert args.symbols is None
     assert args.watchlist == (
-        "data/watchlists/us_large_cap.txt"
+        "data/watchlists/core_universe.txt"
     )
 
 

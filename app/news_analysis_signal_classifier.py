@@ -1,13 +1,23 @@
-from dataclasses import dataclass
-from datetime import timedelta
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 
 from app.news_analysis import (
     NewsImpactScope,
-    NewsImpactTerm,
     NewsSentiment,
 )
 from app.news_analysis_service import (
     NewsAnalysisService,
+)
+from app.news_confidence import (
+    NewsConfidenceEngine,
+)
+from app.news_confidence_models import (
+    NewsConfidenceFactor,
 )
 from app.news_signal import NewsSignal
 from app.news_signal_classifier import (
@@ -26,18 +36,47 @@ _SENTIMENT_SCORES = {
 class NewsAnalysisSignalClassifier:
     analyser: NewsAnalysisService
     expiry_hours: int = 24
-    confidence: float = 0.80
+    confidence: float | None = None
+    confidence_engine: (
+        NewsConfidenceEngine
+    ) = field(
+        default_factory=(
+            NewsConfidenceEngine
+        )
+    )
+    now_provider: Callable[
+        [],
+        datetime,
+    ] = field(
+        default=(
+            lambda: datetime.now(
+                timezone.utc
+            )
+        ),
+        compare=False,
+        repr=False,
+    )
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         if self.expiry_hours <= 0:
             raise ValueError(
-                "Expiry hours must be positive."
+                "Expiry hours must be "
+                "positive."
             )
 
-        if not 0.0 <= self.confidence <= 1.0:
+        if (
+            self.confidence is not None
+            and not (
+                0.0
+                <= self.confidence
+                <= 1.0
+            )
+        ):
             raise ValueError(
-                "Confidence must be between "
-                "0.0 and 1.0."
+                "Confidence must be "
+                "between 0.0 and 1.0."
             )
 
     def classify(
@@ -45,8 +84,10 @@ class NewsAnalysisSignalClassifier:
         *,
         article: NewsArticleInput,
     ) -> NewsSignal:
-        analysis = self.analyser.analyse(
-            article.article_text
+        analysis = (
+            self.analyser.analyse(
+                article.article_text
+            )
         )
 
         event_type = (
@@ -72,8 +113,53 @@ class NewsAnalysisSignalClassifier:
             )
         )
 
+        if (
+            self.confidence
+            is not None
+        ):
+            calculated_confidence = (
+                self.confidence
+            )
+            confidence_breakdown = (
+                NewsConfidenceFactor(
+                    code=(
+                        "CONFIGURED_OVERRIDE"
+                    ),
+                    label=(
+                        "Configured override"
+                    ),
+                    contribution=(
+                        self.confidence
+                    ),
+                    detail=(
+                        "A configured "
+                        "confidence override "
+                        "was used."
+                    ),
+                ),
+            )
+        else:
+            result = (
+                self.confidence_engine
+                .calculate(
+                    article=article,
+                    analysis=analysis,
+                    now=(
+                        self.now_provider()
+                    ),
+                )
+            )
+            calculated_confidence = (
+                result.confidence
+            )
+            confidence_breakdown = (
+                result.factors
+            )
+
         return NewsSignal(
-            article_id=article.article_id,
+            article_id=(
+                article.article_id
+            ),
             symbol=article.symbol,
             headline=article.headline,
             sentiment=(
@@ -82,20 +168,30 @@ class NewsAnalysisSignalClassifier:
                 ]
             ),
             relevance=(
-                article.provider_relevance
+                article
+                .provider_relevance
             ),
-            confidence=self.confidence,
+            confidence=(
+                calculated_confidence
+            ),
             event_type=event_type,
             is_material=is_material,
-            published_at=article.published_at,
+            published_at=(
+                article.published_at
+            ),
             expires_at=(
                 article.published_at
                 + timedelta(
-                    hours=self.expiry_hours
+                    hours=(
+                        self.expiry_hours
+                    )
                 )
             ),
             source=article.source,
             reasoning_summary=(
                 reasoning_summary
+            ),
+            confidence_breakdown=(
+                confidence_breakdown
             ),
         )

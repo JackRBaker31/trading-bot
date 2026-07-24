@@ -86,6 +86,16 @@ from web.dependencies import (
     create_system_status_service,
     create_schedule_management_service,
     create_copilot_service,
+    create_intelligence_observability_service,
+    create_advanced_intelligence_service,
+    create_adaptive_intelligence_service,
+    create_decision_outcome_service,
+    create_decision_memory_service,
+    create_macro_capability_provider,
+    create_technical_historical_client,
+    create_technical_analysis_service,
+    create_investment_thesis_service,
+    create_decision_engine_service,
     create_symbol_decision_service,
     create_symbol_decision_history_service,
     create_decision_intelligence_service,
@@ -1182,6 +1192,309 @@ def create_app(
             "symbol": trace.symbol,
             "trace": trace.to_dictionary(),
         }
+
+
+    @app.get(
+        "/api/copilot/investment-decisions",
+        tags=["copilot"],
+    )
+    def investment_decisions(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_decision_engine_service()
+            .get_report()
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/copilot/investment-theses",
+        tags=["copilot"],
+    )
+    def investment_theses(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        report = (
+            create_investment_thesis_service()
+            .get_report()
+        )
+
+        create_decision_memory_service(
+        ).capture_report(
+            report=report
+        )
+
+        return report.to_dictionary()
+
+
+    @app.get(
+        "/api/copilot/technical-analysis/{symbol}",
+        tags=["copilot"],
+    )
+    def technical_analysis(
+        symbol: str,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        bars = (
+            create_technical_historical_client()
+            .get_daily_bars(
+                symbol=symbol,
+                output_size=260,
+            )
+        )
+
+        return (
+            create_technical_analysis_service()
+            .analyse(
+                symbol=symbol,
+                bars=bars,
+            )
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/copilot/macro-analysis",
+        tags=["copilot"],
+    )
+    def macro_analysis(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_macro_capability_provider()
+            .get_analysis()
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/copilot/decision-memory",
+        tags=["copilot"],
+    )
+    def decision_memory(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+        limit: int = Query(
+            default=10,
+            ge=1,
+            le=100,
+        ),
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_decision_memory_service()
+            .overview(
+                limit=limit
+            )
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/copilot/decision-outcomes",
+        tags=["copilot"],
+    )
+    def decision_outcomes(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+        limit: int = Query(
+            default=20,
+            ge=1,
+            le=100,
+        ),
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_decision_outcome_service()
+            .overview(
+                limit=limit
+            )
+            .to_dictionary()
+        )
+
+
+    @app.post(
+        "/api/copilot/decision-outcomes/capture",
+        tags=["copilot"],
+    )
+    def capture_decision_outcomes(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_decision_outcome_service()
+            .capture_due()
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/copilot/adaptive-intelligence",
+        tags=["copilot"],
+    )
+    def adaptive_intelligence(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_adaptive_intelligence_service()
+            .report()
+            .to_dictionary()
+        )
+
+
+    @app.post(
+        "/api/copilot/strategy-evolution/propose",
+        tags=["copilot"],
+    )
+    def propose_strategy_evolution(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        proposals = (
+            create_adaptive_intelligence_service()
+            .propose_evolution()
+        )
+
+        return {
+            "created_count": len(
+                proposals
+            ),
+            "proposals": [
+                item.to_dictionary()
+                for item in proposals
+            ],
+        }
+
+
+    @app.get(
+        "/api/copilot/advanced-intelligence",
+        tags=["copilot"],
+    )
+    def advanced_intelligence(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_advanced_intelligence_service()
+            .report()
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/copilot/intelligence-health",
+        tags=["copilot"],
+    )
+    def intelligence_health(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+        limit: int = Query(
+            default=20,
+            ge=1,
+            le=100,
+        ),
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_intelligence_observability_service()
+            .overview(
+                limit=limit
+            )
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/jobs/{job_id}/diagnostics",
+        tags=["jobs"],
+    )
+    def job_diagnostics(
+        job_id: str,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+    ) -> dict[str, object]:
+        del user
+
+        return (
+            create_intelligence_observability_service()
+            .job_report(
+                job_id=job_id
+            )
+            .to_dictionary()
+        )
 
 
     @app.get(

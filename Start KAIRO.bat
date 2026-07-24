@@ -5,7 +5,6 @@ title KAIRO Launcher
 color 0B
 
 set "ROOT=C:\Users\Jack\Documents\trading-bot"
-set "PYTHON=%ROOT%\.venv\Scripts\python.exe"
 set "FRONTEND=%ROOT%\frontend"
 
 cls
@@ -14,10 +13,18 @@ echo                    KAIRO AI PLATFORM
 echo ============================================================
 echo.
 
-if not exist "%PYTHON%" (
+if not exist "%ROOT%\.venv\Scripts\python.exe" (
     color 0C
     echo ERROR: Python was not found:
-    echo %PYTHON%
+    echo %ROOT%\.venv\Scripts\python.exe
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%ROOT%\run_web.py" (
+    color 0C
+    echo ERROR: run_web.py was not found.
     echo.
     pause
     exit /b 1
@@ -40,26 +47,27 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Starting backend...
-start "KAIRO Backend Supervisor" cmd /k "title KAIRO Backend Supervisor && cd /d "%ROOT%" && "%PYTHON%" -m app.run_process_supervisor"
+echo Starting KAIRO API in its own persistent window...
+start "KAIRO API" cmd.exe /d /k "cd /d %ROOT% && .venv\Scripts\python.exe run_web.py"
 
-timeout /t 2 >nul
+timeout /t 3 /nobreak >nul
 
-echo Starting frontend...
-start "KAIRO Frontend" cmd /k "title KAIRO Frontend && cd /d "%FRONTEND%" && call npm.cmd run dev -- --host 127.0.0.1 --port 5173 --strictPort"
+echo Starting KAIRO frontend in its own persistent window...
+start "KAIRO Frontend" cmd.exe /d /k "cd /d %FRONTEND% && call npm.cmd run dev -- --host 127.0.0.1 --port 5173 --strictPort"
 
 echo.
 echo Waiting 8 seconds for startup...
-timeout /t 8 >nul
+timeout /t 8 /nobreak >nul
 
-echo.
 echo Opening KAIRO...
 start "" "http://127.0.0.1:5173"
 
 echo.
-echo Startup commands completed.
-echo Review the Backend and Frontend windows if the site does not load.
+echo API and frontend have been launched independently.
+echo Run "Start KAIRO Services.bat" separately for the worker and scheduler.
+echo Do not close the API, Frontend, Worker or Scheduler windows while testing.
 echo.
 pause
 
+endlocal
 exit /b 0

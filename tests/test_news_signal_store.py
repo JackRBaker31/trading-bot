@@ -98,3 +98,19 @@ def test_rejects_invalid_record(
         match="line 1",
     ):
         store.load_all()
+
+def test_loads_legacy_signal_without_confidence_breakdown(tmp_path) -> None:
+    path = tmp_path / "signals.jsonl"
+    path.write_text(
+        '{"article_id":"legacy","symbol":"AAPL","headline":"Legacy",'
+        '"sentiment":1.0,"relevance":0.8,"confidence":0.8,'
+        '"event_type":"STOCK_SHORTTERM_POSITIVE","is_material":true,'
+        '"published_at":"2026-07-18T12:00:00+00:00",'
+        '"expires_at":"2026-07-19T12:00:00+00:00",'
+        '"source":"alpha_vantage","reasoning_summary":"Legacy record."}\n',
+        encoding="utf-8",
+    )
+    signals = NewsSignalStore(file_path=str(path)).load_all()
+    assert len(signals) == 1
+    assert signals[0].confidence == 0.8
+    assert signals[0].confidence_breakdown == ()

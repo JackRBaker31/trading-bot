@@ -252,6 +252,10 @@ class ResearchQueryService:
             ),
             "relevance": signal.relevance,
             "confidence": signal.confidence,
+            "confidence_breakdown": [
+                factor.to_dictionary()
+                for factor in signal.confidence_breakdown
+            ],
             "event_type": signal.event_type,
             "is_material": signal.is_material,
             "published_at": signal.published_at.isoformat(),

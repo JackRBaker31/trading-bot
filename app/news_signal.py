@@ -1,5 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+
+from app.news_confidence_models import (
+    NewsConfidenceFactor,
+)
 
 
 @dataclass(frozen=True)
@@ -16,25 +20,38 @@ class NewsSignal:
     expires_at: datetime
     source: str
     reasoning_summary: str
+    confidence_breakdown: tuple[
+        NewsConfidenceFactor,
+        ...
+    ] = field(
+        default_factory=tuple
+    )
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         cleaned_article_id = (
             self.article_id.strip()
         )
         cleaned_symbol = (
-            self.symbol.upper().strip()
+            self.symbol
+            .upper()
+            .strip()
         )
         cleaned_headline = (
             self.headline.strip()
         )
         cleaned_event_type = (
-            self.event_type.upper().strip()
+            self.event_type
+            .upper()
+            .strip()
         )
         cleaned_source = (
             self.source.strip()
         )
         cleaned_reasoning = (
-            self.reasoning_summary.strip()
+            self.reasoning_summary
+            .strip()
         )
 
         object.__setattr__(
@@ -93,22 +110,41 @@ class NewsSignal:
                 "Source is required."
             )
 
-        if not -1.0 <= self.sentiment <= 1.0:
+        if not (
+            -1.0
+            <= self.sentiment
+            <= 1.0
+        ):
             raise ValueError(
-                "Sentiment must be between -1.0 and 1.0."
+                "Sentiment must be "
+                "between -1.0 and 1.0."
             )
 
-        if not 0.0 <= self.relevance <= 1.0:
+        if not (
+            0.0
+            <= self.relevance
+            <= 1.0
+        ):
             raise ValueError(
-                "Relevance must be between 0.0 and 1.0."
+                "Relevance must be "
+                "between 0.0 and 1.0."
             )
 
-        if not 0.0 <= self.confidence <= 1.0:
+        if not (
+            0.0
+            <= self.confidence
+            <= 1.0
+        ):
             raise ValueError(
-                "Confidence must be between 0.0 and 1.0."
+                "Confidence must be "
+                "between 0.0 and 1.0."
             )
 
-        if self.expires_at <= self.published_at:
+        if (
+            self.expires_at
+            <= self.published_at
+        ):
             raise ValueError(
-                "Expiry must be later than publication."
+                "Expiry must be later "
+                "than publication."
             )
