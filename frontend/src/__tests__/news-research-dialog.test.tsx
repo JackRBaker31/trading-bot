@@ -71,7 +71,11 @@ describe("News Research dialog", () => {
     renderOpenDialog();
 
     await user.click(screen.getByTestId("select-research-target"));
-    await user.click(screen.getByText("Custom Symbols"));
+    await user.click(
+      screen.getByRole("option", {
+        name: /custom symbols/i,
+      }),
+    );
 
     const input = screen.getByTestId("input-symbols");
     await user.type(input, "aapl, msft");
@@ -101,7 +105,11 @@ describe("News Research dialog", () => {
     renderOpenDialog();
 
     await user.click(screen.getByTestId("select-research-target"));
-    await user.click(screen.getByText("Custom Symbols"));
+    await user.click(
+      screen.getByRole("option", {
+        name: /custom symbols/i,
+      }),
+    );
 
     const submit = screen.getByTestId("submit-news-research");
     expect(submit).toBeDisabled();

@@ -86,7 +86,24 @@ describe("422 validation error", () => {
     );
 
     // Enter a symbol so the submit is enabled
-    await user.type(screen.getByTestId("input-target"), "AAPL");
+    await user.click(
+      screen.getByTestId(
+        "select-research-target",
+      ),
+    );
+
+    await user.click(
+      screen.getByRole("option", {
+        name: /custom symbols/i,
+      }),
+    );
+
+    await user.type(
+      screen.getByTestId(
+        "input-symbols",
+      ),
+      "AAPL",
+    );
     await user.click(screen.getByTestId("submit-news-research"));
 
     await waitFor(() =>
@@ -119,7 +136,24 @@ describe("429 rate-limit error", () => {
       />,
     );
 
-    await user.type(screen.getByTestId("input-target"), "AAPL");
+    await user.click(
+      screen.getByTestId(
+        "select-research-target",
+      ),
+    );
+
+    await user.click(
+      screen.getByRole("option", {
+        name: /custom symbols/i,
+      }),
+    );
+
+    await user.type(
+      screen.getByTestId(
+        "input-symbols",
+      ),
+      "AAPL",
+    );
     await user.click(screen.getByTestId("submit-news-research"));
 
     await waitFor(() =>

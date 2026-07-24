@@ -20,7 +20,7 @@ import {
   X,
   Circle,
   User,
-} from "lucide-react";
+  } from "lucide-react";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { useInfrastructureStatus } from "@/hooks/useInfrastructureStatus";
 import { apiClient } from "@/lib/api-client";
@@ -35,18 +35,19 @@ interface AppShellProps {
 }
 
 const navItems = [
-  { icon: Command,         label: "Operations Centre",     path: "/operations" },
-  { icon: LayoutDashboard, label: "Dashboard",             path: "/dashboard" },
-  { icon: FlaskConical,    label: "Research",              path: "/research" },
-  { icon: Newspaper,       label: "AI News",               path: "/news" },
-  { icon: Brain,           label: "Shadow Intelligence",   path: "/shadow" },
-  { icon: Briefcase,       label: "Portfolio",             path: "/portfolio" },
-  { icon: ClipboardList,   label: "Orders",                path: "/orders" },
-  { icon: ShieldCheck,     label: "Risk & Reconciliation", path: "/risk" },
-  { icon: Bot,             label: "Paper Trading",         path: "/paper-trading" },
-  { icon: Clock,           label: "Jobs",                  path: "/jobs" },
-  { icon: CalendarClock,   label: "Scheduler",             path: "/schedules" },
-  { icon: ScrollText,      label: "Audit",                 path: "/audit" },
+  { icon: Command,                 label: "Operations Centre",     path: "/operations" },
+  { icon: Bot,                     label: "KAIRO Copilot",         path: "/copilot",},
+  { icon: LayoutDashboard,         label: "Dashboard",             path: "/dashboard" },
+  { icon: FlaskConical,            label: "Research",              path: "/research" },
+  { icon: Newspaper,               label: "AI News",               path: "/news" },
+  { icon: Brain,                   label: "Shadow Intelligence",   path: "/shadow" },
+  { icon: Briefcase,               label: "Portfolio",             path: "/portfolio" },
+  { icon: ClipboardList,           label: "Orders",                path: "/orders" },
+  { icon: ShieldCheck,             label: "Risk & Reconciliation", path: "/risk" },
+  { icon: Bot,                     label: "Paper Trading",         path: "/paper-trading" },
+  { icon: Clock,                   label: "Jobs",                  path: "/jobs" },
+  { icon: CalendarClock,           label: "Scheduler",             path: "/schedules" },
+  { icon: ScrollText,              label: "Audit",                 path: "/audit" },
 ];
 
 export function AppShell({ children, title }: AppShellProps) {

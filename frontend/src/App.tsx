@@ -18,6 +18,7 @@ import AuditPage from "@/pages/AuditPage";
 import ShadowIntelligencePage from "@/pages/ShadowIntelligencePage";
 import SchedulesPage from "@/pages/SchedulesPage";
 import OperationsPage from "@/pages/OperationsPage";
+import CopilotPage from "@/pages/CopilotPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,6 +60,14 @@ function Router() {
           <ProtectedRoute
             component={OperationsPage}
             title="Operations Centre"
+          />
+        )}
+      </Route>
+      <Route path="/copilot">
+        {() => (
+          <ProtectedRoute
+            component={CopilotPage}
+            title="KAIRO Copilot"
           />
         )}
       </Route>
