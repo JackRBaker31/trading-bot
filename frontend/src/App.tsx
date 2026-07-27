@@ -20,6 +20,7 @@ import SchedulesPage from "@/pages/SchedulesPage";
 import OperationsPage from "@/pages/OperationsPage";
 import CopilotPage from "@/pages/CopilotPage";
 import PerformanceIntelligencePage from "@/pages/PerformanceIntelligencePage";
+import DecisionExplainabilityPage from "@/pages/DecisionExplainabilityPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,14 @@ function Router() {
           <ProtectedRoute
             component={PerformanceIntelligencePage}
             title="Performance Intelligence"
+          />
+        )}
+      </Route>
+      <Route path="/decision-explainability">
+        {() => (
+          <ProtectedRoute
+            component={DecisionExplainabilityPage}
+            title="Decision Explainability"
           />
         )}
       </Route>

@@ -128,11 +128,19 @@ from app.symbol_decision_repository import (
 from app.symbol_decision_service import (
     SymbolDecisionService,
 )
+from app.performance_review_service import PerformanceReviewService
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
     "data/application.db"
 )
 
+
+
+def create_performance_review_service(
+    *,
+    database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+) -> PerformanceReviewService:
+    return PerformanceReviewService(database_path=database_path)
 
 def create_system_status_service(
 ) -> SystemStatusService:

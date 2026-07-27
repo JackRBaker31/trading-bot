@@ -70,6 +70,7 @@ class IntelligenceCycleService:
         intelligence_snapshot_runner: Callable[[], object],
         daily_briefing_runner: Callable[[], object],
         now_provider: Callable[[], datetime] | None = None,
+        stage_observer: Callable[[str], None] | None = None,
     ) -> None:
         self._news_cycle_runner = news_cycle_runner
         self._shadow_analysis_runner = shadow_analysis_runner
@@ -80,10 +81,12 @@ class IntelligenceCycleService:
         self._now_provider = now_provider or (
             lambda: datetime.now(timezone.utc)
         )
+        self._stage_observer = stage_observer or (lambda stage: None)
 
     def run(self) -> IntelligenceCycleResult:
         stages: list[IntelligenceCycleStageResult] = []
 
+        self._stage_observer("NEWS_RESEARCH")
         news_result = self._news_cycle_runner()
         observation = news_result.observation_summary
         snapshot = news_result.snapshot_summary
@@ -140,6 +143,7 @@ class IntelligenceCycleService:
             )
         )
 
+        self._stage_observer("SHADOW_ANALYSIS")
         shadow = self._shadow_analysis_runner()
         stages.append(
             IntelligenceCycleStageResult(
@@ -149,6 +153,7 @@ class IntelligenceCycleService:
             )
         )
 
+        self._stage_observer("SHADOW_PERFORMANCE")
         performance = self._shadow_performance_runner()
         one_day = next(
             horizon
@@ -172,6 +177,7 @@ class IntelligenceCycleService:
             )
         )
 
+        self._stage_observer("GRADUATION_STATUS")
         graduation = self._graduation_status_runner()
         stages.append(
             IntelligenceCycleStageResult(
@@ -186,6 +192,7 @@ class IntelligenceCycleService:
             )
         )
 
+        self._stage_observer("INTELLIGENCE_SNAPSHOT")
         intelligence = self._intelligence_snapshot_runner()
         stages.append(
             IntelligenceCycleStageResult(
@@ -209,6 +216,7 @@ class IntelligenceCycleService:
             )
         )
 
+        self._stage_observer("DAILY_BRIEFING")
         briefing = self._daily_briefing_runner()
         stages.append(
             IntelligenceCycleStageResult(
@@ -226,6 +234,7 @@ class IntelligenceCycleService:
             )
         )
 
+        self._stage_observer("FINISHED")
         return IntelligenceCycleResult(
             generated_at=self._utc_now(),
             stages=tuple(stages),

@@ -1,3 +1,4 @@
+from app.job_crash_reporting import JobCrashReporter
 from app.job_executor import JobExecutor
 from app.job_service import JobService
 
@@ -8,9 +9,11 @@ class JobWorker:
         *,
         job_service: JobService,
         executor: JobExecutor,
+        crash_reporter: JobCrashReporter | None = None,
     ) -> None:
         self._job_service = job_service
         self._executor = executor
+        self._crash_reporter = crash_reporter or JobCrashReporter()
         self.current_job_id: str | None = None
         self.current_job_type: str | None = None
         self.jobs_processed = 0
@@ -30,14 +33,38 @@ class JobWorker:
             result, with_warnings = (
                 self._executor.execute(job=job)
             )
-        except Exception as error:
+        except KeyboardInterrupt:
+            raise
+        except BaseException as error:
             self.last_error = (
                 f"{type(error).__name__}: {error}"
             )
-            self._job_service.fail(
-                job_id=job.job_id,
-                error=error,
+            stage = getattr(
+                self._executor,
+                "current_stage",
+                None,
             )
+            report_path = self._crash_reporter.report(
+                error=error,
+                job_id=job.job_id,
+                job_type=job.job_type.value,
+                stage=stage,
+            )
+            try:
+                self._job_service.fail(
+                    job_id=job.job_id,
+                    error=error,
+                )
+            except Exception as failure_error:
+                self._crash_reporter.report(
+                    error=failure_error,
+                    job_id=job.job_id,
+                    job_type=job.job_type.value,
+                    stage="FAILURE_RECORDING",
+                    context={
+                        "original_report": str(report_path),
+                    },
+                )
             self.jobs_processed += 1
             return True
         finally:

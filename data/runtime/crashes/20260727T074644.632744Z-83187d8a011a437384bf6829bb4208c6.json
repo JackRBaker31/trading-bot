@@ -1,0 +1,15 @@
+{
+  "context": {},
+  "exception_message": "internal detail",
+  "exception_type": "RuntimeError",
+  "job_id": "12475b0e-4402-4aff-badc-d3c0fa32925e",
+  "job_type": "STRATEGY_REPORT",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "process_id": 53488,
+  "python_version": "3.14.6",
+  "report_id": "83187d8a011a437384bf6829bb4208c6",
+  "stage": null,
+  "thread": "MainThread",
+  "timestamp": "2026-07-27T07:46:44.632744+00:00",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Jack\\Documents\\trading-bot\\app\\job_worker.py\", line 34, in run_once\n    self._executor.execute(job=job)\n    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Users\\Jack\\Documents\\trading-bot\\tests\\test_job_worker.py\", line 18, in execute\n    raise RuntimeError(\"internal detail\")\nRuntimeError: internal detail\n"
+}

@@ -94,7 +94,10 @@ class JobService:
                 if with_warnings
                 else JobStatus.SUCCEEDED
             ),
-            finished_at=self._utc_now(),
+            finished_at=max(
+                self._utc_now(),
+                current.started_at or current.created_at,
+            ),
             result=dict(result),
         )
         self._repository.update(record=completed)
@@ -120,7 +123,10 @@ class JobService:
         failed = replace(
             current,
             status=JobStatus.FAILED,
-            finished_at=self._utc_now(),
+            finished_at=max(
+                self._utc_now(),
+                current.started_at or current.created_at,
+            ),
             error_code=error_code,
             error_summary=error_summary,
         )

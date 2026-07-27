@@ -20,6 +20,7 @@ Minimal .env required:
 """
 
 import os
+from datetime import datetime
 from dataclasses import asdict
 from collections.abc import Callable
 from typing import Annotated, Protocol
@@ -53,6 +54,7 @@ from app.application_errors import (
     TradingOperationError,
 )
 from app.authentication import AuthenticatedUser
+from app.job_reliability_service import JobReliabilityService
 from app.job import (
     JobStatus,
     JobType,
@@ -100,6 +102,7 @@ from web.dependencies import (
     create_symbol_decision_history_service,
     create_decision_intelligence_service,
     create_copilot_change_service,
+    create_performance_review_service,
     )
 
 
@@ -562,6 +565,9 @@ def create_app(
         Callable[[], PaperTradingControllerLike]
         | None
     ) = None,
+    performance_review_service_factory: (
+        Callable[[], object] | None
+    ) = None,
 ) -> FastAPI:
     infrastructure_factory = (
         infrastructure_status_service_factory
@@ -626,6 +632,10 @@ def create_app(
     paper_trading_factory = (
         paper_trading_controller_factory
         or create_paper_trading_controller
+    )
+    performance_review_factory = (
+        performance_review_service_factory
+        or create_performance_review_service
     )
 
     app = FastAPI(
@@ -969,6 +979,16 @@ def create_app(
             .get_worker_status()
             .to_dictionary()
         )
+
+
+    @app.get(
+        "/api/workers/job/reliability",
+        tags=["system"],
+        dependencies=[Depends(require_authenticated_user)],
+    )
+    def job_worker_reliability(
+    ) -> dict[str, object]:
+        return JobReliabilityService().get_status()
 
     @app.get(
         "/api/copilot/history",
@@ -1957,6 +1977,21 @@ def create_app(
             ),
         )
         return result.to_dictionary()
+
+
+    @app.get(
+        "/api/performance/review",
+        tags=["performance"],
+        dependencies=[Depends(require_authenticated_user)],
+    )
+    def performance_review(
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> dict[str, object]:
+        return performance_review_factory().generate(
+            start=start,
+            end=end,
+        )
 
     @app.get(
         "/api/portfolio",

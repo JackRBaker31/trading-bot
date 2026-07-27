@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import {
@@ -38,6 +39,7 @@ import {
   Clock,
   Activity,
   Filter,
+  SearchCheck,
 } from "lucide-react";
 
 // ─── Shadow decision type (from /api/shadow-decisions) ───────────────────────
@@ -571,6 +573,7 @@ function DecisionHistorySection() {
                   <TableHead>Reasons</TableHead>
                   <TableHead>Blocking</TableHead>
                   <TableHead>Ref Price</TableHead>
+                  <TableHead>Explain</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -634,6 +637,14 @@ function DecisionHistorySection() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {d.reference_price != null ? `$${d.reference_price.toFixed(2)}` : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Button asChild size="sm" variant="outline" className="h-7 gap-1.5 text-[10px]">
+                        <Link href={`/decision-explainability?symbol=${encodeURIComponent(d.symbol)}`}>
+                          <SearchCheck className="h-3 w-3" />
+                          Explain
+                        </Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

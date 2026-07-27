@@ -1,5 +1,6 @@
 import React, {
   FormEvent,
+  useEffect,
   useState,
 } from "react";
 
@@ -334,6 +335,16 @@ export default function CopilotPage() {
     nextEntryId,
     setNextEntryId,
   ] = useState(1);
+
+  useEffect(() => {
+    const prefilled = new URLSearchParams(
+      window.location.search,
+    ).get("question");
+
+    if (prefilled) {
+      setQuestion(prefilled.slice(0, 500));
+    }
+  }, []);
 
   const suggestionsQuery =
     useCopilotSuggestions();

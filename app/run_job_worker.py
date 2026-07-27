@@ -5,7 +5,9 @@ import time
 from datetime import datetime, timezone
 
 from app.environment import load_environment
+from app.job_crash_reporting import JobCrashReporter
 from app.job_executor import JobExecutor
+from app.job_recovery_service import JobRecoveryService
 from app.job_repository import JobRepository
 from app.job_service import JobService
 from app.job_worker import JobWorker
@@ -68,18 +70,30 @@ def main() -> None:
             "Worker name is required."
         )
 
+    repository = JobRepository(
+        database_path=args.database
+    )
     service = JobService(
-        repository=JobRepository(
-            database_path=args.database
-        )
+        repository=repository
     )
     service.initialize()
+    recovery = JobRecoveryService(
+        repository=repository
+    ).reconcile()
+    if recovery.reconciled_count:
+        print(
+            "JOB WORKER RECOVERED "
+            f"{recovery.reconciled_count} "
+            "ABANDONED JOB(S)"
+        )
 
+    crash_reporter = JobCrashReporter()
     worker = JobWorker(
         job_service=service,
         executor=JobExecutor(
             application_database_path=args.database
         ),
+        crash_reporter=crash_reporter,
     )
     heartbeat_repository = (
         WorkerHeartbeatRepository(
@@ -175,4 +189,16 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        raise
+    except BaseException as error:
+        path = JobCrashReporter().report(
+            error=error,
+            job_id=None,
+            job_type=None,
+            stage="WORKER_MAIN",
+        )
+        print(f"JOB WORKER FATAL ERROR RECORDED: {path}")
+        raise

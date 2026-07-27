@@ -311,6 +311,13 @@ class JobRepository:
                     connection.commit()
                     return None
 
+                created_at = datetime.fromisoformat(
+                    row["created_at"]
+                )
+                effective_started_at = max(
+                    started_at,
+                    created_at,
+                )
                 cursor = connection.execute(
                     """
                     UPDATE jobs
@@ -319,7 +326,7 @@ class JobRepository:
                     """,
                     (
                         JobStatus.RUNNING.value,
-                        started_at.isoformat(),
+                        effective_started_at.isoformat(),
                         row["job_id"],
                         JobStatus.QUEUED.value,
                     ),
@@ -339,6 +346,54 @@ class JobRepository:
             raise DataStoreError(
                 "Queued job could not be claimed.",
                 code="JOB_CLAIM_FAILED",
+            ) from error
+
+    def reconcile_stale_running(
+        self,
+        *,
+        cutoff: datetime,
+        finished_at: datetime,
+    ) -> int:
+        if cutoff.tzinfo is None or finished_at.tzinfo is None:
+            raise ValueError(
+                "Recovery timestamps must be timezone-aware."
+            )
+        try:
+            with self._connect() as connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE jobs
+                    SET
+                        status = ?,
+                        started_at = CASE
+                            WHEN started_at IS NULL
+                                 OR started_at < created_at
+                            THEN created_at
+                            ELSE started_at
+                        END,
+                        finished_at = ?,
+                        error_code = ?,
+                        error_summary = ?
+                    WHERE status = ?
+                      AND COALESCE(started_at, created_at) < ?
+                    """,
+                    (
+                        JobStatus.FAILED.value,
+                        finished_at.isoformat(),
+                        "WORKER_INTERRUPTED",
+                        (
+                            "Job was reconciled after the worker "
+                            "stopped before recording completion."
+                        ),
+                        JobStatus.RUNNING.value,
+                        cutoff.isoformat(),
+                    ),
+                )
+                return int(cursor.rowcount)
+        except sqlite3.Error as error:
+            raise DataStoreError(
+                "Stale jobs could not be reconciled.",
+                code="JOB_RECONCILIATION_FAILED",
             ) from error
 
     def _connect(self) -> sqlite3.Connection:

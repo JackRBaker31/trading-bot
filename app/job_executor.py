@@ -49,12 +49,14 @@ class JobExecutor:
         self._application_database_path = (
             application_database_path
         )
+        self.current_stage: str | None = None
 
     def execute(
         self,
         *,
         job: JobRecord,
     ) -> tuple[dict[str, object], bool]:
+        self.current_stage = "DISPATCH"
         if job.job_type == JobType.NEWS_RESEARCH_CYCLE:
             return self._execute_news_cycle(job.payload)
 
@@ -311,9 +313,14 @@ class JobExecutor:
             daily_briefing_runner=(
                 briefing_service.get_briefing
             ),
+            stage_observer=self._set_stage,
         ).run()
 
+        self.current_stage = "FINISHED"
         return result.to_dictionary(), result.has_warnings
+
+    def _set_stage(self, stage: str) -> None:
+        self.current_stage = stage
 
     def _resolve_symbols(
         self,
