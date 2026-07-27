@@ -1,6 +1,10 @@
 from fastapi.testclient import TestClient
 
 from web.app import create_app
+from tests.web_test_auth import (
+    FakeAuthenticatedService,
+    authenticated_client,
+)
 
 
 class FakeIntelligenceResult:
@@ -40,6 +44,9 @@ class FakeHistoryService:
 
 def test_returns_intelligence_snapshot():
     app = create_app(
+        authentication_service_factory=(
+            lambda: FakeAuthenticatedService()
+        ),
         intelligence_service_factory=(
             lambda: FakeIntelligenceService()
         ),
@@ -50,7 +57,7 @@ def test_returns_intelligence_snapshot():
             lambda: FakeHistoryService()
         ),
     )
-    response = TestClient(app).get(
+    response = authenticated_client(app).get(
         "/api/intelligence/snapshot"
     )
 

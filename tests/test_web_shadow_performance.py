@@ -1,6 +1,10 @@
 from fastapi.testclient import TestClient
 
 from web.app import create_app
+from tests.web_test_auth import (
+    FakeAuthenticatedService,
+    authenticated_client,
+)
 
 
 class FakeReport:
@@ -31,8 +35,11 @@ class FakeGraduationService:
 
 
 def test_returns_shadow_performance() -> None:
-    client = TestClient(
+    client = authenticated_client(
         create_app(
+            authentication_service_factory=(
+                lambda: FakeAuthenticatedService()
+            ),
             shadow_performance_service_factory=(
                 lambda: FakePerformanceService()
             ),
@@ -56,8 +63,11 @@ def test_returns_shadow_performance() -> None:
 
 
 def test_returns_graduation_status() -> None:
-    client = TestClient(
+    client = authenticated_client(
         create_app(
+            authentication_service_factory=(
+                lambda: FakeAuthenticatedService()
+            ),
             shadow_performance_service_factory=(
                 lambda: FakePerformanceService()
             ),

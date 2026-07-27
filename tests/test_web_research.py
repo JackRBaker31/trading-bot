@@ -2,6 +2,10 @@ from fastapi.testclient import TestClient
 
 from app.research_query_service import PagedResearchResult
 from web.app import create_app
+from tests.web_test_auth import (
+    FakeAuthenticatedService,
+    authenticated_client,
+)
 
 
 class FakeStatusService:
@@ -69,12 +73,15 @@ class FakeResearchService:
 
 def create_client(research: FakeResearchService) -> TestClient:
     app = create_app(
+        authentication_service_factory=(
+            lambda: FakeAuthenticatedService()
+        ),
         system_status_service_factory=lambda: FakeStatusService(),
         run_history_service_factory=lambda: FakeHistoryService(),
         job_service_factory=lambda: FakeJobService(),
         research_query_service_factory=lambda: research,
     )
-    return TestClient(app)
+    return authenticated_client(app)
 
 
 def test_returns_latest_research_report() -> None:

@@ -6,14 +6,47 @@ from datetime import (
 from fastapi.testclient import TestClient
 
 from app.application_errors import (
+    AuthenticationError,
     DataStoreError,
 )
+from app.authentication import AuthenticatedUser
 from app.run_history import (
     RunHistoryRecord,
     RunStatus,
     RunType,
 )
 from web.app import create_app
+
+
+class FakeAuthenticationService:
+    def authenticate(
+        self,
+        *,
+        session_token: str | None,
+    ) -> AuthenticatedUser:
+        if session_token != "test-session":
+            raise AuthenticationError(
+                "Authentication is required.",
+                code="AUTH_REQUIRED",
+            )
+
+        return AuthenticatedUser(
+            user_id="user-1",
+            username="admin",
+            role="ADMIN",
+        )
+
+    def verify_csrf(self, **kwargs):
+        return self.authenticate(
+            session_token=kwargs.get("session_token")
+        )
+
+    def login(self, **kwargs):
+        del kwargs
+        raise NotImplementedError
+
+    def logout(self, **kwargs) -> None:
+        del kwargs
 
 
 class FakeSystemStatusResult:
@@ -116,6 +149,9 @@ def create_client(
     )
 
     app = create_app(
+        authentication_service_factory=(
+            lambda: FakeAuthenticationService()
+        ),
         system_status_service_factory=(
             lambda: status
         ),
@@ -123,7 +159,12 @@ def create_client(
             lambda: history
         ),
     )
-    return TestClient(app)
+    client = TestClient(app)
+    client.cookies.set(
+        "trading_session",
+        "test-session",
+    )
+    return client
 
 
 def test_liveness_endpoint() -> None:

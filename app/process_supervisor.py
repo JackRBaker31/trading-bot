@@ -14,6 +14,7 @@ from typing import Callable, Protocol, TextIO
 from app.health_monitor import HealthMonitor, ServiceHealth
 from app.restart_policy import RestartPolicy, RestartPolicyConfig
 from app.supervisor_logging import LogRotationConfig, SupervisorEventLogger, rotate_file
+from app.supervisor_alerting import SupervisorAlertingHook
 
 
 class SpawnedProcess(Protocol):
@@ -114,6 +115,7 @@ class ProcessSupervisor:
         sleeper: Sleeper = time.sleep,
         log_rotation: LogRotationConfig | None = None,
         event_logger: SupervisorEventLogger | None = None,
+        alerting_hook: SupervisorAlertingHook | None = None,
     ) -> None:
         if not processes:
             raise ValueError("At least one managed process is required.")
@@ -142,6 +144,10 @@ class ProcessSupervisor:
         self._sleeper = sleeper
         self._log_rotation = log_rotation or LogRotationConfig()
         self._event_logger = event_logger
+        self._alerting_hook = (
+            alerting_hook
+            or SupervisorAlertingHook.from_environment()
+        )
         self._states = {
             config.name: ManagedProcessState(config=config)
             for config in processes
@@ -151,6 +157,27 @@ class ProcessSupervisor:
     def _event(self, event_type: str, **fields: object) -> None:
         if self._event_logger is not None:
             self._event_logger.log(event_type, **fields)
+
+    def _alert(
+        self,
+        *,
+        event_type: str,
+        state: ManagedProcessState,
+        message: str,
+        details: dict[str, object] | None = None,
+    ) -> None:
+        delivered = self._alerting_hook.send(
+            event_type=event_type,
+            process_name=state.config.name,
+            message=message,
+            details=details,
+        )
+        self._event(
+            "supervisor_alert",
+            alert_event_type=event_type,
+            name=state.config.name,
+            delivered=delivered,
+        )
 
     def acquire(self) -> None:
         self._pid_path.parent.mkdir(parents=True, exist_ok=True)
@@ -298,6 +325,14 @@ class ProcessSupervisor:
 
         state.last_exit_code = int(exit_code)
         self._event("process_exited", name=state.config.name, exit_code=int(exit_code))
+        self._alert(
+            event_type="process_crash",
+            state=state,
+            message=(
+                f"Managed process exited unexpectedly with code {exit_code}."
+            ),
+            details={"exit_code": int(exit_code)},
+        )
         self._close_log(state)
         state.process = None
         self._restart(state, reason=f"process exited with code {exit_code}")
@@ -391,6 +426,17 @@ class ProcessSupervisor:
                 "RESTART LIMIT REACHED - MANUAL REVIEW REQUIRED",
             )
             self._event("restart_limit_reached", name=state.config.name, reason=reason, restart_count=state.restart_count)
+            self._alert(
+                event_type="supervisor_gave_up",
+                state=state,
+                message=(
+                    "Restart limit reached; manual review is required."
+                ),
+                details={
+                    "reason": reason,
+                    "restart_count": state.restart_count,
+                },
+            )
             return
 
         state.restart_state = "RESTART_PENDING"
@@ -413,6 +459,18 @@ class ProcessSupervisor:
         )
         state.restart_count += 1
         self._event("process_restarting", name=state.config.name, reason=reason, restart_count=state.restart_count)
+        if state.restart_count >= 2:
+            self._alert(
+                event_type="repeated_restart_failure",
+                state=state,
+                message=(
+                    "Managed process has required repeated restarts."
+                ),
+                details={
+                    "reason": reason,
+                    "restart_count": state.restart_count,
+                },
+            )
         state.last_restart_at = datetime.now(timezone.utc)
         self._start(state, recovering=True)
 

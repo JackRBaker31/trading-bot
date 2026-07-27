@@ -16,6 +16,10 @@ from app.run_history import (
     RunType,
 )
 from web.app import create_app
+from tests.web_test_auth import (
+    FakeAuthenticatedService,
+    authenticated_client,
+)
 
 
 class FakeOperationsQueryService:
@@ -116,8 +120,11 @@ class FakeOperationsQueryService:
 
 
 def create_client() -> TestClient:
-    return TestClient(
+    return authenticated_client(
         create_app(
+            authentication_service_factory=(
+                lambda: FakeAuthenticatedService()
+            ),
             operations_query_service_factory=(
                 lambda: (
                     FakeOperationsQueryService()

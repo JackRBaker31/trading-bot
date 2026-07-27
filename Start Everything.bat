@@ -11,11 +11,20 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-".venv\Scripts\python.exe" ".\run_kairo.py" --foreground
+".venv\Scripts\python.exe" ".\run_kairo.py" ^
+    --foreground ^
+    --monitor ^
+    --monitor-interval 10 ^
+    --restart-delay 5 ^
+    --restart-window 300 ^
+    --max-restarts 5
 
 if errorlevel 1 (
     echo.
-    echo KAIRO failed to start.
+    echo KAIRO worker watchdog stopped after repeated failures.
+    echo Review:
+    echo data\runtime\launcher-events.jsonl
+    echo.
     pause
 )
 

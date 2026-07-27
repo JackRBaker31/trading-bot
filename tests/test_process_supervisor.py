@@ -307,3 +307,111 @@ def test_stop_all_terminates_children(tmp_path):
     assert factory.processes[0].terminated is True
     payload = json.loads((tmp_path / "status.json").read_text())
     assert payload["supervisor_status"] == "STOPPED"
+
+class FakeAlertTransport:
+    def __init__(self) -> None:
+        self.requests: list[dict[str, object]] = []
+
+    def post(
+        self,
+        *,
+        url: str,
+        payload: dict[str, object],
+        timeout_seconds: float,
+    ) -> None:
+        self.requests.append(
+            {
+                "url": url,
+                "payload": payload,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+
+
+def make_alerting_hook(transport: FakeAlertTransport):
+    from app.supervisor_alerting import SupervisorAlertingHook
+
+    return SupervisorAlertingHook(
+        webhook_url="https://alerts.example.test/kairo",
+        transport=transport,
+    )
+
+
+def test_alerts_when_process_crashes(tmp_path) -> None:
+    factory = FakePopenFactory()
+    transport = FakeAlertTransport()
+    supervisor = ProcessSupervisor(
+        processes=[make_config(tmp_path)],
+        working_directory=tmp_path,
+        status_path=tmp_path / "status.json",
+        pid_path=tmp_path / "supervisor.pid",
+        popen_factory=factory,
+        sleeper=lambda seconds: None,
+        alerting_hook=make_alerting_hook(transport),
+    )
+    supervisor.start_all()
+    factory.processes[0].exit_code = 1
+
+    supervisor.run_once()
+
+    events = [
+        request["payload"]["event_type"]
+        for request in transport.requests
+    ]
+    assert "process_crash" in events
+    supervisor.stop_all()
+
+
+def test_alerts_after_repeated_restart_failures(tmp_path) -> None:
+    factory = FakePopenFactory()
+    transport = FakeAlertTransport()
+    supervisor = ProcessSupervisor(
+        processes=[make_config(tmp_path)],
+        working_directory=tmp_path,
+        status_path=tmp_path / "status.json",
+        pid_path=tmp_path / "supervisor.pid",
+        popen_factory=factory,
+        sleeper=lambda seconds: None,
+        alerting_hook=make_alerting_hook(transport),
+    )
+    supervisor.start_all()
+
+    factory.processes[-1].exit_code = 1
+    supervisor.run_once()
+    factory.processes[-1].exit_code = 1
+    supervisor.run_once()
+
+    events = [
+        request["payload"]["event_type"]
+        for request in transport.requests
+    ]
+    assert "repeated_restart_failure" in events
+    supervisor.stop_all()
+
+
+def test_alerts_when_supervisor_gives_up(tmp_path) -> None:
+    factory = FakePopenFactory()
+    transport = FakeAlertTransport()
+    supervisor = ProcessSupervisor(
+        processes=[make_config(tmp_path)],
+        working_directory=tmp_path,
+        status_path=tmp_path / "status.json",
+        pid_path=tmp_path / "supervisor.pid",
+        popen_factory=factory,
+        sleeper=lambda seconds: None,
+        max_restarts=1,
+        alerting_hook=make_alerting_hook(transport),
+    )
+    supervisor.start_all()
+
+    factory.processes[-1].exit_code = 1
+    supervisor.run_once()
+    factory.processes[-1].exit_code = 1
+    supervisor.run_once()
+
+    events = [
+        request["payload"]["event_type"]
+        for request in transport.requests
+    ]
+    assert "supervisor_gave_up" in events
+    supervisor.stop_all()

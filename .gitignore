@@ -67,3 +67,10 @@ frontend/.env.*.local
 # Runtime state
 data/position_states.json
 data/supervisor_status.json
+# KAIRO runtime state
+data/runtime/*.json
+data/runtime/*.jsonl
+data/logs/
+data/backups/
+source-backups/
+payload/

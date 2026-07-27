@@ -1,6 +1,10 @@
 from fastapi.testclient import TestClient
 
 from web.app import create_app
+from tests.web_test_auth import (
+    FakeAuthenticatedService,
+    authenticated_client,
+)
 
 
 class FakeResult:
@@ -36,8 +40,11 @@ class FakeInfrastructureService:
 
 
 def test_returns_infrastructure_status() -> None:
-    client = TestClient(
+    client = authenticated_client(
         create_app(
+            authentication_service_factory=(
+                lambda: FakeAuthenticatedService()
+            ),
             infrastructure_status_service_factory=(
                 lambda: FakeInfrastructureService()
             )
@@ -53,8 +60,11 @@ def test_returns_infrastructure_status() -> None:
 
 
 def test_returns_job_worker_status() -> None:
-    client = TestClient(
+    client = authenticated_client(
         create_app(
+            authentication_service_factory=(
+                lambda: FakeAuthenticatedService()
+            ),
             infrastructure_status_service_factory=(
                 lambda: FakeInfrastructureService()
             )

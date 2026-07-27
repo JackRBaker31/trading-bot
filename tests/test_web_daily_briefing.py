@@ -1,6 +1,10 @@
 from fastapi.testclient import TestClient
 
 from web.app import create_app
+from tests.web_test_auth import (
+    FakeAuthenticatedService,
+    authenticated_client,
+)
 
 
 class FakeBriefing:
@@ -19,8 +23,11 @@ class FakeBriefingService:
 
 
 def test_returns_daily_briefing() -> None:
-    client = TestClient(
+    client = authenticated_client(
         create_app(
+            authentication_service_factory=(
+                lambda: FakeAuthenticatedService()
+            ),
             daily_briefing_service_factory=(
                 lambda: FakeBriefingService()
             )

@@ -11,6 +11,7 @@ import urllib.request
 import webbrowser
 from dataclasses import dataclass
 from datetime import datetime
+from os import getpid
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -23,6 +24,8 @@ RUNTIME_DIR = DATA_DIR / "runtime"
 LOG_DIR = DATA_DIR / "logs"
 DATABASE_PATH = DATA_DIR / "application.db"
 STATE_PATH = RUNTIME_DIR / "kairo-launcher-state.json"
+MONITOR_LOCK_PATH = RUNTIME_DIR / "kairo-monitor.json"
+MONITOR_EVENTS_PATH = RUNTIME_DIR / "launcher-events.jsonl"
 
 API_URL = "http://127.0.0.1:8000"
 FRONTEND_URL = "http://127.0.0.1:5173"
@@ -101,6 +104,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--foreground", action="store_true")
     parser.add_argument("--timeout", type=int, default=60)
+    parser.add_argument("--monitor", action="store_true")
+    parser.add_argument("--monitor-interval", type=float, default=10.0)
+    parser.add_argument("--restart-delay", type=float, default=5.0)
+    parser.add_argument("--restart-window", type=float, default=300.0)
+    parser.add_argument("--max-restarts", type=int, default=5)
     return parser.parse_args()
 
 
@@ -134,6 +142,122 @@ def save_state(state: dict[str, dict[str, object]]) -> None:
         json.dumps(state, indent=2, sort_keys=True),
         encoding="utf-8",
     )
+
+
+
+
+def append_monitor_event(
+    *,
+    event: str,
+    service: str,
+    detail: str,
+    pid: int | None = None,
+) -> None:
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        "timestamp": datetime.now().astimezone().isoformat(),
+        "event": event,
+        "service": service,
+        "detail": detail,
+        "pid": pid,
+    }
+
+    with MONITOR_EVENTS_PATH.open(
+        "a",
+        encoding="utf-8",
+    ) as handle:
+        handle.write(
+            json.dumps(
+                payload,
+                sort_keys=True,
+            )
+            + "\n"
+        )
+
+
+def acquire_monitor_lock() -> bool:
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+
+    if MONITOR_LOCK_PATH.exists():
+        try:
+            current = json.loads(
+                MONITOR_LOCK_PATH.read_text(
+                    encoding="utf-8"
+                )
+            )
+        except (
+            json.JSONDecodeError,
+            OSError,
+        ):
+            current = {}
+
+        existing_pid = current.get("pid")
+
+        if (
+            isinstance(existing_pid, int)
+            and pid_is_running(existing_pid)
+        ):
+            return False
+
+        MONITOR_LOCK_PATH.unlink(
+            missing_ok=True
+        )
+
+    MONITOR_LOCK_PATH.write_text(
+        json.dumps(
+            {
+                "pid": getpid(),
+                "started_at": (
+                    datetime.now()
+                    .astimezone()
+                    .isoformat()
+                ),
+            },
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+
+    return True
+
+
+def release_monitor_lock() -> None:
+    if not MONITOR_LOCK_PATH.exists():
+        return
+
+    try:
+        current = json.loads(
+            MONITOR_LOCK_PATH.read_text(
+                encoding="utf-8"
+            )
+        )
+    except (
+        json.JSONDecodeError,
+        OSError,
+    ):
+        current = {}
+
+    if current.get("pid") == getpid():
+        MONITOR_LOCK_PATH.unlink(
+            missing_ok=True
+        )
+
+
+def trim_restart_history(
+    restart_times: list[float],
+    *,
+    now: float,
+    window_seconds: float,
+) -> list[float]:
+    cutoff = now - window_seconds
+
+    return [
+        timestamp
+        for timestamp in restart_times
+        if timestamp >= cutoff
+    ]
 
 
 def pid_is_running(pid: int) -> bool:
@@ -769,6 +893,247 @@ def start_platform(
     return 0
 
 
+
+def monitor_worker(
+    *,
+    foreground: bool,
+    interval_seconds: float,
+    restart_delay_seconds: float,
+    restart_window_seconds: float,
+    max_restarts: int,
+) -> int:
+    if interval_seconds <= 0:
+        raise RuntimeError(
+            "Monitor interval must be positive."
+        )
+
+    if restart_delay_seconds < 0:
+        raise RuntimeError(
+            "Restart delay cannot be negative."
+        )
+
+    if restart_window_seconds <= 0:
+        raise RuntimeError(
+            "Restart window must be positive."
+        )
+
+    if max_restarts <= 0:
+        raise RuntimeError(
+            "Maximum restarts must be positive."
+        )
+
+    if not acquire_monitor_lock():
+        print(
+            "[MONITOR] Another KAIRO launcher "
+            "watchdog is already active."
+        )
+        return 0
+
+    worker = next(
+        service
+        for service in SERVICES
+        if service.key == "worker"
+    )
+
+    restart_times: list[float] = []
+
+    print()
+    print("=" * 58)
+    print("KAIRO WORKER WATCHDOG ACTIVE")
+    print("=" * 58)
+    print(
+        "Monitoring Job Worker every "
+        f"{interval_seconds:g} seconds."
+    )
+    print(
+        "Restart policy: "
+        f"{max_restarts} restart(s) per "
+        f"{restart_window_seconds:g} seconds."
+    )
+    print(
+        "Keep this window open. "
+        "Ctrl+C stops monitoring only."
+    )
+    print("=" * 58)
+
+    append_monitor_event(
+        event="MONITOR_STARTED",
+        service="worker",
+        detail=(
+            "Launcher worker watchdog started."
+        ),
+        pid=getpid(),
+    )
+
+    try:
+        while True:
+            state = clean_state(
+                load_state()
+            )
+
+            if service_is_running(
+                worker,
+                state,
+            ):
+                time.sleep(
+                    interval_seconds
+                )
+                continue
+
+            now = time.monotonic()
+
+            restart_times = (
+                trim_restart_history(
+                    restart_times,
+                    now=now,
+                    window_seconds=(
+                        restart_window_seconds
+                    ),
+                )
+            )
+
+            print()
+            print(
+                "[MONITOR] Job Worker is not "
+                "running."
+            )
+
+            append_monitor_event(
+                event="SERVICE_LOST",
+                service="worker",
+                detail=(
+                    "Job Worker process was "
+                    "not detected."
+                ),
+            )
+
+            if (
+                len(restart_times)
+                >= max_restarts
+            ):
+                detail = (
+                    "Restart limit reached: "
+                    f"{len(restart_times)} "
+                    "restart(s) within "
+                    f"{restart_window_seconds:g} "
+                    "seconds."
+                )
+
+                print(
+                    "[GIVE UP] "
+                    + detail
+                )
+
+                append_monitor_event(
+                    event="RESTART_LIMIT_REACHED",
+                    service="worker",
+                    detail=detail,
+                )
+
+                return 1
+
+            if restart_delay_seconds:
+                print(
+                    "[MONITOR] Restarting in "
+                    f"{restart_delay_seconds:g} "
+                    "seconds..."
+                )
+                time.sleep(
+                    restart_delay_seconds
+                )
+
+            try:
+                process = start_service(
+                    worker,
+                    foreground=foreground,
+                )
+            except OSError as error:
+                restart_times.append(
+                    time.monotonic()
+                )
+
+                detail = (
+                    "Worker restart failed: "
+                    f"{error}"
+                )
+
+                print(
+                    "[RESTART FAILED] "
+                    + detail
+                )
+
+                append_monitor_event(
+                    event="RESTART_FAILED",
+                    service="worker",
+                    detail=detail,
+                )
+
+                time.sleep(
+                    interval_seconds
+                )
+                continue
+
+            state = clean_state(
+                load_state()
+            )
+            state[worker.key] = {
+                "pid": process.pid,
+                "started_at": time.time(),
+                "foreground": foreground,
+                "command": list(
+                    worker.command
+                ),
+                "restart_reason": (
+                    "watchdog_recovery"
+                ),
+            }
+            save_state(state)
+
+            restart_times.append(
+                time.monotonic()
+            )
+
+            print(
+                "[RECOVERED] Job Worker "
+                f"restarted (PID {process.pid})."
+            )
+
+            append_monitor_event(
+                event="SERVICE_RESTARTED",
+                service="worker",
+                detail=(
+                    "Job Worker restarted "
+                    "successfully."
+                ),
+                pid=process.pid,
+            )
+
+            time.sleep(
+                interval_seconds
+            )
+    except KeyboardInterrupt:
+        print()
+        print(
+            "[MONITOR] Worker watchdog "
+            "stopped. KAIRO services remain "
+            "running."
+        )
+
+        append_monitor_event(
+            event="MONITOR_STOPPED",
+            service="worker",
+            detail=(
+                "Launcher worker watchdog "
+                "was stopped manually."
+            ),
+            pid=getpid(),
+        )
+
+        return 0
+    finally:
+        release_monitor_lock()
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -788,10 +1153,29 @@ def main() -> int:
             return print_detailed_status()
         if args.logs:
             return show_logs(args.service, max(args.lines, 1))
-        return start_platform(
+        result = start_platform(
             foreground=args.foreground,
             no_browser=args.no_browser,
             timeout_seconds=args.timeout,
+        )
+
+        if result != 0 or not args.monitor:
+            return result
+
+        return monitor_worker(
+            foreground=args.foreground,
+            interval_seconds=(
+                args.monitor_interval
+            ),
+            restart_delay_seconds=(
+                args.restart_delay
+            ),
+            restart_window_seconds=(
+                args.restart_window
+            ),
+            max_restarts=(
+                args.max_restarts
+            ),
         )
     except RuntimeError as error:
         print(f"KAIRO launcher error: {error}")

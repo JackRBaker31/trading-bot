@@ -6,7 +6,7 @@ Changes vs original:
      Also accepts all *.replit.dev / *.replit.app origins and localhost by default
      via allow_origin_regex, so FRONTEND_ORIGINS is optional.
   2. Session cookie samesite/secure made configurable via
-     COOKIE_SAMESITE (default: lax) and COOKIE_SECURE (default: false).
+     COOKIE_SAMESITE (default: lax) and COOKIE_SECURE (default: true).
   3. Login response now also returns session_token in the JSON body.
   4. require_authenticated_user and require_csrf_user accept the session token
      from an X-Session-Token header in addition to (or instead of) the cookie.
@@ -16,7 +16,7 @@ Changes vs original:
 Minimal .env required:
   FRONTEND_ORIGINS=https://your-kairo-domain.replit.dev   # optional with regex fallback
   COOKIE_SAMESITE=lax
-  COOKIE_SECURE=false
+  COOKIE_SECURE=true
 """
 
 import os
@@ -122,7 +122,7 @@ def _cookie_samesite() -> str:
 
 
 def _cookie_secure() -> bool:
-    return os.environ.get("COOKIE_SECURE", "false").lower() in ("1", "true", "yes")
+    return os.environ.get("COOKIE_SECURE", "true").lower() in ("1", "true", "yes")
 
 
 # ─── Protocol definitions (unchanged) ────────────────────────────────────────
@@ -638,17 +638,15 @@ def create_app(
     # ── CORS middleware ────────────────────────────────────────────────────────
     # Must be added BEFORE any route definitions.
     # allow_origins handles any explicit origins from FRONTEND_ORIGINS.
-    # allow_origin_regex is the fallback: covers all *.replit.dev subdomains
-    # and any localhost / 127.0.0.1 port — so it works out of the box without
-    # needing FRONTEND_ORIGINS set in .env.
+    # Only local development origins are accepted by regex. Hosted origins,
+    # including Replit deployments, must be explicitly listed in
+    # FRONTEND_ORIGINS when credentials are enabled.
     origins = _cors_origins()
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_origin_regex=(
-            r"https://.*\.replit\.dev"
-            r"|https://.*\.replit\.app"
-            r"|http://localhost(:\d+)?"
+            r"http://localhost(:\d+)?"
             r"|http://127\.0\.0\.1(:\d+)?"
         ),
         allow_credentials=True,
@@ -843,6 +841,7 @@ def create_app(
     @app.get(
         "/api/intelligence/briefing",
         tags=["intelligence"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def intelligence_briefing(
     ) -> dict[str, object]:
@@ -855,6 +854,7 @@ def create_app(
     @app.get(
         "/api/intelligence/snapshot",
         tags=["intelligence"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def intelligence_snapshot(
     ) -> dict[str, object]:
@@ -894,6 +894,7 @@ def create_app(
     @app.get(
         "/api/shadow-performance",
         tags=["intelligence"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def shadow_performance(
     ) -> dict[str, object]:
@@ -906,6 +907,7 @@ def create_app(
     @app.get(
         "/api/intelligence/graduation-status",
         tags=["intelligence"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def intelligence_graduation_status(
     ) -> dict[str, object]:
@@ -918,6 +920,7 @@ def create_app(
     @app.get(
         "/api/shadow-decisions",
         tags=["intelligence"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def shadow_decisions(
         limit: int = Query(default=50, ge=1, le=200),
@@ -935,6 +938,7 @@ def create_app(
     @app.get(
         "/api/shadow-decisions/summary",
         tags=["intelligence"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def shadow_decision_summary(
     ) -> dict[str, object]:
@@ -943,6 +947,7 @@ def create_app(
     @app.get(
         "/api/infrastructure/status",
         tags=["system"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def infrastructure_status(
     ) -> dict[str, object]:
@@ -955,6 +960,7 @@ def create_app(
     @app.get(
         "/api/workers/job/status",
         tags=["system"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def job_worker_status(
     ) -> dict[str, object]:
@@ -1559,7 +1565,10 @@ def create_app(
 
         return asdict(response)
 
-    @app.get("/api/status", tags=["system"])
+    @app.get(
+        "/api/status",
+        dependencies=[Depends(require_authenticated_user)],
+    )
     def system_status() -> dict[str, object]:
         result = status_factory().get_status(
             request=SystemStatusRequest()
@@ -1569,6 +1578,7 @@ def create_app(
     @app.get(
         "/api/run-history",
         tags=["operations"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def run_history(
         limit: int = Query(
@@ -1677,7 +1687,10 @@ def create_app(
         )
         return job.to_dictionary()
 
-    @app.get("/api/jobs", tags=["jobs"])
+    @app.get(
+        "/api/jobs",
+        dependencies=[Depends(require_authenticated_user)],
+    )
     def list_jobs(
         limit: int = Query(
             default=20,
@@ -1700,7 +1713,10 @@ def create_app(
             ],
         }
 
-    @app.get("/api/jobs/{job_id}", tags=["jobs"])
+    @app.get(
+        "/api/jobs/{job_id}",
+        dependencies=[Depends(require_authenticated_user)],
+    )
     def get_job(job_id: str) -> dict[str, object]:
         record = jobs_factory().get(job_id=job_id)
 
@@ -1800,6 +1816,7 @@ def create_app(
     @app.get(
         "/api/research/latest",
         tags=["research"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def latest_research_report() -> dict[str, object]:
         report = research_factory().get_latest_report()
@@ -1811,6 +1828,7 @@ def create_app(
     @app.get(
         "/api/news/signals",
         tags=["research"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def news_signals(
         symbol: str | None = None,
@@ -1839,6 +1857,7 @@ def create_app(
     @app.get(
         "/api/news/outcomes",
         tags=["research"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def news_outcomes(
         symbol: str | None = None,
@@ -1857,6 +1876,7 @@ def create_app(
     @app.get(
         "/api/news/summary",
         tags=["research"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def news_summary() -> dict[str, object]:
         return research_factory().get_news_summary()
@@ -1864,6 +1884,7 @@ def create_app(
     @app.get(
         "/api/paper-trading/status",
         tags=["paper-trading"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def paper_trading_status(
     ) -> dict[str, object]:
@@ -1940,6 +1961,7 @@ def create_app(
     @app.get(
         "/api/portfolio",
         tags=["operations"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def portfolio() -> dict[str, object]:
         return operations_factory().get_portfolio(
@@ -1949,6 +1971,7 @@ def create_app(
     @app.get(
         "/api/positions",
         tags=["operations"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def positions() -> dict[str, object]:
         items = operations_factory().list_positions(
@@ -1965,6 +1988,7 @@ def create_app(
     @app.get(
         "/api/orders",
         tags=["operations"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def orders(
         symbol: str | None = None,
@@ -1987,6 +2011,7 @@ def create_app(
     @app.get(
         "/api/orders/unresolved",
         tags=["operations"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def unresolved_orders(
         offset: int = Query(default=0, ge=0),
@@ -2002,6 +2027,7 @@ def create_app(
     @app.get(
         "/api/risk/status",
         tags=["operations"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def risk_status() -> dict[str, object]:
         return operations_factory().get_risk_status(
@@ -2011,6 +2037,7 @@ def create_app(
     @app.get(
         "/api/reconciliation/latest",
         tags=["operations"],
+        dependencies=[Depends(require_authenticated_user)],
     )
     def latest_reconciliation() -> dict[str, object]:
         return (

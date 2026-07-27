@@ -21,10 +21,6 @@ from app.scheduled_task import (
     ScheduleKind,
     ScheduledTask,
 )
-from app.copilot_intelligence_models import (
-    CopilotGraduationOverview,
-    CopilotIntelligenceOverview,
-)
 
 
 NOW = datetime(

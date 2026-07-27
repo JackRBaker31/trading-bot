@@ -80,3 +80,89 @@ def test_state_round_trip(tmp_path, monkeypatch) -> None:
     }
     run_kairo.save_state(expected)
     assert run_kairo.load_state() == expected
+
+
+
+def test_trim_restart_history_removes_old_entries() -> None:
+    assert run_kairo.trim_restart_history(
+        [10.0, 50.0, 95.0],
+        now=100.0,
+        window_seconds=20.0,
+    ) == [95.0]
+
+
+def test_trim_restart_history_keeps_boundary() -> None:
+    assert run_kairo.trim_restart_history(
+        [80.0, 81.0, 100.0],
+        now=100.0,
+        window_seconds=20.0,
+    ) == [80.0, 81.0, 100.0]
+
+
+def test_append_monitor_event_writes_jsonl(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    path = tmp_path / "events.jsonl"
+
+    monkeypatch.setattr(
+        run_kairo,
+        "MONITOR_EVENTS_PATH",
+        path,
+    )
+    monkeypatch.setattr(
+        run_kairo,
+        "RUNTIME_DIR",
+        tmp_path,
+    )
+
+    run_kairo.append_monitor_event(
+        event="SERVICE_RESTARTED",
+        service="worker",
+        detail="Recovered.",
+        pid=123,
+    )
+
+    payload = run_kairo.json.loads(
+        path.read_text(
+            encoding="utf-8"
+        ).strip()
+    )
+
+    assert payload["event"] == "SERVICE_RESTARTED"
+    assert payload["service"] == "worker"
+    assert payload["pid"] == 123
+
+
+def test_monitor_lock_rejects_live_existing_monitor(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    lock_path = tmp_path / "monitor.json"
+    lock_path.write_text(
+        run_kairo.json.dumps(
+            {"pid": 999}
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        run_kairo,
+        "MONITOR_LOCK_PATH",
+        lock_path,
+    )
+    monkeypatch.setattr(
+        run_kairo,
+        "RUNTIME_DIR",
+        tmp_path,
+    )
+    monkeypatch.setattr(
+        run_kairo,
+        "pid_is_running",
+        lambda pid: pid == 999,
+    )
+
+    assert (
+        run_kairo.acquire_monitor_lock()
+        is False
+    )

@@ -101,7 +101,6 @@ class CopilotService:
         self._graduation_status_provider = (
             graduation_status_provider
         )
-        
 
     def answer(
         self,
@@ -980,8 +979,7 @@ class CopilotService:
                 f"{remaining_minutes} minutes"
             )
 
-        return f"in {hours} hours"
-    
+        return f"in {hours} hours"  
     @staticmethod
     def _as_int(
         value: object,

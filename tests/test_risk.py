@@ -252,3 +252,67 @@ def test_reset_session_resets_trade_count() -> None:
     )
 
     assert decision.approved is True
+
+def test_position_limit_uses_higher_current_price_for_held_shares() -> None:
+    portfolio = Portfolio(starting_cash=10_000.00)
+    portfolio.buy(symbol="AAPL", quantity=10, price=100.00)
+    risk_engine = create_risk_engine()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=5,
+        price=100.00,
+    )
+
+    decision = risk_engine.evaluate(
+        order=order,
+        portfolio=portfolio,
+        current_prices={"AAPL": 260.00},
+    )
+
+    assert decision.approved is False
+    assert "£3100.00" in decision.reason
+
+
+def test_position_limit_uses_lower_current_price_for_held_shares() -> None:
+    portfolio = Portfolio(starting_cash=10_000.00)
+    portfolio.buy(symbol="AAPL", quantity=10, price=200.00)
+    risk_engine = create_risk_engine()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=5,
+        price=200.00,
+    )
+
+    decision = risk_engine.evaluate(
+        order=order,
+        portfolio=portfolio,
+        current_prices={"AAPL": 100.00},
+    )
+
+    assert decision.approved is True
+
+
+def test_buy_rejects_missing_current_price_for_held_symbol() -> None:
+    portfolio = Portfolio(starting_cash=10_000.00)
+    portfolio.buy(symbol="AAPL", quantity=5, price=100.00)
+    risk_engine = create_risk_engine()
+
+    order = Order(
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        price=100.00,
+    )
+
+    decision = risk_engine.evaluate(
+        order=order,
+        portfolio=portfolio,
+        current_prices={},
+    )
+
+    assert decision.approved is False
+    assert "current prices are unavailable for: AAPL" in decision.reason

@@ -178,10 +178,18 @@ class RiskEngine:
             )
         )
 
-        proposed_position_value = (
+        existing_position_value = (
             existing_quantity
-            + order.quantity
-        ) * order.price
+            * current_prices.get(
+                order.symbol,
+                0.0,
+            )
+        )
+
+        proposed_position_value = (
+            existing_position_value
+            + order.value
+        )
 
         if (
             proposed_position_value
