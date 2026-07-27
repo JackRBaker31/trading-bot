@@ -5,6 +5,7 @@ import {
 import {
   apiClient,
 } from "@/lib/api-client";
+import { MarketDataMetadata } from "@/lib/types";
 
 
 export interface TechnicalMetric {
@@ -36,6 +37,7 @@ export interface TechnicalAnalysis {
   metrics: TechnicalMetric[];
   evidence: string[];
   warnings: string[];
+  market_data?: MarketDataMetadata;
 }
 
 

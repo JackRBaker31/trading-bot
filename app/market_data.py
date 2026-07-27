@@ -7,6 +7,55 @@ class MarketDataError(Exception):
     """Raised when market data cannot be retrieved or validated."""
 
 
+class MarketDataProviderError(MarketDataError):
+    """Raised when an upstream market-data provider rejects a request."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        provider: str,
+        status_code: int | None = None,
+        retry_after_seconds: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.provider = provider.upper().strip()
+        self.status_code = status_code
+        self.retry_after_seconds = retry_after_seconds
+
+    @property
+    def rate_limited(self) -> bool:
+        return self.status_code == 429
+
+
+class MarketDataUnavailableError(MarketDataError):
+    """Raised when neither live nor cached market data can be supplied."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "MARKET_DATA_UNAVAILABLE",
+        provider: str = "TWELVE_DATA",
+        retry_after_seconds: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code.upper().strip()
+        self.provider = provider.upper().strip()
+        self.retry_after_seconds = retry_after_seconds
+
+    def to_dictionary(self) -> dict[str, object]:
+        return {
+            "status": "degraded",
+            "code": self.code,
+            "provider": self.provider,
+            "data_source": "UNAVAILABLE",
+            "is_stale": False,
+            "retry_after_seconds": self.retry_after_seconds,
+            "warning": str(self),
+        }
+
+
 @dataclass(frozen=True)
 class PriceQuote:
     symbol: str

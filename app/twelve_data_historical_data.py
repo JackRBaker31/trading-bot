@@ -4,7 +4,10 @@ import logging
 import httpx
 
 from app.backtest_models import HistoricalPriceBar
-from app.market_data import MarketDataError
+from app.market_data import (
+    MarketDataError,
+    MarketDataProviderError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -98,10 +101,39 @@ class TwelveDataHistoricalDataClient:
                         f"for {cleaned_symbol}."
                     ) from error
 
-            except httpx.HTTPError as error:
-                raise MarketDataError(
-                    "Historical-data request failed "
+            except httpx.HTTPStatusError as error:
+                retry_after: float | None = None
+                raw_retry_after = error.response.headers.get(
+                    "Retry-After"
+                )
+                if raw_retry_after is not None:
+                    try:
+                        retry_after = float(raw_retry_after)
+                    except ValueError:
+                        retry_after = None
+
+                status_code = error.response.status_code
+                message = (
+                    "Twelve Data rate limit reached "
                     f"for {cleaned_symbol}."
+                    if status_code == 429
+                    else (
+                        "Historical-data request failed "
+                        f"for {cleaned_symbol}."
+                    )
+                )
+                raise MarketDataProviderError(
+                    message,
+                    provider="TWELVE_DATA",
+                    status_code=status_code,
+                    retry_after_seconds=retry_after,
+                ) from error
+
+            except httpx.HTTPError as error:
+                raise MarketDataProviderError(
+                    "Historical-data request failed "
+                    f"for {cleaned_symbol}.",
+                    provider="TWELVE_DATA",
                 ) from error
 
         if response is None:
@@ -123,13 +155,18 @@ class TwelveDataHistoricalDataClient:
             )
 
         if data.get("status") == "error":
-            raise MarketDataError(
-                str(
-                    data.get(
-                        "message",
-                        "Unknown Twelve Data error.",
-                    )
+            message = str(
+                data.get(
+                    "message",
+                    "Unknown Twelve Data error.",
                 )
+            )
+            code = str(data.get("code", "")).strip()
+            status_code = 429 if code == "429" else None
+            raise MarketDataProviderError(
+                message,
+                provider="TWELVE_DATA",
+                status_code=status_code,
             )
 
         values = data.get("values")

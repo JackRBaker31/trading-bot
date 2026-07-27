@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api-client";
+import { MarketDataMetadata } from "@/lib/types";
 
 
 export interface MacroMetric {
@@ -29,6 +30,7 @@ export interface MacroAnalysis {
   metrics: MacroMetric[];
   evidence: string[];
   warnings: string[];
+  market_data_health?: MarketDataMetadata;
 }
 
 

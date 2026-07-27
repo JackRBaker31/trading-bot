@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Globe2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Globe2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { MacroAnalysis } from "@/hooks/useMacroAnalysis";
@@ -16,6 +16,10 @@ export function MacroAnalysisPanel({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
+  const marketDataDegraded = ["DEGRADED", "UNAVAILABLE"].includes(
+    analysis.market_data_health?.status?.toUpperCase() ?? "",
+  );
+
   return (
     <section
       className="rounded-xl border border-border bg-card p-5"
@@ -54,6 +58,15 @@ export function MacroAnalysisPanel({
           Refresh Macro
         </Button>
       </div>
+
+      {marketDataDegraded && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Market data is degraded. KAIRO is using cached historical data where available.
+          </p>
+        </div>
+      )}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-background p-4">

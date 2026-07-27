@@ -28,6 +28,7 @@ class InfrastructureStatusService:
         news_stale_after_seconds: float = 24 * 60 * 60,
         supervisor_status_repository: SupervisorStatusRepository | None = None,
         supervisor_stale_after_seconds: float = 15.0,
+        market_data_health_provider: Callable[[], dict[str, object]] | None = None,
         now_provider: Callable[[], datetime] | None = None,
     ) -> None:
         if worker_stale_after_seconds <= 0:
@@ -68,6 +69,9 @@ class InfrastructureStatusService:
         )
         self._supervisor_stale_after_seconds = (
             supervisor_stale_after_seconds
+        )
+        self._market_data_health_provider = (
+            market_data_health_provider
         )
         self._now_provider = now_provider or (
             lambda: datetime.now(timezone.utc)
@@ -110,19 +114,9 @@ class InfrastructureStatusService:
                     "connection_verified": False,
                 },
             ),
-            ServiceHealth(
-                name="market_data",
-                status="CONFIGURED",
-                online=True,
-                detail=(
-                    f"{config.market_data_provider} is the configured "
-                    "market-data provider."
-                ),
-                last_updated_at=now,
-                metadata={
-                    "provider": config.market_data_provider,
-                    "connection_verified": False,
-                },
+            self._market_data_health(
+                now=now,
+                configured_provider=config.market_data_provider,
             ),
             self._news_health(now=now),
         )
@@ -284,6 +278,89 @@ class InfrastructureStatusService:
         if not isinstance(health, dict):
             return True
         return bool(health.get("healthy", False))
+
+
+    def _market_data_health(
+        self,
+        *,
+        now: datetime,
+        configured_provider: str,
+    ) -> ServiceHealth:
+        provider = self._market_data_health_provider
+        if provider is None:
+            return ServiceHealth(
+                name="market_data",
+                status="CONFIGURED",
+                online=True,
+                detail=(
+                    f"{configured_provider} is the configured "
+                    "market-data provider."
+                ),
+                last_updated_at=now,
+                metadata={
+                    "provider": configured_provider,
+                    "connection_verified": False,
+                },
+            )
+
+        try:
+            snapshot = provider()
+        except Exception as error:
+            return ServiceHealth(
+                name="market_data",
+                status="UNAVAILABLE",
+                online=False,
+                detail="Market-data resilience health could not be read.",
+                last_updated_at=now,
+                metadata={
+                    "provider": configured_provider,
+                    "error": str(error),
+                },
+            )
+
+        status = str(snapshot.get("status", "UNKNOWN")).upper()
+        circuit_state = str(
+            snapshot.get("circuit_state", "UNKNOWN")
+        ).upper()
+        stale_fallbacks = int(snapshot.get("stale_fallbacks", 0) or 0)
+        rate_limit_events = int(
+            snapshot.get("rate_limit_events", 0) or 0
+        )
+
+        if status == "HEALTHY":
+            detail = (
+                "Market data is available with local caching, request "
+                "deduplication and rate-budget protection."
+            )
+        elif circuit_state == "OPEN":
+            detail = (
+                "The provider circuit is open; KAIRO is serving cached "
+                "historical data where available."
+            )
+        elif rate_limit_events > 0 or stale_fallbacks > 0:
+            detail = (
+                "Market data is degraded; cached historical data is "
+                "keeping intelligence services available."
+            )
+        else:
+            detail = (
+                "Market data is unavailable and no suitable cached "
+                "dataset could be supplied."
+            )
+
+        return ServiceHealth(
+            name="market_data",
+            status=status,
+            online=status != "UNAVAILABLE",
+            detail=detail,
+            last_updated_at=now,
+            metadata={
+                **snapshot,
+                "connection_verified": (
+                    snapshot.get("last_success_at") is not None
+                ),
+            },
+        )
 
     def _storage_health(
         self,

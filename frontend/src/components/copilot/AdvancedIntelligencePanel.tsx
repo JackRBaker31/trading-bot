@@ -1,6 +1,7 @@
 import React from "react";
 
 import {
+  AlertTriangle,
   BrainCircuit,
   RefreshCw,
   ShieldCheck,
@@ -26,6 +27,10 @@ export function AdvancedIntelligencePanel({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
+  const marketDataDegraded = ["DEGRADED", "UNAVAILABLE"].includes(
+    report.market_data_health?.status?.toUpperCase() ?? "",
+  );
+
   return (
     <section
       className="rounded-xl border border-border bg-card p-5"
@@ -68,6 +73,15 @@ export function AdvancedIntelligencePanel({
           Refresh
         </Button>
       </div>
+
+      {marketDataDegraded && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Market data is degraded. Cached history is preserving the available intelligence report.
+          </p>
+        </div>
+      )}
 
       <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
         <ShieldCheck className="h-4 w-4 text-emerald-400" />

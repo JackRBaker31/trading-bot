@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOperationsCentre } from "@/hooks/useOperationsCentre";
-import { Job, RunHistoryRecord, ScheduledTask, SupervisorMetadata } from "@/lib/types";
+import { Job, MarketDataMetadata, RunHistoryRecord, ScheduledTask, SupervisorMetadata } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const HEALTHY = new Set(["HEALTHY", "ONLINE", "RUNNING", "IDLE", "CURRENT", "CONFIGURED"]);
@@ -175,6 +175,8 @@ export default function OperationsPage() {
 
   const supervisor = infrastructure?.services.supervisor;
   const supervisorMeta = supervisor?.metadata as unknown as SupervisorMetadata | undefined;
+  const marketData = infrastructure?.services.market_data;
+  const marketDataMeta = marketData?.metadata as unknown as MarketDataMetadata | undefined;
   const activeJobs = useMemo(
     () => jobs.filter((job) => job.status === "RUNNING" || job.status === "QUEUED"),
     [jobs],
@@ -343,6 +345,30 @@ export default function OperationsPage() {
               <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Broker environment</span><span className="text-sm font-semibold">{appStatus?.broker_environment ?? "Unknown"}</span></div>
               <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Execution permission</span><span className="text-sm font-semibold">{appStatus?.execution_permission_confirmed ? "Confirmed" : "Not confirmed"}</span></div>
               <div className="rounded-xl border border-border/70 bg-background/35 p-3 text-xs leading-relaxed text-muted-foreground">Paper trading remains independently controlled. This page is operational visibility only and cannot start trading or processes.</div>
+            </CardContent>
+          </Card>
+
+          <Card className={cn("border-border/70 bg-card/70", statusClasses(marketData?.status))}>
+            <CardHeader className="flex-row items-center justify-between border-b border-border/60 pb-4">
+              <CardTitle className="flex items-center gap-2 text-sm uppercase tracking-[0.14em]"><Radio className="h-4 w-4 text-primary" />Market data resilience</CardTitle>
+              <StatusBadge status={marketData?.status ?? "UNKNOWN"} />
+            </CardHeader>
+            <CardContent className="space-y-4 p-5">
+              <p className="text-xs leading-relaxed text-muted-foreground">{marketData?.detail ?? "Market-data health is unavailable."}</p>
+              <div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Cache hit rate</span><span>{(marketDataMeta?.cache_hit_rate_percent ?? 0).toFixed(1)}%</span></div>
+                <Progress value={marketDataMeta?.cache_hit_rate_percent ?? 0} className="mt-2 h-2" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-border/70 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Minute budget</p><p className="mt-1 text-xl font-semibold">{marketDataMeta?.requests_last_minute ?? 0}/{marketDataMeta?.max_requests_per_minute ?? "—"}</p></div>
+                <div className="rounded-lg border border-border/70 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Cached symbols</p><p className="mt-1 text-xl font-semibold">{marketDataMeta?.cached_symbols ?? 0}</p></div>
+                <div className="rounded-lg border border-border/70 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Stale fallbacks</p><p className="mt-1 text-xl font-semibold">{marketDataMeta?.stale_fallbacks ?? 0}</p></div>
+                <div className="rounded-lg border border-border/70 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Rate limits</p><p className={cn("mt-1 text-xl font-semibold", (marketDataMeta?.rate_limit_events ?? 0) > 0 && "text-amber-400")}>{marketDataMeta?.rate_limit_events ?? 0}</p></div>
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background/35 p-3">
+                <div><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Circuit breaker</p><p className="mt-1 text-sm font-semibold">{friendly(marketDataMeta?.circuit_state)}</p></div>
+                <span className="text-right text-xs text-muted-foreground">Last live success<br />{formatRelative(marketDataMeta?.last_success_at)}</span>
+              </div>
             </CardContent>
           </Card>
 

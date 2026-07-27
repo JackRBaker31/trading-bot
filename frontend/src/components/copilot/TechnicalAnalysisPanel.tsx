@@ -2,6 +2,7 @@ import React from "react";
 
 import {
   Activity,
+  AlertTriangle,
   RefreshCw,
 } from "lucide-react";
 
@@ -73,6 +74,20 @@ export function TechnicalAnalysisPanel({
           Refresh Technicals
         </Button>
       </div>
+
+      {analysis.market_data?.warning && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <div>
+            <p className="text-xs font-semibold text-amber-200">
+              Cached market data in use
+            </p>
+            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+              {analysis.market_data.warning}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-background p-4">

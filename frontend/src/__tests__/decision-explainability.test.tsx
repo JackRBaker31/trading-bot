@@ -1,4 +1,5 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
 import DecisionExplainabilityPage from "@/pages/DecisionExplainabilityPage";
@@ -170,7 +171,9 @@ vi.mock("@/hooks/useHistoricalSimilarity", () => ({
 }));
 
 describe("DecisionExplainabilityPage", () => {
-  it("renders evidence-backed decision explanation", () => {
+  it("renders evidence-backed decision explanation", async () => {
+    const user = userEvent.setup();
+
     render(<DecisionExplainabilityPage />);
 
     expect(screen.getByText("Decision Explainability")).toBeInTheDocument();
@@ -178,9 +181,21 @@ describe("DecisionExplainabilityPage", () => {
     expect(screen.getByText("KAIRO conclusion")).toBeInTheDocument();
     expect(screen.getByText("Score composition")).toBeInTheDocument();
     expect(screen.getByText("Decision timeline")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Historical similarity"));
-    expect(screen.getByText("True historical similarity")).toBeInTheDocument();
-    expect(screen.getByText("Historical Apple earnings setup.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Ask Copilot/i })).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("tab", { name: "Historical similarity" }),
+    );
+
+    expect(
+      await screen.findByText("True historical similarity"),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByText("Historical Apple earnings setup."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("link", { name: /Ask Copilot/i }),
+    ).toBeInTheDocument();
   });
 });

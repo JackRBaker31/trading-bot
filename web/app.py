@@ -55,6 +55,7 @@ from app.application_errors import (
     TradingOperationError,
 )
 from app.authentication import AuthenticatedUser
+from app.market_data import MarketDataUnavailableError
 from app.job_reliability_service import JobReliabilityService
 from app.job import (
     JobStatus,
@@ -736,6 +737,23 @@ def create_app(
             },
         )
 
+    @app.exception_handler(MarketDataUnavailableError)
+    async def handle_market_data_unavailable(
+        request: Request,
+        error: MarketDataUnavailableError,
+    ) -> JSONResponse:
+        del request
+        headers = {}
+        if error.retry_after_seconds is not None:
+            headers["Retry-After"] = str(
+                max(1, int(error.retry_after_seconds))
+            )
+        return JSONResponse(
+            status_code=503,
+            content=error.to_dictionary(),
+            headers=headers,
+        )
+
     @app.post(
         "/api/auth/login",
         tags=["authentication"],
@@ -974,6 +992,18 @@ def create_app(
             infrastructure_factory()
             .get_status()
             .to_dictionary()
+        )
+
+    @app.get(
+        "/api/market-data/health",
+        tags=["system"],
+        dependencies=[Depends(require_authenticated_user)],
+    )
+    def market_data_health(
+    ) -> dict[str, object]:
+        return (
+            create_technical_historical_client()
+            .health_snapshot()
         )
 
     @app.get(
@@ -1336,22 +1366,24 @@ def create_app(
     ) -> dict[str, object]:
         del user
 
-        bars = (
+        market_data = (
             create_technical_historical_client()
-            .get_daily_bars(
+            .get_daily_bars_result(
                 symbol=symbol,
                 output_size=260,
             )
         )
 
-        return (
+        payload = (
             create_technical_analysis_service()
             .analyse(
                 symbol=symbol,
-                bars=bars,
+                bars=list(market_data.bars),
             )
             .to_dictionary()
         )
+        payload["market_data"] = market_data.to_metadata()
+        return payload
 
 
     @app.get(
@@ -1368,11 +1400,16 @@ def create_app(
     ) -> dict[str, object]:
         del user
 
-        return (
+        payload = (
             create_macro_capability_provider()
             .get_analysis()
             .to_dictionary()
         )
+        payload["market_data_health"] = (
+            create_technical_historical_client()
+            .health_snapshot()
+        )
+        return payload
 
 
     @app.get(
@@ -1517,11 +1554,16 @@ def create_app(
     ) -> dict[str, object]:
         del user
 
-        return (
+        payload = (
             create_advanced_intelligence_service()
             .report()
             .to_dictionary()
         )
+        payload["market_data_health"] = (
+            create_technical_historical_client()
+            .health_snapshot()
+        )
+        return payload
 
 
     @app.get(

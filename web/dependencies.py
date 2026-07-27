@@ -1,3 +1,6 @@
+from functools import lru_cache
+import os
+
 from app.infrastructure_status_service import (
     InfrastructureStatusService,
 )
@@ -99,6 +102,10 @@ from app.macro_capability_provider import MacroCapabilityProvider
 from app.technical_analysis_service import TechnicalAnalysisService
 from app.technical_capability_provider import TechnicalCapabilityProvider
 from app.twelve_data_historical_data import TwelveDataHistoricalDataClient
+from app.market_data_resilience import (
+    HistoricalDataCache,
+    ResilientHistoricalDataClient,
+)
 from app.investment_capability_providers import (
     NewsCapabilityProvider,
     PortfolioCapabilityProvider,
@@ -347,7 +354,13 @@ def create_infrastructure_status_service(
     )
     repository.initialize()
     return InfrastructureStatusService(
-        heartbeat_repository=repository
+        heartbeat_repository=repository,
+        market_data_health_provider=(
+            lambda: (
+                create_technical_historical_client()
+                .health_snapshot()
+            )
+        ),
     )
 
 
@@ -663,10 +676,9 @@ def create_investment_thesis_service(
 
 
 
+@lru_cache(maxsize=1)
 def create_technical_historical_client(
-) -> TwelveDataHistoricalDataClient:
-    import os
-
+) -> ResilientHistoricalDataClient:
     api_key = os.getenv(
         "TWELVE_DATA_API_KEY"
     )
@@ -680,10 +692,73 @@ def create_technical_historical_client(
             "found in the environment."
         )
 
-    return TwelveDataHistoricalDataClient(
+    def float_setting(
+        name: str,
+        default: float,
+    ) -> float:
+        raw = os.getenv(name)
+        if raw is None or not raw.strip():
+            return default
+        try:
+            return float(raw)
+        except ValueError as error:
+            raise RuntimeError(
+                f"{name} must be numeric."
+            ) from error
+
+    def int_setting(
+        name: str,
+        default: int,
+    ) -> int:
+        raw = os.getenv(name)
+        if raw is None or not raw.strip():
+            return default
+        try:
+            return int(raw)
+        except ValueError as error:
+            raise RuntimeError(
+                f"{name} must be an integer."
+            ) from error
+
+    provider = TwelveDataHistoricalDataClient(
         api_key=api_key,
         timeout_seconds=15.0,
         max_attempts=2,
+    )
+
+    return ResilientHistoricalDataClient(
+        provider=provider,
+        cache=HistoricalDataCache(
+            directory=os.getenv(
+                "KAIRO_MARKET_DATA_CACHE_DIR",
+                "data/runtime/market-data-cache",
+            )
+        ),
+        provider_name="TWELVE_DATA",
+        fresh_ttl_seconds=float_setting(
+            "KAIRO_MARKET_DATA_CACHE_TTL_SECONDS",
+            900.0,
+        ),
+        stale_max_age_seconds=float_setting(
+            "KAIRO_MARKET_DATA_STALE_MAX_AGE_SECONDS",
+            604800.0,
+        ),
+        max_requests_per_minute=int_setting(
+            "KAIRO_MARKET_DATA_MAX_REQUESTS_PER_MINUTE",
+            6,
+        ),
+        max_requests_per_day=int_setting(
+            "KAIRO_MARKET_DATA_MAX_REQUESTS_PER_DAY",
+            750,
+        ),
+        circuit_failure_threshold=int_setting(
+            "KAIRO_MARKET_DATA_CIRCUIT_FAILURE_THRESHOLD",
+            2,
+        ),
+        circuit_cooldown_seconds=float_setting(
+            "KAIRO_MARKET_DATA_CIRCUIT_COOLDOWN_SECONDS",
+            60.0,
+        ),
     )
 
 

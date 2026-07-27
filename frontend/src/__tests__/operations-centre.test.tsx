@@ -33,6 +33,7 @@ describe("Operations Centre v2", () => {
     expect(await screen.findByText("Operational timeline")).toBeInTheDocument();
     expect(await screen.findByText("Upcoming work")).toBeInTheDocument();
     expect(await screen.findByText("Safety state")).toBeInTheDocument();
+    expect(await screen.findByText("Market data resilience")).toBeInTheDocument();
     expect(await screen.findByText("Supervisor health")).toBeInTheDocument();
     expect(screen.queryByText("Current intelligence")).not.toBeInTheDocument();
     expect(screen.queryByText("Graduation readiness")).not.toBeInTheDocument();

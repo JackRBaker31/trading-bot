@@ -5,6 +5,7 @@ import {
 import {
   apiClient,
 } from "@/lib/api-client";
+import { MarketDataMetadata } from "@/lib/types";
 
 
 export interface AdvancedIntelligenceReport {
@@ -68,6 +69,7 @@ export interface AdvancedIntelligenceReport {
     confidence_weight: number;
   };
   warnings: string[];
+  market_data_health?: MarketDataMetadata;
 }
 
 

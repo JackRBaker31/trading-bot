@@ -451,6 +451,38 @@ export interface JobWorkerMetadata {
   last_error: string | null;
 }
 
+export interface MarketDataMetadata {
+  provider?: string;
+  status?: string;
+  data_source?: string;
+  is_stale?: boolean;
+  last_updated_at?: string | null;
+  age_seconds?: number;
+  bar_count?: number;
+  warning?: string | null;
+  cache_hit_rate_percent?: number;
+  live_requests?: number;
+  cache_hits?: number;
+  stale_fallbacks?: number;
+  failed_requests?: number;
+  rate_limit_events?: number;
+  deduplicated_requests?: number;
+  budget_deferrals?: number;
+  requests_last_minute?: number;
+  requests_today?: number;
+  max_requests_per_minute?: number;
+  max_requests_per_day?: number;
+  cached_entries?: number;
+  cached_symbols?: number;
+  oldest_cache_age_seconds?: number | null;
+  circuit_state?: string;
+  circuit_open_until?: string | null;
+  last_success_at?: string | null;
+  last_failure_at?: string | null;
+  last_error?: string | null;
+  last_access?: Record<string, unknown>;
+}
+
 export interface InfrastructureServiceStatus {
   name: string;
   status: string;
