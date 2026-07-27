@@ -492,3 +492,75 @@ export interface PagedResponse<T> {
   count: number;
   items: T[];
 }
+
+
+export interface PerformanceReview {
+  generated_at: string;
+  period: { start: string; end: string; hours: number };
+  executive_summary: string;
+  system_health: {
+    total_jobs: number; intelligence_cycles: number; succeeded: number;
+    succeeded_with_warnings: number; failed: number; queued: number;
+    abandoned_running: number; completion_rate_percent: number;
+    healthy_completion_percent: number; average_cycle_duration_seconds: number;
+    longest_cycle_duration_seconds: number; warning_stages: Record<string, number>;
+  };
+  research_activity: {
+    research_runs: number; created_count: number; skipped_count: number;
+    failure_count: number; skip_rate_percent: number; articles_fetched: number;
+    signals_stored: number; provider_cycles: Record<string, number>;
+  };
+  decision_intelligence: {
+    shadow_decisions: number; eligible_decisions: number; eligibility_rate_percent: number;
+    average_confidence_percent: number; actions: Record<string, number>;
+    top_symbols: Array<{ symbol: string; count: number }>;
+    memory_decisions: number; recommendations: Record<string, number>;
+    opportunities_seen: number; decisions_skipped: number;
+  };
+  shadow_performance: {
+    total_decisions: number; measured_1d_decisions: number;
+    directional_success_percent: number; profitable_after_cost_percent: number;
+    recorded_outcomes: number; outcomes_recorded_by_cycles: number;
+    snapshots_captured: number; price_operation_failures: number;
+    average_recorded_return_percent: number; opportunities_seen: number;
+    decisions_skipped: number;
+  };
+  confidence_calibration: {
+    snapshot_count: number; average_snapshot_confidence_percent: number;
+    latest_snapshot_confidence_percent: number; stale_snapshot_percent: number;
+    decision_confidence_bands: Record<string, number>;
+    calibration_sample_size: number; mean_absolute_calibration_gap_points: number;
+    calibration_buckets: Array<{
+      label: string; decision_count: number; measured_count: number;
+      expected_accuracy_percent: number; actual_accuracy_percent: number;
+      calibration_gap_points: number; average_return_percent: number;
+    }>;
+  };
+  sector_analytics: Array<{
+    sector: string; decision_count: number; measured_count: number;
+    average_confidence_percent: number; directional_accuracy_percent: number;
+    average_return_percent: number; eligible_count: number;
+  }>;
+  symbol_analytics: Array<{
+    symbol: string; sector: string; decision_count: number; measured_count: number;
+    average_confidence_percent: number; average_score: number;
+    directional_accuracy_percent: number; average_return_percent: number;
+    eligible_count: number; latest_headline: string;
+  }>;
+  blocker_analytics: {
+    total_blocker_events: number; unique_blockers: number;
+    top_blockers: Array<{ reason: string; count: number; symbol_count: number; symbols: string[] }>;
+  };
+  trends: Array<{
+    date: string; cycles: number; healthy_cycles: number; failed_cycles: number;
+    created: number; skipped: number; decisions: number; measured_outcomes: number;
+    cycle_duration_seconds: number;
+  }>;
+  maturity: {
+    score_percent: number; label: string; graduation_passed_checks: number;
+    graduation_total_checks: number; trading_readiness: string; evidence_quality: string;
+    components: Record<string, number>;
+  };
+  insights: string[];
+  markdown: string;
+}

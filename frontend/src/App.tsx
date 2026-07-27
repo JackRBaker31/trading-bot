@@ -19,6 +19,7 @@ import ShadowIntelligencePage from "@/pages/ShadowIntelligencePage";
 import SchedulesPage from "@/pages/SchedulesPage";
 import OperationsPage from "@/pages/OperationsPage";
 import CopilotPage from "@/pages/CopilotPage";
+import PerformanceIntelligencePage from "@/pages/PerformanceIntelligencePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +69,14 @@ function Router() {
           <ProtectedRoute
             component={CopilotPage}
             title="KAIRO Copilot"
+          />
+        )}
+      </Route>
+      <Route path="/performance">
+        {() => (
+          <ProtectedRoute
+            component={PerformanceIntelligencePage}
+            title="Performance Intelligence"
           />
         )}
       </Route>

@@ -12,6 +12,7 @@ import {
   ClipboardList,
   ShieldCheck,
   Bot,
+  BarChart3,
   Clock,
   ScrollText,
   CalendarClock,
@@ -37,6 +38,7 @@ interface AppShellProps {
 const navItems = [
   { icon: Command,                 label: "Operations Centre",     path: "/operations" },
   { icon: Bot,                     label: "KAIRO Copilot",         path: "/copilot",},
+  { icon: BarChart3,               label: "Performance Intelligence", path: "/performance" },
   { icon: LayoutDashboard,         label: "Dashboard",             path: "/dashboard" },
   { icon: FlaskConical,            label: "Research",              path: "/research" },
   { icon: Newspaper,               label: "AI News",               path: "/news" },
