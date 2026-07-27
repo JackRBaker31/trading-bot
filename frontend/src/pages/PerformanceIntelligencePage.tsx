@@ -49,6 +49,17 @@ export default function PerformanceIntelligencePage() {
   const [preset, setPreset] = useState<ReviewPreset>("weekend");
   const review = usePerformanceReview(preset);
 
+  const maturityComponents = useMemo(
+    () =>
+      Object.entries(review.data?.maturity?.components ?? {}).map(
+        ([name, value]) => ({
+          name: name.replaceAll("_", " "),
+          value,
+        }),
+      ),
+    [review.data?.maturity?.components],
+  );
+
   if (review.isLoading) return <div className="space-y-4"><Skeleton className="h-20 w-full" /><div className="grid gap-4 md:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-36" />)}</div></div>;
   if (!review.data) return <Card><CardContent className="p-8 text-center"><AlertTriangle className="mx-auto mb-3 h-8 w-8 text-amber-400" /><p className="font-semibold">Performance review unavailable</p><p className="mt-1 text-sm text-muted-foreground">{review.error instanceof Error ? review.error.message : "The review could not be generated."}</p></CardContent></Card>;
 
@@ -58,10 +69,9 @@ export default function PerformanceIntelligencePage() {
   const decisions = data.decision_intelligence;
   const performance = data.shadow_performance;
   const confidence = data.confidence_calibration;
-  const calibratedBuckets = confidence.calibration_buckets.filter(item => item.decision_count > 0);
-  const sectorRows = data.sector_analytics.slice(0, 10);
-  const symbolRows = data.symbol_analytics.slice(0, 15);
-  const maturityComponents = useMemo(() => Object.entries(data.maturity.components).map(([name, value]) => ({ name: name.replaceAll("_", " "), value })), [data.maturity.components]);
+  const calibratedBuckets = (confidence.calibration_buckets ?? []).filter(item => item.decision_count > 0);
+  const sectorRows = (data.sector_analytics ?? []).slice(0, 10);
+  const symbolRows = (data.symbol_analytics ?? []).slice(0, 15);
 
   return <div className="space-y-6">
     <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">

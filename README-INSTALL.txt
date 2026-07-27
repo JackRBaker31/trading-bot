@@ -1,28 +1,55 @@
-KAIRO PERFORMANCE INTELLIGENCE V1
-=================================
+KAIRO HISTORICAL SIMILARITY V0.7
+==================================
 
 PURPOSE
 -------
-Turn KAIRO's existing SQLite history into reusable daily,
-weekend, weekly and monthly operational/intelligence reviews.
+Replace the aggregate "Observed History" view with genuine historical
+feature-vector matching backed by KAIRO's existing decision memory and
+measured decision outcomes.
 
 WHAT IT ADDS
 ------------
-- PerformanceReviewService over data/application.db
-- authenticated GET /api/performance/review
-- date-range query support using start/end ISO timestamps
-- deterministic executive summary and recommendations
-- system health, research, decision, outcome and confidence metrics
-- exportable Markdown report
-- frontend Performance Intelligence page
-- presets: Last 24 Hours, Weekend Review, Last 7 Days, Last 30 Days
-- navigation entry in the KAIRO sidebar
+- HistoricalSimilarityService with deterministic KAIRO-HSIM-1.0 scoring
+- authenticated GET /api/copilot/historical-similarity/{symbol}
+- live single-symbol thesis generation, rather than rebuilding every symbol
+- comparison against older decision_memory capability vectors
+- nearest-horizon matching against decision_outcomes
+- directional win rate, raw return, directional return, alpha and hold period
+- sample-quality labels and explicit small-sample warnings
+- closest-case explanations showing matching and differing factors
+- true Historical Similarity tab inside Decision Explainability
+- lazy loading: provider requests begin only when that tab is opened
 - backend and frontend tests
 
-NO DATABASE MIGRATION
----------------------
-This release is read-only against the existing database.
-It creates no tables and modifies no historical records.
+SIMILARITY METHOD
+-----------------
+KAIRO-HSIM-1.0 weights:
+- capability score profile: 36 points
+- capability stance alignment: 8 points
+- capability availability: 4 points
+- overall score: 8 points
+- confidence: 8 points
+- capability coverage: 5 points
+- recommendation: 5 points
+- risk tier: 4 points
+- time horizon: 4 points
+- primary driver: 4 points
+- news event type: 8 points
+- symbol match: 6 points
+
+A case must reach 65% similarity by default. Matching does not bypass
+risk, graduation, approved-symbol or execution gates.
+
+DATABASE
+--------
+No new database tables are created.
+
+The engine reads:
+- decision_memory
+- decision_outcomes
+
+KAIRO already stores capability vectors in decision_memory.capabilities_json.
+This release turns those stored vectors into a reproducible similarity model.
 
 INSTALL
 -------
@@ -37,102 +64,93 @@ C:\Users\Jack\Documents\trading-bot
 4. Run with the real extracted path:
 
 .\.venv\Scripts\python.exe `
-    "C:\Path\To\KAIRO-Performance-Intelligence-v1\install_performance_intelligence_v1.py"
+    "C:\Path\To\KAIRO-Historical-Similarity-v0.7\install_historical_similarity_v07.py"
 
-The installer backs up every replaced source file under:
+The installer backs up every replaced file under:
 
-source-backups\performance-intelligence-v1-<timestamp>\
+source-backups\historical-similarity-v0.7-<timestamp>\
 
 BACKEND VALIDATION
 ------------------
 .\.venv\Scripts\python.exe -m pytest `
-    tests\test_performance_review_service.py `
+    tests\test_historical_similarity_service.py `
+    tests\test_investment_thesis_service.py `
+    tests\test_web_historical_similarity.py `
     -q
+
+Expected focused result:
+
+7 passed
+
+Then run the complete backend suite:
 
 .\.venv\Scripts\python.exe -m pytest -q
 
-Expected full backend result for the supplied baseline:
+Expected result for the supplied source baseline:
 
-1153 passed
+1159 passed
 
 FRONTEND VALIDATION
 -------------------
 cd .\frontend
+
 npm run typecheck
 npm run test
 npm run build
+
 cd ..
 
-The build environment used to prepare this bundle did not have
-frontend node_modules available, so run these three commands on
-your PC before committing.
+TypeScript validation passed while preparing this bundle. The available
+packaging environment contained Windows node_modules and could not execute
+Linux Rollup/Vitest native binaries, so run the test and build commands on
+your Windows installation.
 
-START
------
-Start KAIRO normally with Start Everything.bat.
+FUNCTIONAL CHECK
+----------------
+1. Start KAIRO normally with Start Everything.bat.
+2. Open Decision Explainability.
+3. Select a ranked symbol.
+4. Open Historical Similarity.
+5. Confirm:
+   - candidate and matched-case counts appear;
+   - the sample-quality badge appears;
+   - measured cases show directional returns;
+   - matching and differing factors appear;
+   - warnings remain visible when the sample is small.
 
-Open the new sidebar item:
+EARLY EMPTY STATES ARE CORRECT
+------------------------------
+A new installation may show no measured matches. That is not a failure.
 
-Performance Intelligence
+Similarity needs:
+- older records in decision_memory;
+- due measurements in decision_outcomes.
 
-The Weekend Review preset begins at 17:00 on the most recent
-Friday and ends at the current time.
+Investment Theses captures decision-memory records. The existing Copilot
+Decision Outcomes control captures due 1/7/30/90/180/365-day outcomes.
 
 API
 ---
-GET /api/performance/review
-GET /api/performance/review?start=<ISO>&end=<ISO>
+GET /api/copilot/historical-similarity/AAPL
+GET /api/copilot/historical-similarity/AAPL?minimum_similarity_percent=70&limit=10
 
 The endpoint requires authentication.
 
-METRICS
--------
-System Health:
-- total jobs and intelligence cycles
-- success/warning/failure/abandoned counts
-- healthy completion percentage
-- average and longest successful cycle duration
-- stages producing warnings
+PERFORMANCE / API USE
+---------------------
+The frontend does not request similarity on initial page load. It loads only
+when Historical Similarity is opened.
 
-Research Activity:
-- runs, created, skipped and failed items
-- skip rate
-- articles fetched and signals stored by intelligence cycles
-- provider cycle counts
+The backend builds only the selected symbol's current thesis. This avoids
+recalculating technical and macro capabilities for every ranked symbol in
+one request. React Query caches each symbol report for 60 seconds.
 
-Decision Intelligence:
-- shadow decisions
-- eligible decisions
-- confidence
-- actions and most-active symbols
-- opportunities and skipped decisions
-
-Shadow Performance:
-- total and measured decisions
-- directional success
-- profitable-after-cost percentage
-- captured outcomes/snapshots
-- price-operation failures
-
-Confidence Calibration:
-- average/latest snapshot confidence
-- stale snapshot share where the stored status supports it
-- shadow-decision confidence bands
-
-INTERPRETATION
---------------
-The report deliberately warns when the decision sample is too
-small. Do not treat a few weekend outcomes as evidence of a
-profitable strategy.
-
-The report is deterministic and evidence-based. It does not use
-an external language model or invent missing data.
-
-COMMIT
+SAFETY
 ------
-After backend and frontend checks pass:
-
-git add -A
-git diff --cached --check
-git commit -m "Add performance intelligence reviews"
-git push
+This release is research-only. It does not:
+- submit orders;
+- change position sizing;
+- alter risk limits;
+- alter graduation requirements;
+- enable real-money trading;
+- modify historical decisions or outcomes.

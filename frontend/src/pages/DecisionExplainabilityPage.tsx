@@ -8,13 +8,10 @@ import {
   CheckCircle2,
   CircleDot,
   Clock3,
-  History,
   MessageSquareText,
   RefreshCw,
   SearchCheck,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
   XCircle,
 } from "lucide-react";
@@ -34,7 +31,8 @@ import {
   useSymbolDecisionChangeSummary,
   useSymbolDecisions,
 } from "@/hooks/useCopilot";
-import { usePerformanceReview } from "@/hooks/usePerformanceReview";
+import { HistoricalSimilarityPanel } from "@/components/decision/HistoricalSimilarityPanel";
+import { useHistoricalSimilarity } from "@/hooks/useHistoricalSimilarity";
 import { cn } from "@/lib/utils";
 
 function displayName(value: string | null | undefined): string {
@@ -284,7 +282,6 @@ function DecisionSummary({
 export default function DecisionExplainabilityPage() {
   const decisionQuery = useDecisionIntelligence();
   const traceQuery = useSymbolDecisions();
-  const performanceQuery = usePerformanceReview("30d");
 
   const rankedDecisions = useMemo(
     () => [...(decisionQuery.data?.decisions ?? [])].sort((left, right) => right.score - left.score),
@@ -297,6 +294,7 @@ export default function DecisionExplainabilityPage() {
   );
 
   const [selectedSymbol, setSelectedSymbol] = useState(requestedSymbol);
+  const [activeTab, setActiveTab] = useState("score");
 
   useEffect(() => {
     if (selectedSymbol && rankedDecisions.some((item) => item.symbol === selectedSymbol)) return;
@@ -304,10 +302,13 @@ export default function DecisionExplainabilityPage() {
   }, [rankedDecisions, selectedSymbol]);
 
   const changeQuery = useSymbolDecisionChangeSummary(selectedSymbol || null);
+  const similarityQuery = useHistoricalSimilarity(
+    selectedSymbol || null,
+    activeTab === "history",
+  );
 
   const decision = rankedDecisions.find((item) => item.symbol === selectedSymbol);
   const trace = traceQuery.data?.items.find((item) => item.symbol === selectedSymbol);
-  const historical = performanceQuery.data?.symbol_analytics.find((item) => item.symbol === selectedSymbol);
 
   const loading = decisionQuery.isPending || traceQuery.isPending;
   const failed = decisionQuery.isError;
@@ -327,12 +328,12 @@ export default function DecisionExplainabilityPage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">Decision Explainability</h1>
               <span className="rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D4AF37]">
-                v0.6
+                v0.7
               </span>
             </div>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Evidence-backed explanations built from KAIRO&apos;s existing score components, decision trace,
-              execution gates and measured symbol history. This page does not alter trading logic.
+              Evidence-backed explanations built from KAIRO&apos;s score components, decision trace,
+              execution gates and true historical feature-vector similarity. This page does not alter trading logic.
             </p>
           </div>
         </div>
@@ -344,7 +345,7 @@ export default function DecisionExplainabilityPage() {
             onClick={() => {
               void decisionQuery.refetch();
               void traceQuery.refetch();
-              void performanceQuery.refetch();
+              if (activeTab === "history") void similarityQuery.refetch();
               void changeQuery.refetch();
             }}
           >
@@ -413,12 +414,12 @@ export default function DecisionExplainabilityPage() {
           <div className="min-w-0 space-y-5">
             <DecisionSummary decision={decision} trace={trace} />
 
-            <Tabs defaultValue="score" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList className="h-auto flex-wrap justify-start">
                 <TabsTrigger value="score">Score composition</TabsTrigger>
                 <TabsTrigger value="evidence">Evidence & risk</TabsTrigger>
                 <TabsTrigger value="timeline">Decision timeline</TabsTrigger>
-                <TabsTrigger value="history">Observed history</TabsTrigger>
+                <TabsTrigger value="history">Historical similarity</TabsTrigger>
                 <TabsTrigger value="change">What changed</TabsTrigger>
               </TabsList>
 
@@ -567,44 +568,12 @@ export default function DecisionExplainabilityPage() {
               </TabsContent>
 
               <TabsContent value="history">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <History className="h-4 w-4 text-primary" />
-                      Observed 30-day symbol context
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {performanceQuery.isPending ? (
-                      <Skeleton className="h-40" />
-                    ) : historical ? (
-                      <div className="space-y-4">
-                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                          <div className="rounded-lg border p-4"><p className="text-[10px] uppercase text-muted-foreground">Decisions</p><p className="mt-2 text-2xl font-bold">{historical.decision_count}</p></div>
-                          <div className="rounded-lg border p-4"><p className="text-[10px] uppercase text-muted-foreground">Measured</p><p className="mt-2 text-2xl font-bold">{historical.measured_count}</p></div>
-                          <div className="rounded-lg border p-4"><p className="text-[10px] uppercase text-muted-foreground">Avg confidence</p><p className="mt-2 text-2xl font-bold">{historical.average_confidence_percent}%</p></div>
-                          <div className="rounded-lg border p-4"><p className="text-[10px] uppercase text-muted-foreground">Accuracy</p><p className="mt-2 text-2xl font-bold">{historical.directional_accuracy_percent}%</p></div>
-                          <div className="rounded-lg border p-4"><p className="text-[10px] uppercase text-muted-foreground">Avg return</p><p className={cn("mt-2 text-2xl font-bold", historical.average_return_percent > 0 && "text-emerald-400", historical.average_return_percent < 0 && "text-destructive")}>{historical.average_return_percent}%</p></div>
-                        </div>
-                        <div className="rounded-lg border bg-muted/20 p-4">
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Latest recorded evidence</p>
-                          <p className="mt-2 text-sm">{historical.latest_headline || "No historical headline recorded."}</p>
-                        </div>
-                        <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-muted-foreground">
-                          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-                          <p>
-                            This is observed aggregate history, not a claim that past cases are identical to the current setup.
-                            A dedicated historical-similarity engine will require backend feature vectors and matched-case storage.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="py-8 text-center text-sm text-muted-foreground">
-                        No measured 30-day symbol history is available for {decision.symbol} yet.
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                <HistoricalSimilarityPanel
+                  symbol={decision.symbol}
+                  report={similarityQuery.data}
+                  isPending={similarityQuery.isPending}
+                  isError={similarityQuery.isError}
+                />
               </TabsContent>
 
               <TabsContent value="change">

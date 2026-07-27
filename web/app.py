@@ -30,6 +30,7 @@ from fastapi import (
     Depends,
     FastAPI,
     Header,
+    HTTPException,
     Response,
     Query,
     Request,
@@ -103,6 +104,7 @@ from web.dependencies import (
     create_decision_intelligence_service,
     create_copilot_change_service,
     create_performance_review_service,
+    create_historical_similarity_service,
     )
 
 
@@ -568,6 +570,9 @@ def create_app(
     performance_review_service_factory: (
         Callable[[], object] | None
     ) = None,
+    historical_similarity_service_factory: (
+        Callable[[], object] | None
+    ) = None,
 ) -> FastAPI:
     infrastructure_factory = (
         infrastructure_status_service_factory
@@ -636,6 +641,10 @@ def create_app(
     performance_review_factory = (
         performance_review_service_factory
         or create_performance_review_service
+    )
+    historical_similarity_factory = (
+        historical_similarity_service_factory
+        or create_historical_similarity_service
     )
 
     app = FastAPI(
@@ -1239,6 +1248,50 @@ def create_app(
             .get_report()
             .to_dictionary()
         )
+
+
+    @app.get(
+        "/api/copilot/historical-similarity/{symbol}",
+        tags=["copilot"],
+    )
+    def historical_similarity(
+        symbol: str,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(
+                require_authenticated_user
+            ),
+        ],
+        minimum_similarity_percent: float = Query(
+            default=65.0,
+            ge=0.0,
+            le=100.0,
+        ),
+        limit: int = Query(
+            default=12,
+            ge=1,
+            le=50,
+        ),
+    ) -> dict[str, object]:
+        del user
+
+        try:
+            return (
+                historical_similarity_factory()
+                .analyse(
+                    symbol=symbol,
+                    minimum_similarity_percent=(
+                        minimum_similarity_percent
+                    ),
+                    limit=limit,
+                )
+                .to_dictionary()
+            )
+        except LookupError as error:
+            raise HTTPException(
+                status_code=404,
+                detail=str(error),
+            ) from error
 
 
     @app.get(

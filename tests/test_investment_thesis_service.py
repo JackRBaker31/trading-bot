@@ -203,3 +203,39 @@ def test_incomplete_capabilities_block_execution(
         for capability
         in thesis.capabilities
     )
+
+
+def test_get_thesis_returns_requested_current_symbol() -> None:
+    service = InvestmentThesisService(
+        snapshot_provider=snapshot,
+        risk_provider=risk,
+        portfolio_provider=portfolio,
+        graduation_provider=Graduation,
+        capability_providers=(
+            NewsCapabilityProvider(),
+            UnavailableCapabilityProvider(
+                capability="TECHNICAL",
+                maximum=20.0,
+                summary="Technical provider not connected.",
+            ),
+            UnavailableCapabilityProvider(
+                capability="MACRO",
+                maximum=10.0,
+                summary="Macro provider not connected.",
+            ),
+            UnavailableCapabilityProvider(
+                capability="VALUATION",
+                maximum=10.0,
+                summary="Valuation provider not connected.",
+            ),
+            PortfolioCapabilityProvider(),
+            RiskCapabilityProvider(),
+        ),
+        now_provider=lambda: NOW,
+    )
+
+    thesis = service.get_thesis(symbol="aapl")
+
+    assert thesis is not None
+    assert thesis.symbol == "AAPL"
+    assert service.get_thesis(symbol="MSFT") is None

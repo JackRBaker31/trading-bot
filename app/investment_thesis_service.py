@@ -149,6 +149,41 @@ class InvestmentThesisService:
             ),
         )
 
+    def get_thesis(
+        self,
+        *,
+        symbol: str,
+    ) -> InvestmentThesis | None:
+        normalised_symbol = symbol.upper().strip()
+        if not normalised_symbol:
+            raise ValueError(
+                "Symbol is required."
+            )
+
+        generated_at = self._utc_now()
+        snapshot = self._snapshot_provider()
+        opportunity = next(
+            (
+                item
+                for item
+                in snapshot.top_opportunities
+                if item.symbol == normalised_symbol
+            ),
+            None,
+        )
+
+        if opportunity is None:
+            return None
+
+        return self._build_thesis(
+            opportunity=opportunity,
+            snapshot=snapshot,
+            risk=self._risk_provider(),
+            portfolio=self._portfolio_provider(),
+            graduation=self._graduation_provider(),
+            generated_at=generated_at,
+        )
+
     def _build_thesis(
         self,
         *,

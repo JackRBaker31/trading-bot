@@ -129,6 +129,7 @@ from app.symbol_decision_service import (
     SymbolDecisionService,
 )
 from app.performance_review_service import PerformanceReviewService
+from app.historical_similarity_service import HistoricalSimilarityService
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
     "data/application.db"
@@ -141,6 +142,44 @@ def create_performance_review_service(
     database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
 ) -> PerformanceReviewService:
     return PerformanceReviewService(database_path=database_path)
+
+
+def create_historical_similarity_service(
+    *,
+    database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+) -> HistoricalSimilarityService:
+    thesis_service = create_investment_thesis_service(
+        database_path=database_path
+    )
+    memory_service = create_decision_memory_service(
+        database_path=database_path
+    )
+    outcome_repository = DecisionOutcomeRepository(
+        database_path=database_path
+    )
+    outcome_repository.initialize()
+
+    return HistoricalSimilarityService(
+        thesis_provider=(
+            lambda symbol: (
+                thesis_service.get_thesis(
+                    symbol=symbol
+                )
+            )
+        ),
+        decisions_provider=(
+            lambda limit: memory_service.recent(
+                limit=limit
+            )
+        ),
+        outcomes_provider=(
+            lambda decision_id: (
+                outcome_repository.list_for_decision(
+                    decision_id=decision_id
+                )
+            )
+        ),
+    )
 
 def create_system_status_service(
 ) -> SystemStatusService:
