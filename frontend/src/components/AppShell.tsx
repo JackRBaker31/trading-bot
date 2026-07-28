@@ -22,6 +22,7 @@ import {
   Circle,
   User,
   SearchCheck,
+  ListOrdered,
   } from "lucide-react";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { useInfrastructureStatus } from "@/hooks/useInfrastructureStatus";
@@ -41,6 +42,7 @@ const navItems = [
   { icon: Bot,                     label: "KAIRO Copilot",         path: "/copilot",},
   { icon: BarChart3,               label: "Performance Intelligence", path: "/performance" },
   { icon: SearchCheck,              label: "Decision Explainability", path: "/decision-explainability" },
+  { icon: ListOrdered,             label: "Opportunity Ranking",    path: "/opportunity-ranking" },
   { icon: LayoutDashboard,         label: "Dashboard",             path: "/dashboard" },
   { icon: FlaskConical,            label: "Research",              path: "/research" },
   { icon: Newspaper,               label: "AI News",               path: "/news" },

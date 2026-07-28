@@ -106,6 +106,7 @@ from web.dependencies import (
     create_copilot_change_service,
     create_performance_review_service,
     create_historical_similarity_service,
+    create_opportunity_ranking_service,
     )
 
 
@@ -574,6 +575,9 @@ def create_app(
     historical_similarity_service_factory: (
         Callable[[], object] | None
     ) = None,
+    opportunity_ranking_service_factory: (
+        Callable[[], object] | None
+    ) = None,
 ) -> FastAPI:
     infrastructure_factory = (
         infrastructure_status_service_factory
@@ -646,6 +650,10 @@ def create_app(
     historical_similarity_factory = (
         historical_similarity_service_factory
         or create_historical_similarity_service
+    )
+    opportunity_ranking_factory = (
+        opportunity_ranking_service_factory
+        or create_opportunity_ranking_service
     )
 
     app = FastAPI(
@@ -1275,6 +1283,24 @@ def create_app(
 
         return (
             create_decision_engine_service()
+            .get_report()
+            .to_dictionary()
+        )
+
+
+    @app.get(
+        "/api/opportunity-ranking",
+        tags=["copilot"],
+    )
+    def opportunity_ranking(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+    ) -> dict[str, object]:
+        del user
+        return (
+            opportunity_ranking_factory()
             .get_report()
             .to_dictionary()
         )

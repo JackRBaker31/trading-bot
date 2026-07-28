@@ -1,4 +1,5 @@
 from functools import lru_cache
+from datetime import datetime, timedelta, timezone
 import os
 
 from app.infrastructure_status_service import (
@@ -137,6 +138,7 @@ from app.symbol_decision_service import (
 )
 from app.performance_review_service import PerformanceReviewService
 from app.historical_similarity_service import HistoricalSimilarityService
+from app.opportunity_ranking_service import OpportunityRankingService
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
     "data/application.db"
@@ -185,6 +187,68 @@ def create_historical_similarity_service(
                     decision_id=decision_id
                 )
             )
+        ),
+    )
+
+
+def create_opportunity_ranking_service(
+    *,
+    database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+) -> OpportunityRankingService:
+    thesis_service = create_investment_thesis_service(
+        database_path=database_path
+    )
+    memory_service = create_decision_memory_service(
+        database_path=database_path
+    )
+    outcome_repository = DecisionOutcomeRepository(
+        database_path=database_path
+    )
+    outcome_repository.initialize()
+    performance_service = create_performance_review_service(
+        database_path=database_path
+    )
+
+    def similarity_provider(thesis):
+        service = HistoricalSimilarityService(
+            thesis_provider=(
+                lambda symbol: (
+                    thesis
+                    if symbol.upper().strip() == thesis.symbol
+                    else None
+                )
+            ),
+            decisions_provider=(
+                lambda limit: memory_service.recent(limit=limit)
+            ),
+            outcomes_provider=(
+                lambda decision_id: outcome_repository.list_for_decision(
+                    decision_id=decision_id
+                )
+            ),
+        )
+        return service.analyse(
+            symbol=thesis.symbol,
+            minimum_similarity_percent=65.0,
+            limit=12,
+        )
+
+    return OpportunityRankingService(
+        thesis_report_provider=thesis_service.get_report,
+        similarity_provider=similarity_provider,
+        performance_review_provider=(
+            lambda: performance_service.generate(
+                start=(
+                    datetime.now(timezone.utc)
+                    - timedelta(
+                        days=OpportunityRankingService.PERFORMANCE_WINDOW_DAYS
+                    )
+                ),
+                end=datetime.now(timezone.utc),
+            )
+        ),
+        market_health_provider=(
+            create_technical_historical_client().health_snapshot
         ),
     )
 

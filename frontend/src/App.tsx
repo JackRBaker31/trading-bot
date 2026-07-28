@@ -21,6 +21,7 @@ import OperationsPage from "@/pages/OperationsPage";
 import CopilotPage from "@/pages/CopilotPage";
 import PerformanceIntelligencePage from "@/pages/PerformanceIntelligencePage";
 import DecisionExplainabilityPage from "@/pages/DecisionExplainabilityPage";
+import OpportunityRankingPage from "@/pages/OpportunityRankingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,14 @@ function Router() {
           <ProtectedRoute
             component={DecisionExplainabilityPage}
             title="Decision Explainability"
+          />
+        )}
+      </Route>
+      <Route path="/opportunity-ranking">
+        {() => (
+          <ProtectedRoute
+            component={OpportunityRankingPage}
+            title="Opportunity Ranking"
           />
         )}
       </Route>

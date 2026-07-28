@@ -1,126 +1,99 @@
-KAIRO SUPERVISOR UNIFICATION v0.8.1
-==================================
+KAIRO OPPORTUNITY RANKING v0.9
+================================
 
 PURPOSE
 -------
-This update replaces the worker-only launcher watchdog with one authoritative
-KAIRO Platform Supervisor. The same run_kairo.py process now monitors:
+Adds a new advisory-only Opportunity Ranking engine and page. It combines:
 
-- API
-- Frontend
-- Job Worker
-- Scheduler
+- Investment thesis quality
+- Conservatively calibrated confidence
+- Evidence/capability coverage
+- Technical and macro alignment
+- True historical similarity
+- Measured expected return
+- Symbol and sector performance
+- Risk tier
+- Execution readiness
+- Market-data health and freshness
 
-It writes the status already consumed by the Dashboard and Operations Centre,
-so the Platform Supervisor card reports the supervisor that is actually running.
+The ranking does NOT submit orders or weaken any execution, risk, approval,
+graduation or paper-trading gate.
 
-IMPORTANT: STOP KAIRO FIRST
----------------------------
-1. In the existing Start Everything / worker-watchdog window, press Ctrl+C.
-   Wait until it says monitoring has stopped.
-
-2. Run:
+BEFORE INSTALLING
+-----------------
+1. Commit or back up the current v0.8.1 project.
+2. In the KAIRO Platform Supervisor window, press Ctrl+C.
+3. Run:
 
    C:\Users\Jack\Documents\trading-bot\Stop Everything.bat
 
-3. Confirm the API, Frontend, Worker and Scheduler windows have closed.
+4. Wait for API, Frontend, Worker and Scheduler to stop.
 
 INSTALL
 -------
-Extract this ZIP to a normal folder.
-
-Open PowerShell and run:
+Extract this ZIP, then open PowerShell and run:
 
 cd C:\Users\Jack\Documents\trading-bot
 
 .\.venv\Scripts\python.exe `
-  "C:\PATH\TO\KAIRO-Supervisor-Unification-v0.8.1\install_supervisor_unification_v081.py" `
+  "C:\PATH\TO\KAIRO-Opportunity-Ranking-v0.9\install_opportunity_ranking_v09.py" `
   "C:\Users\Jack\Documents\trading-bot"
 
-Replace C:\PATH\TO with the folder where this bundle was extracted.
+Replace C:\PATH\TO with the folder where you extracted this bundle.
 
-The installer creates a source backup under:
+The installer backs up every replaced source file under:
 
-source-backups\supervisor-unification-v0.8.1-<timestamp>\
+source-backups\opportunity-ranking-v0.9-<timestamp>\
 
-START
------
+START KAIRO
+-----------
 Double-click:
 
 C:\Users\Jack\Documents\trading-bot\Start Everything.bat
 
-The main window should now show:
+Open:
 
-KAIRO PLATFORM SUPERVISOR ACTIVE
-Monitoring API, Frontend, Job Worker and Scheduler...
+http://127.0.0.1:5173/opportunity-ranking
 
-VALIDATE
---------
-In a separate PowerShell window:
+The sidebar will also contain a new Opportunity Ranking link.
 
-cd C:\Users\Jack\Documents\trading-bot
-.\.venv\Scripts\python.exe .\run_kairo.py --status
-
-Expected service section:
-
-Platform Supervisor   RUNNING
-API                   HEALTHY
-Frontend              HEALTHY
-Job Worker            RUNNING
-Scheduler             RUNNING
-
-Then open the KAIRO Dashboard / Operations Centre. The Platform Supervisor card
-should show RUNNING, 4 services managed, 4 healthy, and automatic recovery enabled.
-
-RUN TESTS
----------
-Backend focused validation:
+VALIDATION
+----------
+From the project root:
 
 .\.venv\Scripts\python.exe -m pytest `
-  tests\test_run_kairo.py `
-  tests\test_infrastructure_status_service.py `
-  tests\test_web_infrastructure.py -q
-
-Full validation:
+  tests/test_opportunity_ranking_service.py `
+  tests/test_web_opportunity_ranking.py -q
 
 .\.venv\Scripts\python.exe -m pytest -q
 
+Then validate the frontend:
+
 cd .\frontend
 npm run typecheck
+npm run test -- src/__tests__/opportunity-ranking.test.tsx
 npm run test
 npm run build
 
-RECOVERY TEST
--------------
-Only after the status is fully healthy:
+EXPECTED BEHAVIOUR
+------------------
+The page should show:
 
-1. Note the Job Worker PID from Task Manager or PowerShell.
-2. End only the Job Worker process.
-3. Watch the Platform Supervisor window.
-4. It should report SERVICE_LOST / RECOVERING and start a replacement.
-5. Operations Centre should briefly show DEGRADED, then return to RUNNING.
+- Ranked current opportunities
+- Opportunity score out of 100
+- Priority Ready / High Potential Blocked / Promising Immature / Watch states
+- Raw and calibrated confidence
+- Measured expected return, or a clear unavailable state
+- Evidence quality and coverage
+- Historical matches and measured-case maturity
+- Full ten-component score breakdown
+- Positive contributors, penalties and improvement actions
+- Links into Decision Explainability and KAIRO Copilot
 
-Do not kill the API or Frontend until the worker recovery test has passed.
-
-WHAT CHANGED
-------------
-- Unified supervision for all four platform services.
-- Independent restart history and restart limits per service.
-- API readiness and Worker/Scheduler heartbeat health checks.
-- Frontend HTTP health checks.
-- Atomic data\supervisor_status.json updates every monitor cycle.
-- Safe prevention of multiple supervisor instances.
-- Stop Everything now stops the active monitor before stopping services.
-- Restart Everything restarts KAIRO with supervision enabled.
-- Dashboard guidance now points to Start Everything.bat rather than the retired
-  app.run_process_supervisor command.
-- Legacy data\kairo_supervisor.pid is removed during installation.
-
-NOT CHANGED
------------
-- Trading logic
-- Risk limits
-- Order execution
-- Database schema
-- Paper-trading permissions
-- Intelligence scoring
+NOTES
+-----
+- The current shortlist is based on KAIRO's existing top opportunities.
+- Missing measured data scores as unavailable; it is never fabricated.
+- Early samples are deliberately maturity-weighted and conservative.
+- The ranking uses a 90-day measured-performance review window.
+- No database migration is required.
