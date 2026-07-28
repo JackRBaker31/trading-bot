@@ -754,7 +754,7 @@ export default function DashboardPage() {
           ? "The KAIRO supervisor is managing this service. Automatic recovery may be in progress."
           : workerGuidance === "failed"
             ? "Automatic recovery has stopped after repeated failures. Manual review is required on the host."
-            : "Start the KAIRO platform supervisor on the host: python -m app.run_process_supervisor",
+            : "Start the unified KAIRO platform supervisor on the host with Start Everything.bat",
     },
     {
       label: "Portfolio Available",
@@ -1065,7 +1065,7 @@ export default function DashboardPage() {
                         {!isFailed && (isStopped || !svc.online) && (
                           <p className="text-[11px] text-muted-foreground mt-0.5">
                             Start the KAIRO platform supervisor on the host:{" "}
-                            <code className="font-mono">python -m app.run_process_supervisor</code>
+                            <code className="font-mono">Start Everything.bat</code>
                           </p>
                         )}
                         {/* Metadata grid */}
@@ -1189,7 +1189,7 @@ export default function DashboardPage() {
                           return (
                             <p className="text-[11px] text-muted-foreground mt-0.5">
                               Start the KAIRO platform supervisor on the host:{" "}
-                              <code className="font-mono">python -m app.run_process_supervisor</code>
+                              <code className="font-mono">Start Everything.bat</code>
                             </p>
                           );
                         })()}
@@ -1266,7 +1266,7 @@ export default function DashboardPage() {
                           return (
                             <p className="text-[11px] text-muted-foreground mt-0.5">
                               Start the KAIRO platform supervisor on the host:{" "}
-                              <code className="font-mono">python -m app.run_process_supervisor</code>
+                              <code className="font-mono">Start Everything.bat</code>
                             </p>
                           );
                         })()}
@@ -1321,7 +1321,7 @@ export default function DashboardPage() {
                 return (
                   <p className="text-[11px] text-muted-foreground">
                     Supervisor status unavailable — start{" "}
-                    <code className="font-mono">python -m app.run_process_supervisor</code> on the host.
+                    <code className="font-mono">Start Everything.bat</code> on the host.
                   </p>
                 );
               }

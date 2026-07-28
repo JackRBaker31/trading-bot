@@ -2,7 +2,11 @@
 setlocal
 cd /d "%~dp0"
 
+title KAIRO Unified Platform Supervisor
+color 0B
+
 if not exist ".venv\Scripts\python.exe" (
+    color 0C
     echo KAIRO virtual environment was not found.
     echo Expected:
     echo %CD%\.venv\Scripts\python.exe
@@ -20,10 +24,12 @@ if not exist ".venv\Scripts\python.exe" (
     --max-restarts 5
 
 if errorlevel 1 (
+    color 0C
     echo.
-    echo KAIRO worker watchdog stopped after repeated failures.
+    echo KAIRO Platform Supervisor stopped after a failure.
     echo Review:
     echo data\runtime\launcher-events.jsonl
+    echo data\supervisor_status.json
     echo.
     pause
 )

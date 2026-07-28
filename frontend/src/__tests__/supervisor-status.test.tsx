@@ -262,10 +262,10 @@ describe("10. STOPPED shows supervisor-start guidance", () => {
     useInfra({ ...RUNNING_SUPERVISOR, status: "STOPPED", online: false }),
   );
 
-  it("shows run_process_supervisor in guidance", async () => {
+  it("shows Start Everything.bat in guidance", async () => {
     render(<DashboardPage />);
     await waitFor(() =>
-      expect(screen.getByText(/run_process_supervisor/)).toBeInTheDocument(),
+      expect(screen.getByText(/Start Everything\.bat/)).toBeInTheDocument(),
     );
   });
 });
@@ -277,10 +277,10 @@ describe("11. NOT_SEEN shows supervisor-start guidance", () => {
     useInfra({ ...RUNNING_SUPERVISOR, status: "NOT_SEEN", online: false }),
   );
 
-  it("shows run_process_supervisor in guidance", async () => {
+  it("shows Start Everything.bat in guidance", async () => {
     render(<DashboardPage />);
     await waitFor(() =>
-      expect(screen.getByText(/run_process_supervisor/)).toBeInTheDocument(),
+      expect(screen.getByText(/Start Everything\.bat/)).toBeInTheDocument(),
     );
   });
 });

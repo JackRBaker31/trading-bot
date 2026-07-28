@@ -9,11 +9,14 @@ import time
 import urllib.error
 import urllib.request
 import webbrowser
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from os import getpid
 from pathlib import Path
 from typing import Iterable, Mapping
+
+from app.health_monitor import HealthMonitor, HealthMonitorConfig
+from app.worker_heartbeat_repository import WorkerHeartbeatRepository
 
 
 ROOT = Path(__file__).resolve().parent
@@ -26,6 +29,7 @@ DATABASE_PATH = DATA_DIR / "application.db"
 STATE_PATH = RUNTIME_DIR / "kairo-launcher-state.json"
 MONITOR_LOCK_PATH = RUNTIME_DIR / "kairo-monitor.json"
 MONITOR_EVENTS_PATH = RUNTIME_DIR / "launcher-events.jsonl"
+SUPERVISOR_STATUS_PATH = DATA_DIR / "supervisor_status.json"
 
 API_URL = "http://127.0.0.1:8000"
 FRONTEND_URL = "http://127.0.0.1:5173"
@@ -52,6 +56,17 @@ class PlatformCheck:
     name: str
     status: str
     detail: str
+
+
+@dataclass
+class MonitoredServiceState:
+    restart_times: list[float] = field(default_factory=list)
+    restart_count: int = 0
+    restart_state: str = "HEALTHY"
+    last_restart_reason: str | None = None
+    last_restart_at: str | None = None
+    recovered_at: str | None = None
+    frontend_failures: int = 0
 
 
 SERVICES = (
@@ -243,6 +258,215 @@ def release_monitor_lock() -> None:
         MONITOR_LOCK_PATH.unlink(
             missing_ok=True
         )
+
+
+def current_monitor_pid() -> int | None:
+    if not MONITOR_LOCK_PATH.exists():
+        return None
+    try:
+        payload = json.loads(
+            MONITOR_LOCK_PATH.read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError, UnicodeError):
+        return None
+    pid = payload.get("pid") if isinstance(payload, dict) else None
+    return pid if isinstance(pid, int) and pid > 0 else None
+
+
+def stop_active_monitor() -> bool:
+    pid = current_monitor_pid()
+    if pid is None:
+        MONITOR_LOCK_PATH.unlink(missing_ok=True)
+        return True
+    if pid == getpid():
+        return True
+    if not pid_is_running(pid):
+        MONITOR_LOCK_PATH.unlink(missing_ok=True)
+        return True
+
+    result = subprocess.run(
+        ["taskkill", "/PID", str(pid), "/F"],
+        check=False,
+        capture_output=True,
+        text=True,
+        creationflags=CREATE_NO_WINDOW,
+    )
+    if result.returncode == 0:
+        MONITOR_LOCK_PATH.unlink(missing_ok=True)
+        return True
+    return False
+
+
+def _status_service_name(service: ServiceDefinition) -> str:
+    return "job_worker" if service.key == "worker" else service.key
+
+
+def _iso_from_epoch(value: object) -> str | None:
+    if not isinstance(value, (int, float)):
+        return None
+    try:
+        return datetime.fromtimestamp(
+            float(value), tz=timezone.utc
+        ).isoformat()
+    except (OSError, OverflowError, ValueError):
+        return None
+
+
+def _service_pid(
+    service: ServiceDefinition,
+    state: Mapping[str, Mapping[str, object]],
+) -> int | None:
+    item = state.get(service.key, {})
+    pid = item.get("pid")
+    if isinstance(pid, int) and pid_is_running(pid):
+        return pid
+    matches = matching_processes(service.process_markers)
+    for match in matches:
+        candidate = match.get("ProcessId")
+        if isinstance(candidate, int) and candidate > 0:
+            return candidate
+    return None
+
+
+def _frontend_health(
+    monitor_state: MonitoredServiceState,
+) -> dict[str, object]:
+    checked_at = datetime.now(timezone.utc).isoformat()
+    status = url_status(FRONTEND_URL)
+    healthy = status is not None and 200 <= status < 400
+    if healthy:
+        monitor_state.frontend_failures = 0
+        detail = f"Frontend returned HTTP {status}."
+        health_status = "HEALTHY"
+    else:
+        monitor_state.frontend_failures += 1
+        detail = (
+            "Frontend could not be reached."
+            if status is None
+            else f"Frontend returned HTTP {status}."
+        )
+        health_status = "UNREACHABLE"
+    return {
+        "name": "frontend",
+        "health_status": health_status,
+        "healthy": healthy,
+        "persistent_fault": (
+            not healthy and monitor_state.frontend_failures >= 3
+        ),
+        "consecutive_health_failures": monitor_state.frontend_failures,
+        "last_health_check_at": checked_at,
+        "last_healthy_at": checked_at if healthy else None,
+        "health_detail": detail,
+        "response_time_ms": None,
+        "heartbeat_age_seconds": None,
+        "heartbeat_status": None,
+        "heartbeat_process_id": None,
+        "heartbeat_last_error": None,
+    }
+
+
+def write_unified_supervisor_status(
+    *,
+    monitored: Mapping[str, MonitoredServiceState],
+    health_payloads: Mapping[str, Mapping[str, object]],
+    supervisor_status: str = "RUNNING",
+    supervisor_process_id: int | None = None,
+) -> None:
+    state = clean_state(load_state())
+    processes: list[dict[str, object]] = []
+
+    for service in SERVICES:
+        monitor_state = monitored.get(service.key, MonitoredServiceState())
+        running = service_is_running(service, state)
+        health = dict(
+            health_payloads.get(
+                service.key,
+                {
+                    "name": _status_service_name(service),
+                    "health_status": "UNKNOWN",
+                    "healthy": running,
+                    "persistent_fault": False,
+                    "consecutive_health_failures": 0,
+                    "last_health_check_at": datetime.now(timezone.utc).isoformat(),
+                    "last_healthy_at": None,
+                    "health_detail": "No health result was available.",
+                },
+            )
+        )
+        if not running:
+            health.update(
+                {
+                    "healthy": False,
+                    "health_status": "STOPPED",
+                    "persistent_fault": True,
+                    "health_detail": f"{service.display_name} process was not detected.",
+                }
+            )
+
+        process_status = "RUNNING" if running else "STOPPED"
+        if monitor_state.restart_state == "FAILED":
+            process_status = "FAILED"
+
+        item = state.get(service.key, {})
+        processes.append(
+            {
+                "name": _status_service_name(service),
+                "status": process_status,
+                "process_id": _service_pid(service, state),
+                "restart_count": monitor_state.restart_count,
+                "restart_state": monitor_state.restart_state,
+                "last_restart_reason": monitor_state.last_restart_reason,
+                "last_restart_at": monitor_state.last_restart_at,
+                "recovered_at": monitor_state.recovered_at,
+                "last_exit_code": None,
+                "health": health,
+                "started_at": _iso_from_epoch(item.get("started_at")),
+                "log_path": str(LOG_DIR / f"{service.key}.log"),
+            }
+        )
+
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "supervisor_status": supervisor_status.upper(),
+        "supervisor_process_id": (
+            getpid() if supervisor_process_id is None else supervisor_process_id
+        ),
+        "restart_enabled": supervisor_status.upper() != "STOPPED",
+        "supervisor_type": "KAIRO_UNIFIED_LAUNCHER",
+        "processes": processes,
+    }
+    SUPERVISOR_STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = SUPERVISOR_STATUS_PATH.with_suffix(
+        SUPERVISOR_STATUS_PATH.suffix + ".tmp"
+    )
+    temporary.write_text(
+        json.dumps(payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    temporary.replace(SUPERVISOR_STATUS_PATH)
+
+
+def write_stopped_supervisor_status() -> None:
+    monitored = {service.key: MonitoredServiceState() for service in SERVICES}
+    health = {
+        service.key: {
+            "name": _status_service_name(service),
+            "health_status": "STOPPED",
+            "healthy": False,
+            "persistent_fault": False,
+            "consecutive_health_failures": 0,
+            "last_health_check_at": datetime.now(timezone.utc).isoformat(),
+            "last_healthy_at": None,
+            "health_detail": "Platform supervision is stopped.",
+        }
+        for service in SERVICES
+    }
+    write_unified_supervisor_status(
+        monitored=monitored,
+        health_payloads=health,
+        supervisor_status="STOPPED",
+        supervisor_process_id=0,
+    )
 
 
 def trim_restart_history(
@@ -437,9 +661,17 @@ def stop_pid(pid: int) -> bool:
 
 def stop_managed_services() -> int:
     ensure_layout()
+
+    monitor_stopped = stop_active_monitor()
+    if not monitor_stopped:
+        print("[FAIL] Platform Supervisor could not be stopped.")
+        return 1
+    time.sleep(0.5)
+
     state = clean_state(load_state())
     if not state:
         print("No launcher-managed services were found.")
+        write_stopped_supervisor_status()
         return 0
 
     failures = 0
@@ -458,6 +690,7 @@ def stop_managed_services() -> int:
 
     if failures == 0:
         STATE_PATH.unlink(missing_ok=True)
+    write_stopped_supervisor_status()
     return 1 if failures else 0
 
 
@@ -720,6 +953,34 @@ def divider(title: str) -> None:
     print("-" * 58)
 
 
+def supervisor_cli_status() -> str:
+    if not SUPERVISOR_STATUS_PATH.exists():
+        return "NOT_SEEN"
+    try:
+        payload = json.loads(
+            SUPERVISOR_STATUS_PATH.read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError, UnicodeError):
+        return "FAILED"
+    if not isinstance(payload, dict):
+        return "FAILED"
+
+    recorded = str(payload.get("supervisor_status") or "UNKNOWN").upper()
+    if recorded == "STOPPED":
+        return "STOPPED"
+
+    process_id = payload.get("supervisor_process_id")
+    generated_at = parse_iso(str(payload.get("generated_at") or ""))
+    stale = True
+    if generated_at is not None:
+        now = datetime.now(generated_at.tzinfo or timezone.utc)
+        stale = (now - generated_at).total_seconds() > 30.0
+    alive = isinstance(process_id, int) and pid_is_running(process_id)
+    if stale or not alive:
+        return "STALE"
+    return recorded
+
+
 def print_detailed_status() -> int:
     ensure_layout()
     state = clean_state(load_state())
@@ -730,6 +991,9 @@ def print_detailed_status() -> int:
 
     all_running = True
     divider("Services")
+    supervisor_status = supervisor_cli_status()
+    all_running = all_running and supervisor_status == "RUNNING"
+    print(f"{'Platform Supervisor':<22}{supervisor_status}")
     for service in SERVICES:
         status = service_health(service, state)
         all_running = all_running and status != "STOPPED"
@@ -894,7 +1158,7 @@ def start_platform(
 
 
 
-def monitor_worker(
+def monitor_platform(
     *,
     foreground: bool,
     interval_seconds: float,
@@ -903,235 +1167,302 @@ def monitor_worker(
     max_restarts: int,
 ) -> int:
     if interval_seconds <= 0:
-        raise RuntimeError(
-            "Monitor interval must be positive."
-        )
-
+        raise RuntimeError("Monitor interval must be positive.")
     if restart_delay_seconds < 0:
-        raise RuntimeError(
-            "Restart delay cannot be negative."
-        )
-
+        raise RuntimeError("Restart delay cannot be negative.")
     if restart_window_seconds <= 0:
-        raise RuntimeError(
-            "Restart window must be positive."
-        )
-
+        raise RuntimeError("Restart window must be positive.")
     if max_restarts <= 0:
-        raise RuntimeError(
-            "Maximum restarts must be positive."
-        )
+        raise RuntimeError("Maximum restarts must be positive.")
 
     if not acquire_monitor_lock():
-        print(
-            "[MONITOR] Another KAIRO launcher "
-            "watchdog is already active."
-        )
+        print("[MONITOR] Another KAIRO Platform Supervisor is already active.")
         return 0
 
-    worker = next(
-        service
-        for service in SERVICES
-        if service.key == "worker"
+    heartbeat_repository = WorkerHeartbeatRepository(
+        database_path=str(DATABASE_PATH),
     )
-
-    restart_times: list[float] = []
+    heartbeat_repository.initialize()
+    health_monitor = HealthMonitor(
+        heartbeat_repository=heartbeat_repository,
+        config=HealthMonitorConfig(
+            api_url=f"{API_URL}/health/ready",
+            startup_grace_seconds=20.0,
+            heartbeat_stale_seconds=30.0,
+            persistent_failure_count=3,
+        ),
+    )
+    monitored = {
+        service.key: MonitoredServiceState()
+        for service in SERVICES
+    }
+    latest_health: dict[str, Mapping[str, object]] = {}
 
     print()
     print("=" * 58)
-    print("KAIRO WORKER WATCHDOG ACTIVE")
+    print("KAIRO PLATFORM SUPERVISOR ACTIVE")
     print("=" * 58)
     print(
-        "Monitoring Job Worker every "
+        "Monitoring API, Frontend, Job Worker and Scheduler every "
         f"{interval_seconds:g} seconds."
     )
     print(
         "Restart policy: "
-        f"{max_restarts} restart(s) per "
+        f"{max_restarts} restart(s) per service within "
         f"{restart_window_seconds:g} seconds."
     )
-    print(
-        "Keep this window open. "
-        "Ctrl+C stops monitoring only."
-    )
+    print("Keep this window open. Ctrl+C stops supervision only.")
     print("=" * 58)
 
     append_monitor_event(
         event="MONITOR_STARTED",
-        service="worker",
+        service="platform",
         detail=(
-            "Launcher worker watchdog started."
+            "Unified launcher supervision started for API, Frontend, "
+            "Job Worker and Scheduler."
         ),
         pid=getpid(),
     )
 
     try:
         while True:
-            state = clean_state(
-                load_state()
-            )
-
-            if service_is_running(
-                worker,
-                state,
-            ):
-                time.sleep(
-                    interval_seconds
-                )
-                continue
-
-            now = time.monotonic()
-
-            restart_times = (
-                trim_restart_history(
-                    restart_times,
-                    now=now,
-                    window_seconds=(
-                        restart_window_seconds
-                    ),
-                )
-            )
-
-            print()
-            print(
-                "[MONITOR] Job Worker is not "
-                "running."
-            )
-
-            append_monitor_event(
-                event="SERVICE_LOST",
-                service="worker",
-                detail=(
-                    "Job Worker process was "
-                    "not detected."
-                ),
-            )
-
-            if (
-                len(restart_times)
-                >= max_restarts
-            ):
-                detail = (
-                    "Restart limit reached: "
-                    f"{len(restart_times)} "
-                    "restart(s) within "
-                    f"{restart_window_seconds:g} "
-                    "seconds."
-                )
-
-                print(
-                    "[GIVE UP] "
-                    + detail
-                )
-
-                append_monitor_event(
-                    event="RESTART_LIMIT_REACHED",
-                    service="worker",
-                    detail=detail,
-                )
-
-                return 1
-
-            if restart_delay_seconds:
-                print(
-                    "[MONITOR] Restarting in "
-                    f"{restart_delay_seconds:g} "
-                    "seconds..."
-                )
-                time.sleep(
-                    restart_delay_seconds
-                )
-
-            try:
-                process = start_service(
-                    worker,
-                    foreground=foreground,
-                )
-            except OSError as error:
-                restart_times.append(
-                    time.monotonic()
-                )
-
-                detail = (
-                    "Worker restart failed: "
-                    f"{error}"
-                )
-
-                print(
-                    "[RESTART FAILED] "
-                    + detail
-                )
-
-                append_monitor_event(
-                    event="RESTART_FAILED",
-                    service="worker",
-                    detail=detail,
-                )
-
-                time.sleep(
-                    interval_seconds
-                )
-                continue
-
-            state = clean_state(
-                load_state()
-            )
-            state[worker.key] = {
-                "pid": process.pid,
-                "started_at": time.time(),
-                "foreground": foreground,
-                "command": list(
-                    worker.command
-                ),
-                "restart_reason": (
-                    "watchdog_recovery"
-                ),
+            launcher_state = clean_state(load_state())
+            raw_health = health_monitor.check_all()
+            latest_health = {
+                "api": raw_health["api"].to_dict(),
+                "worker": raw_health["job_worker"].to_dict(),
+                "scheduler": raw_health["scheduler"].to_dict(),
+                "frontend": _frontend_health(monitored["frontend"]),
             }
-            save_state(state)
 
-            restart_times.append(
-                time.monotonic()
-            )
+            for service in SERVICES:
+                service_state = monitored[service.key]
+                running = service_is_running(service, launcher_state)
+                health = latest_health[service.key]
+                healthy = bool(health.get("healthy", False))
 
-            print(
-                "[RECOVERED] Job Worker "
-                f"restarted (PID {process.pid})."
-            )
+                item = launcher_state.get(service.key, {})
+                started_at = item.get("started_at")
+                in_startup_grace = (
+                    isinstance(started_at, (int, float))
+                    and time.time() - float(started_at) < 20.0
+                )
 
-            append_monitor_event(
-                event="SERVICE_RESTARTED",
-                service="worker",
-                detail=(
-                    "Job Worker restarted "
-                    "successfully."
-                ),
-                pid=process.pid,
-            )
+                if running and healthy:
+                    if service_state.restart_state in {
+                        "RESTART_PENDING",
+                        "RESTARTING",
+                        "RECOVERING",
+                        "FAULT_DETECTED",
+                    }:
+                        service_state.restart_state = "RECOVERED"
+                        service_state.recovered_at = (
+                            datetime.now(timezone.utc).isoformat()
+                        )
+                        append_monitor_event(
+                            event="SERVICE_RECOVERED",
+                            service=service.key,
+                            detail=(
+                                f"{service.display_name} passed its health check "
+                                "after recovery."
+                            ),
+                            pid=_service_pid(service, launcher_state),
+                        )
+                    elif service_state.restart_state != "FAILED":
+                        service_state.restart_state = "HEALTHY"
+                    continue
 
-            time.sleep(
-                interval_seconds
+                if service_state.restart_state == "FAILED":
+                    continue
+
+                if running and in_startup_grace:
+                    service_state.restart_state = "RECOVERING"
+                    continue
+
+                persistent_fault = (
+                    not running
+                    or bool(health.get("persistent_fault", False))
+                )
+                if not persistent_fault:
+                    service_state.restart_state = "FAULT_DETECTED"
+                    continue
+
+                reason = (
+                    f"{service.display_name} process was not detected."
+                    if not running
+                    else str(
+                        health.get("health_detail")
+                        or f"{service.display_name} failed its health check."
+                    )
+                )
+                event_name = "SERVICE_LOST" if not running else "HEALTH_FAULT"
+                append_monitor_event(
+                    event=event_name,
+                    service=service.key,
+                    detail=reason,
+                    pid=_service_pid(service, launcher_state),
+                )
+
+                now = time.monotonic()
+                service_state.restart_times = trim_restart_history(
+                    service_state.restart_times,
+                    now=now,
+                    window_seconds=restart_window_seconds,
+                )
+                if len(service_state.restart_times) >= max_restarts:
+                    service_state.restart_state = "FAILED"
+                    service_state.last_restart_reason = reason
+                    detail = (
+                        f"Restart limit reached for {service.display_name}: "
+                        f"{len(service_state.restart_times)} restart(s) within "
+                        f"{restart_window_seconds:g} seconds."
+                    )
+                    print(f"[GIVE UP] {detail}")
+                    append_monitor_event(
+                        event="RESTART_LIMIT_REACHED",
+                        service=service.key,
+                        detail=detail,
+                    )
+                    continue
+
+                if running:
+                    owned_pid = item.get("pid")
+                    if not isinstance(owned_pid, int) or not pid_is_running(owned_pid):
+                        service_state.restart_state = "FAILED"
+                        service_state.last_restart_reason = (
+                            "Persistent health fault belongs to a process that "
+                            "was not launched by the unified supervisor."
+                        )
+                        append_monitor_event(
+                            event="UNMANAGED_PROCESS_FAULT",
+                            service=service.key,
+                            detail=service_state.last_restart_reason,
+                            pid=_service_pid(service, launcher_state),
+                        )
+                        continue
+                    if not stop_pid(owned_pid):
+                        service_state.restart_state = "FAILED"
+                        service_state.last_restart_reason = (
+                            f"{service.display_name} could not be stopped for recovery."
+                        )
+                        append_monitor_event(
+                            event="RESTART_FAILED",
+                            service=service.key,
+                            detail=service_state.last_restart_reason,
+                            pid=owned_pid,
+                        )
+                        continue
+                    launcher_state.pop(service.key, None)
+                    save_state(launcher_state)
+
+                service_state.restart_state = "RESTART_PENDING"
+                service_state.last_restart_reason = reason
+                write_unified_supervisor_status(
+                    monitored=monitored,
+                    health_payloads=latest_health,
+                    supervisor_status="DEGRADED",
+                )
+
+                if restart_delay_seconds:
+                    print(
+                        f"[MONITOR] Restarting {service.display_name} in "
+                        f"{restart_delay_seconds:g} seconds..."
+                    )
+                    time.sleep(restart_delay_seconds)
+
+                try:
+                    process = start_service(service, foreground=foreground)
+                except OSError as error:
+                    service_state.restart_times.append(time.monotonic())
+                    service_state.restart_state = "RESTARTING"
+                    service_state.last_restart_reason = str(error)
+                    print(
+                        f"[RESTART FAILED] {service.display_name}: {error}"
+                    )
+                    append_monitor_event(
+                        event="RESTART_FAILED",
+                        service=service.key,
+                        detail=f"{service.display_name} restart failed: {error}",
+                    )
+                    continue
+
+                launcher_state = clean_state(load_state())
+                launcher_state[service.key] = {
+                    "pid": process.pid,
+                    "started_at": time.time(),
+                    "foreground": foreground,
+                    "command": list(service.command),
+                    "restart_reason": "unified_supervisor_recovery",
+                }
+                save_state(launcher_state)
+
+                service_state.restart_times.append(time.monotonic())
+                service_state.restart_count += 1
+                service_state.restart_state = "RECOVERING"
+                service_state.last_restart_at = (
+                    datetime.now(timezone.utc).isoformat()
+                )
+                print(
+                    f"[RECOVERING] {service.display_name} restarted "
+                    f"(PID {process.pid})."
+                )
+                append_monitor_event(
+                    event="SERVICE_RESTARTED",
+                    service=service.key,
+                    detail=f"{service.display_name} restarted successfully.",
+                    pid=process.pid,
+                )
+
+            states = {item.restart_state for item in monitored.values()}
+            if "FAILED" in states:
+                supervisor_status = "FAILED"
+            elif states.intersection(
+                {"FAULT_DETECTED", "RESTART_PENDING", "RESTARTING", "RECOVERING"}
+            ):
+                supervisor_status = "DEGRADED"
+            else:
+                supervisor_status = "RUNNING"
+
+            write_unified_supervisor_status(
+                monitored=monitored,
+                health_payloads=latest_health,
+                supervisor_status=supervisor_status,
             )
+            time.sleep(interval_seconds)
     except KeyboardInterrupt:
         print()
         print(
-            "[MONITOR] Worker watchdog "
-            "stopped. KAIRO services remain "
-            "running."
+            "[MONITOR] Platform supervision stopped. "
+            "KAIRO services remain running."
         )
-
         append_monitor_event(
             event="MONITOR_STOPPED",
-            service="worker",
-            detail=(
-                "Launcher worker watchdog "
-                "was stopped manually."
-            ),
+            service="platform",
+            detail="Unified platform supervision was stopped manually.",
             pid=getpid(),
         )
-
+        write_unified_supervisor_status(
+            monitored=monitored,
+            health_payloads=latest_health,
+            supervisor_status="STOPPED",
+        )
         return 0
+    except Exception as error:
+        append_monitor_event(
+            event="MONITOR_FAILED",
+            service="platform",
+            detail=f"Unified supervisor failed: {type(error).__name__}: {error}",
+            pid=getpid(),
+        )
+        write_unified_supervisor_status(
+            monitored=monitored,
+            health_payloads=latest_health,
+            supervisor_status="FAILED",
+        )
+        raise
     finally:
         release_monitor_lock()
+
 
 
 def main() -> int:
@@ -1144,10 +1475,19 @@ def main() -> int:
             if result != 0:
                 return result
             time.sleep(2)
-            return start_platform(
+            result = start_platform(
                 foreground=args.foreground,
                 no_browser=args.no_browser,
                 timeout_seconds=args.timeout,
+            )
+            if result != 0 or not args.monitor:
+                return result
+            return monitor_platform(
+                foreground=args.foreground,
+                interval_seconds=args.monitor_interval,
+                restart_delay_seconds=args.restart_delay,
+                restart_window_seconds=args.restart_window,
+                max_restarts=args.max_restarts,
             )
         if args.status:
             return print_detailed_status()
@@ -1162,7 +1502,7 @@ def main() -> int:
         if result != 0 or not args.monitor:
             return result
 
-        return monitor_worker(
+        return monitor_platform(
             foreground=args.foreground,
             interval_seconds=(
                 args.monitor_interval

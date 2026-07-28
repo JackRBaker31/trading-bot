@@ -230,19 +230,23 @@ class InfrastructureStatusService:
         if recorded_status == "STOPPED":
             status = "STOPPED"
             online = False
-            detail = "The KAIRO process supervisor is stopped."
-        elif failed_count > 0:
-            status = "FAILED"
-            online = process_alive and not stale
-            detail = (
-                "One or more supervised services have entered "
-                "restart lockout."
-            )
+            detail = "The KAIRO unified platform supervisor is stopped."
         elif stale or not process_alive:
             status = "STALE"
             online = False
             detail = "The supervisor status is stale or its process is unavailable."
-        elif recovering_count > 0 or healthy_count < managed_count:
+        elif recorded_status == "FAILED" or failed_count > 0:
+            status = "FAILED"
+            online = False
+            detail = (
+                "One or more supervised services have entered "
+                "restart lockout and require manual review."
+            )
+        elif (
+            recorded_status == "DEGRADED"
+            or recovering_count > 0
+            or healthy_count < managed_count
+        ):
             status = "DEGRADED"
             online = True
             detail = "The supervisor is running but one or more services are recovering."
@@ -250,7 +254,7 @@ class InfrastructureStatusService:
             status = "RUNNING"
             online = True
             detail = (
-                "KAIRO process supervision and automatic recovery are active."
+                "KAIRO unified platform supervision and automatic recovery are active."
             )
 
         return ServiceHealth(

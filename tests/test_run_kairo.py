@@ -166,3 +166,124 @@ def test_monitor_lock_rejects_live_existing_monitor(
         run_kairo.acquire_monitor_lock()
         is False
     )
+
+
+def test_unified_supervisor_status_contains_all_services(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    status_path = tmp_path / "supervisor_status.json"
+    monkeypatch.setattr(
+        run_kairo,
+        "SUPERVISOR_STATUS_PATH",
+        status_path,
+    )
+    monkeypatch.setattr(
+        run_kairo,
+        "load_state",
+        lambda: {
+            service.key: {
+                "pid": 100 + index,
+                "started_at": 1_700_000_000.0,
+            }
+            for index, service in enumerate(run_kairo.SERVICES)
+        },
+    )
+    monkeypatch.setattr(
+        run_kairo,
+        "clean_state",
+        lambda state: state,
+    )
+    monkeypatch.setattr(
+        run_kairo,
+        "service_is_running",
+        lambda service, state: True,
+    )
+    monkeypatch.setattr(
+        run_kairo,
+        "_service_pid",
+        lambda service, state: int(state[service.key]["pid"]),
+    )
+
+    monitored = {
+        service.key: run_kairo.MonitoredServiceState()
+        for service in run_kairo.SERVICES
+    }
+    health = {
+        service.key: {
+            "name": run_kairo._status_service_name(service),
+            "healthy": True,
+            "health_status": "HEALTHY",
+            "persistent_fault": False,
+            "consecutive_health_failures": 0,
+            "last_health_check_at": "2026-07-28T08:00:00+00:00",
+            "last_healthy_at": "2026-07-28T08:00:00+00:00",
+            "health_detail": "Healthy.",
+        }
+        for service in run_kairo.SERVICES
+    }
+
+    run_kairo.write_unified_supervisor_status(
+        monitored=monitored,
+        health_payloads=health,
+        supervisor_status="RUNNING",
+        supervisor_process_id=999,
+    )
+
+    payload = run_kairo.json.loads(
+        status_path.read_text(encoding="utf-8")
+    )
+    assert payload["supervisor_type"] == "KAIRO_UNIFIED_LAUNCHER"
+    assert payload["supervisor_status"] == "RUNNING"
+    assert payload["supervisor_process_id"] == 999
+    assert [item["name"] for item in payload["processes"]] == [
+        "api",
+        "frontend",
+        "job_worker",
+        "scheduler",
+    ]
+    assert all(item["status"] == "RUNNING" for item in payload["processes"])
+
+
+def test_supervisor_cli_status_reports_stale_dead_process(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    status_path = tmp_path / "supervisor_status.json"
+    status_path.write_text(
+        run_kairo.json.dumps(
+            {
+                "generated_at": "2026-07-28T08:00:00+00:00",
+                "supervisor_status": "RUNNING",
+                "supervisor_process_id": 123,
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(run_kairo, "SUPERVISOR_STATUS_PATH", status_path)
+    monkeypatch.setattr(run_kairo, "pid_is_running", lambda pid: False)
+
+    assert run_kairo.supervisor_cli_status() == "STALE"
+
+
+def test_stopped_supervisor_status_disables_restarts(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    status_path = tmp_path / "supervisor_status.json"
+    monkeypatch.setattr(run_kairo, "SUPERVISOR_STATUS_PATH", status_path)
+    monkeypatch.setattr(run_kairo, "load_state", lambda: {})
+    monkeypatch.setattr(run_kairo, "clean_state", lambda state: state)
+    monkeypatch.setattr(
+        run_kairo,
+        "service_is_running",
+        lambda service, state: False,
+    )
+    monkeypatch.setattr(run_kairo, "_service_pid", lambda service, state: None)
+
+    run_kairo.write_stopped_supervisor_status()
+
+    payload = run_kairo.json.loads(status_path.read_text(encoding="utf-8"))
+    assert payload["supervisor_status"] == "STOPPED"
+    assert payload["supervisor_process_id"] == 0
+    assert payload["restart_enabled"] is False

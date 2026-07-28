@@ -1,4 +1,8 @@
 @echo off
-cd /d "C:\Users\Jack\Documents\trading-bot"
-"C:\Users\Jack\Documents\trading-bot\.venv\Scripts\python.exe" -m app.run_process_supervisor --status
+setlocal
+cd /d "%~dp0"
+".venv\Scripts\python.exe" ".\run_kairo.py" --status
+echo.
 pause
+endlocal
+exit /b 0
