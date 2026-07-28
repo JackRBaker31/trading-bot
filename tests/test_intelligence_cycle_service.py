@@ -44,7 +44,7 @@ def _performance():
     )
 
 
-def _service(*, failures: int = 0, stale: int = 0):
+def _service(*, failures: int = 0, stale: int = 0, ranking: bool = False):
     calls: list[str] = []
 
     def mark(name, value):
@@ -103,6 +103,18 @@ def _service(*, failures: int = 0, stale: int = 0):
                 warnings=("More evidence required.",),
             ),
         ),
+        opportunity_ranking_runner=(
+            mark(
+                "ranking",
+                SimpleNamespace(
+                    ranking_count=3,
+                    execution_ready_count=1,
+                    methodology_version="KAIRO-ORANK-1.0",
+                ),
+            )
+            if ranking
+            else None
+        ),
         now_provider=lambda: datetime(
             2026, 7, 21, 20, 0, tzinfo=timezone.utc
         ),
@@ -149,3 +161,12 @@ def test_price_failures_create_warning_result() -> None:
     assert outcome_stage["status"] == "SUCCEEDED_WITH_WARNINGS"
     assert outcome_stage["detail"]["failure_count"] == 2
     assert len(outcome_stage["warnings"]) == 2
+
+def test_optionally_captures_opportunity_ranking_history() -> None:
+    service, calls = _service(ranking=True)
+
+    result = service.run().to_dictionary()
+
+    assert calls[-1] == "ranking"
+    assert result["stages"][-1]["stage"] == "OPPORTUNITY_RANKING_HISTORY"
+    assert result["stages"][-1]["detail"]["ranking_count"] == 3

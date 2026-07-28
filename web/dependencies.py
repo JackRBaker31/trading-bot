@@ -138,6 +138,12 @@ from app.symbol_decision_service import (
 )
 from app.performance_review_service import PerformanceReviewService
 from app.historical_similarity_service import HistoricalSimilarityService
+from app.opportunity_ranking_history_repository import (
+    OpportunityRankingHistoryRepository,
+)
+from app.opportunity_ranking_history_service import (
+    OpportunityRankingHistoryService,
+)
 from app.opportunity_ranking_service import OpportunityRankingService
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
@@ -208,6 +214,12 @@ def create_opportunity_ranking_service(
     performance_service = create_performance_review_service(
         database_path=database_path
     )
+    history_service = OpportunityRankingHistoryService(
+        repository=OpportunityRankingHistoryRepository(
+            database_path=database_path
+        )
+    )
+    history_service.initialize()
 
     def similarity_provider(thesis):
         service = HistoricalSimilarityService(
@@ -250,6 +262,7 @@ def create_opportunity_ranking_service(
         market_health_provider=(
             create_technical_historical_client().health_snapshot
         ),
+        history_service=history_service,
     )
 
 def create_system_status_service(

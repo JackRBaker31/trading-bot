@@ -69,6 +69,7 @@ class IntelligenceCycleService:
         graduation_status_runner: Callable[[], object],
         intelligence_snapshot_runner: Callable[[], object],
         daily_briefing_runner: Callable[[], object],
+        opportunity_ranking_runner: Callable[[], object] | None = None,
         now_provider: Callable[[], datetime] | None = None,
         stage_observer: Callable[[str], None] | None = None,
     ) -> None:
@@ -78,6 +79,7 @@ class IntelligenceCycleService:
         self._graduation_status_runner = graduation_status_runner
         self._intelligence_snapshot_runner = intelligence_snapshot_runner
         self._daily_briefing_runner = daily_briefing_runner
+        self._opportunity_ranking_runner = opportunity_ranking_runner
         self._now_provider = now_provider or (
             lambda: datetime.now(timezone.utc)
         )
@@ -233,6 +235,41 @@ class IntelligenceCycleService:
                 },
             )
         )
+
+        if self._opportunity_ranking_runner is not None:
+            self._stage_observer("OPPORTUNITY_RANKING_HISTORY")
+            try:
+                ranking = self._opportunity_ranking_runner()
+                stages.append(
+                    IntelligenceCycleStageResult(
+                        stage="OPPORTUNITY_RANKING_HISTORY",
+                        status=IntelligenceCycleStageStatus.SUCCEEDED,
+                        detail={
+                            "ranking_count": ranking.ranking_count,
+                            "execution_ready_count": (
+                                ranking.execution_ready_count
+                            ),
+                            "methodology_version": (
+                                ranking.methodology_version
+                            ),
+                        },
+                    )
+                )
+            except Exception as error:
+                stages.append(
+                    IntelligenceCycleStageResult(
+                        stage="OPPORTUNITY_RANKING_HISTORY",
+                        status=(
+                            IntelligenceCycleStageStatus
+                            .SUCCEEDED_WITH_WARNINGS
+                        ),
+                        detail={"ranking_count": 0},
+                        warnings=(
+                            "Opportunity ranking history was not captured: "
+                            f"{type(error).__name__}: {error}",
+                        ),
+                    )
+                )
 
         self._stage_observer("FINISHED")
         return IntelligenceCycleResult(

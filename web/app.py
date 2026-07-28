@@ -1307,6 +1307,57 @@ def create_app(
 
 
     @app.get(
+        "/api/opportunity-ranking/history",
+        tags=["copilot"],
+    )
+    def opportunity_ranking_history_overview(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+        window_days: int = Query(default=1),
+    ) -> dict[str, object]:
+        del user
+        try:
+            return (
+                opportunity_ranking_factory()
+                .get_history_overview(window_days=window_days)
+                .to_dictionary()
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+    @app.get(
+        "/api/opportunity-ranking/history/{symbol}",
+        tags=["copilot"],
+    )
+    def opportunity_ranking_symbol_history(
+        symbol: str,
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+        window_days: int = Query(default=7),
+    ) -> dict[str, object]:
+        del user
+        cleaned = symbol.upper().strip()
+        if not cleaned:
+            raise HTTPException(status_code=422, detail="Symbol is required.")
+        try:
+            return (
+                opportunity_ranking_factory()
+                .get_symbol_history(
+                    symbol=cleaned,
+                    window_days=window_days,
+                )
+                .to_dictionary()
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+    @app.get(
         "/api/copilot/historical-similarity/{symbol}",
         tags=["copilot"],
     )

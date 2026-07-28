@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any, Mapping
 
 from app.config import load_config
@@ -45,10 +46,12 @@ class JobExecutor:
         application_database_path: str = (
             "data/application.db"
         ),
+        opportunity_ranking_runner: Callable[[], object] | None = None,
     ) -> None:
         self._application_database_path = (
             application_database_path
         )
+        self._opportunity_ranking_runner = opportunity_ranking_runner
         self.current_stage: str | None = None
 
     def execute(
@@ -312,6 +315,9 @@ class JobExecutor:
             ),
             daily_briefing_runner=(
                 briefing_service.get_briefing
+            ),
+            opportunity_ranking_runner=(
+                self._opportunity_ranking_runner
             ),
             stage_observer=self._set_stage,
         ).run()

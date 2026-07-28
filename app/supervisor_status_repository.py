@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -72,10 +74,7 @@ class SupervisorStatusRepository:
         )
 
     def process_is_alive(self, process_id: int | None) -> bool:
-        return (
-            process_id is not None
-            and self._process_alive(process_id)
-        )
+        return process_id is not None and self._process_alive(process_id)
 
     @staticmethod
     def _parse_datetime(value: object) -> datetime:
@@ -105,10 +104,44 @@ class SupervisorStatusRepository:
 
     @staticmethod
     def _default_process_alive(process_id: int) -> bool:
-        import os
+        if process_id <= 0:
+            return False
+
+        if os.name == "nt":
+            creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            try:
+                result = subprocess.run(
+                    [
+                        "tasklist",
+                        "/FI",
+                        f"PID eq {process_id}",
+                        "/FO",
+                        "CSV",
+                        "/NH",
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    creationflags=creation_flags,
+                    timeout=5,
+                )
+            except (OSError, subprocess.SubprocessError):
+                return False
+
+            output = result.stdout.strip()
+            return (
+                result.returncode == 0
+                and bool(output)
+                and "No tasks are running" not in output
+                and f'"{process_id}"' in output
+            )
 
         try:
             os.kill(process_id, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
         except OSError:
             return False
         return True

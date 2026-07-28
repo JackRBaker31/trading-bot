@@ -9,6 +9,9 @@ from app.investment_thesis_models import (
     InvestmentThesisReport,
     ThesisCapabilityAssessment,
 )
+from app.opportunity_ranking_history_service import (
+    OpportunityRankingHistoryService,
+)
 from app.opportunity_ranking_models import (
     OpportunityRankingComponent,
     OpportunityRankingReport,
@@ -54,17 +57,23 @@ class OpportunityRankingService:
         similarity_provider: SimilarityProvider,
         performance_review_provider: PerformanceReviewProvider,
         market_health_provider: MarketHealthProvider,
+        history_service: OpportunityRankingHistoryService | None = None,
         now_provider: NowProvider | None = None,
     ) -> None:
         self._thesis_report_provider = thesis_report_provider
         self._similarity_provider = similarity_provider
         self._performance_review_provider = performance_review_provider
         self._market_health_provider = market_health_provider
+        self._history_service = history_service
         self._now_provider = now_provider or (
             lambda: datetime.now(timezone.utc)
         )
 
-    def get_report(self) -> OpportunityRankingReport:
+    def get_report(
+        self,
+        *,
+        capture_source: str = "REPORT",
+    ) -> OpportunityRankingReport:
         generated_at = self._utc_now()
         thesis_report = self._thesis_report_provider()
         performance = dict(self._performance_review_provider())
@@ -135,7 +144,7 @@ class OpportunityRankingService:
             for index, item in enumerate(drafts, start=1)
         )
 
-        return OpportunityRankingReport(
+        report = OpportunityRankingReport(
             generated_at=generated_at,
             methodology_version=self.METHODOLOGY_VERSION,
             methodology_summary=self.METHODOLOGY_SUMMARY,
@@ -156,6 +165,52 @@ class OpportunityRankingService:
             component_weights=dict(self.WEIGHTS),
             items=ranked,
             warnings=tuple(dict.fromkeys(report_warnings)),
+        )
+
+        if self._history_service is not None:
+            try:
+                self._history_service.capture(
+                    report=report,
+                    source=capture_source,
+                )
+            except Exception as error:
+                report = replace(
+                    report,
+                    warnings=tuple(
+                        dict.fromkeys(
+                            (
+                                *report.warnings,
+                                "Opportunity history could not be recorded: "
+                                f"{type(error).__name__}: {error}",
+                            )
+                        )
+                    ),
+                )
+
+        return report
+
+    def get_history_overview(
+        self,
+        *,
+        window_days: int = 1,
+    ):
+        if self._history_service is None:
+            raise RuntimeError("Opportunity history is not configured.")
+        return self._history_service.get_overview(
+            window_days=window_days
+        )
+
+    def get_symbol_history(
+        self,
+        *,
+        symbol: str,
+        window_days: int = 7,
+    ):
+        if self._history_service is None:
+            raise RuntimeError("Opportunity history is not configured.")
+        return self._history_service.get_symbol_history(
+            symbol=symbol,
+            window_days=window_days,
         )
 
     def _ranked_item(
