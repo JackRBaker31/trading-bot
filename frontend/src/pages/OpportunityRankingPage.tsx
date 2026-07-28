@@ -615,9 +615,16 @@ export default function OpportunityRankingPage() {
             <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{data.methodology_summary} Rankings never weaken existing risk, execution or graduation controls.</p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />Refresh ranking
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/ranking-validation">
+            <Button variant="outline">
+              <TrendingUp className="mr-2 h-4 w-4" />Validate rankings
+            </Button>
+          </Link>
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />Refresh ranking
+          </Button>
+        </div>
       </section>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

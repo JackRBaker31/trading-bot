@@ -70,6 +70,7 @@ class IntelligenceCycleService:
         intelligence_snapshot_runner: Callable[[], object],
         daily_briefing_runner: Callable[[], object],
         opportunity_ranking_runner: Callable[[], object] | None = None,
+        opportunity_validation_runner: Callable[[], object] | None = None,
         now_provider: Callable[[], datetime] | None = None,
         stage_observer: Callable[[str], None] | None = None,
     ) -> None:
@@ -80,6 +81,7 @@ class IntelligenceCycleService:
         self._intelligence_snapshot_runner = intelligence_snapshot_runner
         self._daily_briefing_runner = daily_briefing_runner
         self._opportunity_ranking_runner = opportunity_ranking_runner
+        self._opportunity_validation_runner = opportunity_validation_runner
         self._now_provider = now_provider or (
             lambda: datetime.now(timezone.utc)
         )
@@ -266,6 +268,54 @@ class IntelligenceCycleService:
                         detail={"ranking_count": 0},
                         warnings=(
                             "Opportunity ranking history was not captured: "
+                            f"{type(error).__name__}: {error}",
+                        ),
+                    )
+                )
+
+        if self._opportunity_validation_runner is not None:
+            self._stage_observer("RANKING_FORWARD_RETURNS")
+            try:
+                validation = self._opportunity_validation_runner()
+                validation_warnings = tuple(
+                    getattr(validation, "warnings", ())
+                )
+                stages.append(
+                    IntelligenceCycleStageResult(
+                        stage="RANKING_FORWARD_RETURNS",
+                        status=(
+                            IntelligenceCycleStageStatus.SUCCEEDED_WITH_WARNINGS
+                            if validation_warnings
+                            else IntelligenceCycleStageStatus.SUCCEEDED
+                        ),
+                        detail={
+                            "evaluated_snapshots": (
+                                validation.evaluated_snapshot_count
+                            ),
+                            "outcomes_recorded": (
+                                validation.created_outcome_count
+                            ),
+                            "pending_outcomes": (
+                                validation.pending_outcome_count
+                            ),
+                            "failed_symbols": (
+                                validation.failed_symbol_count
+                            ),
+                        },
+                        warnings=validation_warnings,
+                    )
+                )
+            except Exception as error:
+                stages.append(
+                    IntelligenceCycleStageResult(
+                        stage="RANKING_FORWARD_RETURNS",
+                        status=(
+                            IntelligenceCycleStageStatus
+                            .SUCCEEDED_WITH_WARNINGS
+                        ),
+                        detail={"outcomes_recorded": 0},
+                        warnings=(
+                            "Ranking forward returns were not captured: "
                             f"{type(error).__name__}: {error}",
                         ),
                     )

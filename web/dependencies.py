@@ -145,6 +145,12 @@ from app.opportunity_ranking_history_service import (
     OpportunityRankingHistoryService,
 )
 from app.opportunity_ranking_service import OpportunityRankingService
+from app.opportunity_ranking_validation_repository import (
+    OpportunityRankingValidationRepository,
+)
+from app.opportunity_ranking_validation_service import (
+    OpportunityRankingValidationService,
+)
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
     "data/application.db"
@@ -264,6 +270,30 @@ def create_opportunity_ranking_service(
         ),
         history_service=history_service,
     )
+
+
+def create_opportunity_ranking_validation_service(
+    *,
+    database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+) -> OpportunityRankingValidationService:
+    service = OpportunityRankingValidationService(
+        history_repository=OpportunityRankingHistoryRepository(
+            database_path=database_path
+        ),
+        validation_repository=OpportunityRankingValidationRepository(
+            database_path=database_path
+        ),
+        bars_provider=(
+            lambda symbol, output_size: (
+                create_technical_historical_client().get_daily_bars(
+                    symbol=symbol,
+                    output_size=output_size,
+                )
+            )
+        ),
+    )
+    service.initialize()
+    return service
 
 def create_system_status_service(
 ) -> SystemStatusService:

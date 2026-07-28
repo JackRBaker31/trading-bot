@@ -56,6 +56,21 @@ class FakeOpportunityRankingService:
         )
 
 
+class FakeOpportunityRankingValidationService:
+    def get_report(self, *, horizon_days: int):
+        return FakeDictionaryResult(
+            {
+                "methodology_version": "KAIRO-RVALID-1.0",
+                "selected_horizon_days": horizon_days,
+                "measured_outcome_count": 4,
+                "selected_horizon": {
+                    "horizon_days": horizon_days,
+                    "sample_count": 4,
+                },
+            }
+        )
+
+
 def test_returns_authenticated_opportunity_ranking() -> None:
     client = authenticated_client(
         create_app(
@@ -124,3 +139,46 @@ def test_opportunity_ranking_requires_authentication() -> None:
     response = client.get("/api/opportunity-ranking")
 
     assert response.status_code == 401
+
+
+def test_returns_authenticated_ranking_validation() -> None:
+    client = authenticated_client(
+        create_app(
+            authentication_service_factory=lambda: FakeAuthenticatedService(),
+            opportunity_ranking_service_factory=(
+                lambda: FakeOpportunityRankingService()
+            ),
+            opportunity_ranking_validation_service_factory=(
+                lambda: FakeOpportunityRankingValidationService()
+            ),
+        )
+    )
+
+    response = client.get(
+        "/api/opportunity-ranking/validation?horizon_days=5"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["methodology_version"] == "KAIRO-RVALID-1.0"
+    assert response.json()["selected_horizon_days"] == 5
+
+
+def test_ranking_validation_rejects_invalid_horizon() -> None:
+    class InvalidValidationService:
+        def get_report(self, *, horizon_days: int):
+            raise ValueError(f"Unsupported horizon: {horizon_days}")
+
+    client = authenticated_client(
+        create_app(
+            authentication_service_factory=lambda: FakeAuthenticatedService(),
+            opportunity_ranking_validation_service_factory=(
+                lambda: InvalidValidationService()
+            ),
+        )
+    )
+
+    response = client.get(
+        "/api/opportunity-ranking/validation?horizon_days=7"
+    )
+
+    assert response.status_code == 422

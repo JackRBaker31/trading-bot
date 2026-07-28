@@ -107,6 +107,7 @@ from web.dependencies import (
     create_performance_review_service,
     create_historical_similarity_service,
     create_opportunity_ranking_service,
+    create_opportunity_ranking_validation_service,
     )
 
 
@@ -578,6 +579,9 @@ def create_app(
     opportunity_ranking_service_factory: (
         Callable[[], object] | None
     ) = None,
+    opportunity_ranking_validation_service_factory: (
+        Callable[[], object] | None
+    ) = None,
 ) -> FastAPI:
     infrastructure_factory = (
         infrastructure_status_service_factory
@@ -654,6 +658,10 @@ def create_app(
     opportunity_ranking_factory = (
         opportunity_ranking_service_factory
         or create_opportunity_ranking_service
+    )
+    opportunity_ranking_validation_factory = (
+        opportunity_ranking_validation_service_factory
+        or create_opportunity_ranking_validation_service
     )
 
     app = FastAPI(
@@ -1355,6 +1363,29 @@ def create_app(
             )
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+    @app.get(
+        "/api/opportunity-ranking/validation",
+        tags=["copilot"],
+    )
+    def opportunity_ranking_validation(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+        horizon_days: int = Query(default=1),
+    ) -> dict[str, object]:
+        del user
+        try:
+            return (
+                opportunity_ranking_validation_factory()
+                .get_report(horizon_days=horizon_days)
+                .to_dictionary()
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
 
 
     @app.get(

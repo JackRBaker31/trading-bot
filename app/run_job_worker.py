@@ -12,7 +12,10 @@ from app.job_repository import JobRepository
 from app.job_service import JobService
 from app.job_worker import JobWorker
 from app.worker_heartbeat import WorkerHeartbeat
-from web.dependencies import create_opportunity_ranking_service
+from web.dependencies import (
+    create_opportunity_ranking_service,
+    create_opportunity_ranking_validation_service,
+)
 from app.worker_heartbeat_repository import (
     WorkerHeartbeatRepository,
 )
@@ -99,6 +102,11 @@ def main() -> None:
                 ).get_report(
                     capture_source="INTELLIGENCE_CYCLE"
                 )
+            ),
+            opportunity_validation_runner=(
+                lambda: create_opportunity_ranking_validation_service(
+                    database_path=args.database
+                ).capture_due()
             ),
         ),
         crash_reporter=crash_reporter,

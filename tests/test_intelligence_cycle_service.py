@@ -44,7 +44,13 @@ def _performance():
     )
 
 
-def _service(*, failures: int = 0, stale: int = 0, ranking: bool = False):
+def _service(
+    *,
+    failures: int = 0,
+    stale: int = 0,
+    ranking: bool = False,
+    validation: bool = False,
+):
     calls: list[str] = []
 
     def mark(name, value):
@@ -115,6 +121,20 @@ def _service(*, failures: int = 0, stale: int = 0, ranking: bool = False):
             if ranking
             else None
         ),
+        opportunity_validation_runner=(
+            mark(
+                "validation",
+                SimpleNamespace(
+                    evaluated_snapshot_count=3,
+                    created_outcome_count=2,
+                    pending_outcome_count=7,
+                    failed_symbol_count=0,
+                    warnings=(),
+                ),
+            )
+            if validation
+            else None
+        ),
         now_provider=lambda: datetime(
             2026, 7, 21, 20, 0, tzinfo=timezone.utc
         ),
@@ -170,3 +190,13 @@ def test_optionally_captures_opportunity_ranking_history() -> None:
     assert calls[-1] == "ranking"
     assert result["stages"][-1]["stage"] == "OPPORTUNITY_RANKING_HISTORY"
     assert result["stages"][-1]["detail"]["ranking_count"] == 3
+
+
+def test_optionally_captures_ranking_forward_returns() -> None:
+    service, calls = _service(ranking=True, validation=True)
+
+    result = service.run().to_dictionary()
+
+    assert calls[-2:] == ["ranking", "validation"]
+    assert result["stages"][-1]["stage"] == "RANKING_FORWARD_RETURNS"
+    assert result["stages"][-1]["detail"]["outcomes_recorded"] == 2

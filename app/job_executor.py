@@ -47,11 +47,13 @@ class JobExecutor:
             "data/application.db"
         ),
         opportunity_ranking_runner: Callable[[], object] | None = None,
+        opportunity_validation_runner: Callable[[], object] | None = None,
     ) -> None:
         self._application_database_path = (
             application_database_path
         )
         self._opportunity_ranking_runner = opportunity_ranking_runner
+        self._opportunity_validation_runner = opportunity_validation_runner
         self.current_stage: str | None = None
 
     def execute(
@@ -318,6 +320,9 @@ class JobExecutor:
             ),
             opportunity_ranking_runner=(
                 self._opportunity_ranking_runner
+            ),
+            opportunity_validation_runner=(
+                self._opportunity_validation_runner
             ),
             stage_observer=self._set_stage,
         ).run()

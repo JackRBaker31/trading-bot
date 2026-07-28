@@ -22,6 +22,7 @@ import CopilotPage from "@/pages/CopilotPage";
 import PerformanceIntelligencePage from "@/pages/PerformanceIntelligencePage";
 import DecisionExplainabilityPage from "@/pages/DecisionExplainabilityPage";
 import OpportunityRankingPage from "@/pages/OpportunityRankingPage";
+import RankingValidationPage from "@/pages/RankingValidationPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -95,6 +96,14 @@ function Router() {
           <ProtectedRoute
             component={OpportunityRankingPage}
             title="Opportunity Ranking"
+          />
+        )}
+      </Route>
+      <Route path="/ranking-validation">
+        {() => (
+          <ProtectedRoute
+            component={RankingValidationPage}
+            title="Ranking Validation"
           />
         )}
       </Route>
