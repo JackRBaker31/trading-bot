@@ -1,0 +1,129 @@
+# Technology
+AAPL
+MSFT
+NVDA
+AMD
+AVGO
+QCOM
+TXN
+MU
+INTC
+ADBE
+CRM
+ORCL
+CSCO
+PANW
+CRWD
+SNOW
+PLTR
+ANET
+AMAT
+KLAC
+
+# Communication Services
+GOOGL
+META
+NFLX
+DIS
+TMUS
+VZ
+T
+ROKU
+
+# Consumer Discretionary
+AMZN
+TSLA
+HD
+LOW
+MCD
+SBUX
+BKNG
+ABNB
+NKE
+TJX
+
+# Consumer Staples
+WMT
+COST
+PG
+KO
+PEP
+PM
+MO
+CL
+MDLZ
+KMB
+
+# Financials
+JPM
+BAC
+WFC
+GS
+MS
+BLK
+SCHW
+AXP
+V
+MA
+
+# Healthcare
+UNH
+LLY
+JNJ
+ABBV
+MRK
+PFE
+TMO
+ABT
+DHR
+ISRG
+
+# Industrials
+CAT
+DE
+GE
+RTX
+LMT
+HON
+ETN
+PH
+UPS
+FDX
+
+# Energy
+XOM
+CVX
+COP
+SLB
+EOG
+MPC
+PSX
+OXY
+
+# Materials
+LIN
+APD
+NEM
+FCX
+SHW
+
+# Utilities
+NEE
+SO
+DUK
+AEP
+
+# Real Estate
+PLD
+AMT
+EQIX
+
+# ETFs
+SPY
+QQQ
+IWM
+XLF
+XLK
+XLE
+XLV
+SMH

@@ -32,6 +32,8 @@ export interface OpportunityForwardOutcome {
   sector: string;
   historical_match_count: number;
   measured_case_count: number;
+  universe_version_id: string | null;
+  universe_size: number | null;
 }
 
 export interface OpportunityValidationBucket {

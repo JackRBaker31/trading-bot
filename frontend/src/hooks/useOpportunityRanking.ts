@@ -78,6 +78,8 @@ export interface OpportunityRankingSnapshot {
   component_values: Record<string, number>;
   component_labels: Record<string, string>;
   blockers: string[];
+  universe_version_id: string | null;
+  universe_size: number | null;
 }
 
 export interface OpportunityRankingChange {
@@ -113,6 +115,8 @@ export interface OpportunitySymbolHistoryReport {
   streak_direction: string;
   snapshots: OpportunityRankingSnapshot[];
   changes: OpportunityRankingChange[];
+  universe_versions: string[];
+  rank_comparability_warning: string | null;
 }
 
 export interface OpportunityHistoryOverviewItem {
@@ -135,6 +139,8 @@ export interface OpportunityHistoryOverviewReport {
   largest_risers: OpportunityHistoryOverviewItem[];
   largest_fallers: OpportunityHistoryOverviewItem[];
   items: OpportunityHistoryOverviewItem[];
+  universe_versions: string[];
+  rank_comparability_warning: string | null;
 }
 
 export function useOpportunityRanking() {

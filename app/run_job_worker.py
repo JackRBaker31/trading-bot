@@ -15,6 +15,7 @@ from app.worker_heartbeat import WorkerHeartbeat
 from web.dependencies import (
     create_opportunity_ranking_service,
     create_opportunity_ranking_validation_service,
+    create_universe_governance_service,
 )
 from app.worker_heartbeat_repository import (
     WorkerHeartbeatRepository,
@@ -107,6 +108,17 @@ def main() -> None:
                 lambda: create_opportunity_ranking_validation_service(
                     database_path=args.database
                 ).capture_due()
+            ),
+            universe_coverage_runner=(
+                lambda requested, processed: (
+                    create_universe_governance_service(
+                        database_path=args.database
+                    ).record_cycle(
+                        requested_symbols=requested,
+                        processed_symbols=processed,
+                        source="INTELLIGENCE_CYCLE",
+                    )
+                )
             ),
         ),
         crash_reporter=crash_reporter,

@@ -11,6 +11,7 @@ def _news_result(*, failures: int = 0, stale: int = 0):
         observation_summary=SimpleNamespace(
             article_count=4,
             signal_count=3,
+            symbols=("AAPL", "MSFT"),
         ),
         snapshot_summary=SimpleNamespace(
             captured_count=2,
@@ -50,6 +51,7 @@ def _service(
     stale: int = 0,
     ranking: bool = False,
     validation: bool = False,
+    universe: bool = False,
 ):
     calls: list[str] = []
 
@@ -135,6 +137,22 @@ def _service(
             if validation
             else None
         ),
+        universe_coverage_runner=(
+            (
+                lambda requested, processed: (
+                    calls.append("universe")
+                    or SimpleNamespace(
+                        version_id="KAIRO-U-2-ABC",
+                        requested_count=len(requested),
+                        processed_count=len(processed),
+                        skipped_count=0,
+                        coverage_percent=100.0,
+                    )
+                )
+            )
+            if universe
+            else None
+        ),
         now_provider=lambda: datetime(
             2026, 7, 21, 20, 0, tzinfo=timezone.utc
         ),
@@ -200,3 +218,16 @@ def test_optionally_captures_ranking_forward_returns() -> None:
     assert calls[-2:] == ["ranking", "validation"]
     assert result["stages"][-1]["stage"] == "RANKING_FORWARD_RETURNS"
     assert result["stages"][-1]["detail"]["outcomes_recorded"] == 2
+
+
+def test_optionally_captures_universe_coverage() -> None:
+    service, calls = _service(universe=True)
+
+    result = service.run().to_dictionary()
+
+    assert calls[:2] == ["news", "universe"]
+    stage = next(
+        item for item in result["stages"]
+        if item["stage"] == "UNIVERSE_COVERAGE"
+    )
+    assert stage["detail"]["coverage_percent"] == 100.0

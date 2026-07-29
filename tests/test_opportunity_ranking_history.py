@@ -215,3 +215,34 @@ def test_overview_identifies_largest_riser_and_faller(tmp_path) -> None:
     assert overview.largest_risers[0].score_change == 4.0
     assert overview.largest_fallers[0].symbol == "LLY"
     assert overview.largest_fallers[0].score_change == -3.0
+
+
+def test_records_universe_version_and_warns_across_versions(tmp_path) -> None:
+    context = ["KAIRO-U-2-AAA", 2]
+    repository = OpportunityRankingHistoryRepository(
+        database_path=str(tmp_path / "app.db"),
+        universe_context_provider=lambda: (context[0], context[1]),
+    )
+    service = OpportunityRankingHistoryService(
+        repository=repository,
+        now_provider=lambda: NOW + timedelta(hours=1),
+    )
+    service.initialize()
+    service.capture(
+        report=report(generated_at=NOW, items=(item(),)),
+        source="INTELLIGENCE_CYCLE",
+    )
+    context[:] = ["KAIRO-U-3-BBB", 3]
+    service.capture(
+        report=report(
+            generated_at=NOW + timedelta(minutes=30),
+            items=(item(rank=2, score=80.0),),
+        ),
+        source="INTELLIGENCE_CYCLE",
+    )
+
+    history = service.get_symbol_history(symbol="AAPL", window_days=1)
+
+    assert history.snapshots[0].universe_size == 2
+    assert history.snapshots[-1].universe_size == 3
+    assert history.rank_comparability_warning is not None

@@ -24,7 +24,8 @@ import {
   SearchCheck,
   ListOrdered,
   TrendingUp,
-  } from "lucide-react";
+  Network,
+} from "lucide-react";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { useInfrastructureStatus } from "@/hooks/useInfrastructureStatus";
 import { apiClient } from "@/lib/api-client";
@@ -45,6 +46,7 @@ const navItems = [
   { icon: SearchCheck,              label: "Decision Explainability", path: "/decision-explainability" },
   { icon: ListOrdered,             label: "Opportunity Ranking",    path: "/opportunity-ranking" },
   { icon: TrendingUp,              label: "Ranking Validation",     path: "/ranking-validation" },
+  { icon: Network,                 label: "Universe Governance",    path: "/universe-governance" },
   { icon: LayoutDashboard,         label: "Dashboard",             path: "/dashboard" },
   { icon: FlaskConical,            label: "Research",              path: "/research" },
   { icon: Newspaper,               label: "AI News",               path: "/news" },

@@ -33,6 +33,8 @@ class OpportunityForwardOutcome:
     sector: str
     historical_match_count: int
     measured_case_count: int
+    universe_version_id: str | None = None
+    universe_size: int | None = None
 
     def to_dictionary(self) -> dict[str, object]:
         return {
@@ -67,6 +69,8 @@ class OpportunityForwardOutcome:
             "sector": self.sector,
             "historical_match_count": self.historical_match_count,
             "measured_case_count": self.measured_case_count,
+            "universe_version_id": self.universe_version_id,
+            "universe_size": self.universe_size,
         }
 
 

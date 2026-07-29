@@ -97,6 +97,7 @@ class OpportunityRankingHistoryService:
         current = visible[-1]
         baseline = visible[0]
 
+        universe_versions = self._universe_versions(visible)
         return OpportunitySymbolHistoryReport(
             generated_at=generated_at,
             symbol=current.symbol,
@@ -114,6 +115,10 @@ class OpportunityRankingHistoryService:
             streak_direction=self._streak_direction(visible),
             snapshots=tuple(visible),
             changes=changes,
+            universe_versions=universe_versions,
+            rank_comparability_warning=self._comparability_warning(
+                snapshots=visible,
+            ),
         )
 
     def get_overview(
@@ -187,6 +192,10 @@ class OpportunityRankingHistoryService:
             largest_risers=risers,
             largest_fallers=fallers,
             items=ordered,
+            universe_versions=self._universe_versions(all_snapshots),
+            rank_comparability_warning=self._comparability_warning(
+                snapshots=all_snapshots,
+            ),
         )
 
     def _change(self, previous, current) -> OpportunityRankingChange:
@@ -270,6 +279,38 @@ class OpportunityRankingHistoryService:
             readiness_changed=readiness_changed,
             previous_eligible_for_execution=previous.eligible_for_execution,
             eligible_for_execution=current.eligible_for_execution,
+        )
+
+    @staticmethod
+    def _universe_versions(snapshots) -> tuple[str, ...]:
+        return tuple(
+            dict.fromkeys(
+                snapshot.universe_version_id
+                for snapshot in snapshots
+                if snapshot.universe_version_id
+            )
+        )
+
+    @classmethod
+    def _comparability_warning(cls, *, snapshots) -> str | None:
+        versions = cls._universe_versions(snapshots)
+        sizes = {
+            snapshot.universe_size
+            for snapshot in snapshots
+            if snapshot.universe_size is not None
+        }
+        if len(versions) <= 1 and len(sizes) <= 1:
+            return None
+        ordered_sizes = sorted(sizes)
+        size_text = (
+            "different universe sizes"
+            if not ordered_sizes
+            else " and ".join(str(value) for value in ordered_sizes)
+        )
+        return (
+            "Absolute rank movement spans multiple universe versions "
+            f"({size_text} symbols). Compare score movement directly; rank "
+            "movement may also reflect added or removed competitors."
         )
 
     @staticmethod

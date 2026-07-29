@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -10,6 +13,9 @@ from app.opportunity_ranking_history_models import (
 from app.opportunity_ranking_models import OpportunityRankingReport, RankedOpportunity
 
 
+UniverseContextProvider = Callable[[], tuple[str, int]]
+
+
 class OpportunityRankingHistoryRepository:
     def __init__(
         self,
@@ -17,6 +23,7 @@ class OpportunityRankingHistoryRepository:
         database_path: str,
         minimum_score_change: float = 0.25,
         minimum_component_change: float = 0.25,
+        universe_context_provider: UniverseContextProvider | None = None,
     ) -> None:
         if minimum_score_change < 0:
             raise ValueError("Minimum score change cannot be negative.")
@@ -25,6 +32,7 @@ class OpportunityRankingHistoryRepository:
         self._database_path = database_path
         self._minimum_score_change = minimum_score_change
         self._minimum_component_change = minimum_component_change
+        self._universe_context_provider = universe_context_provider
 
     def initialize(self) -> None:
         Path(self._database_path).parent.mkdir(parents=True, exist_ok=True)
@@ -54,9 +62,23 @@ class OpportunityRankingHistoryRepository:
                     headline TEXT NOT NULL,
                     component_values_json TEXT NOT NULL,
                     component_labels_json TEXT NOT NULL,
-                    blockers_json TEXT NOT NULL
+                    blockers_json TEXT NOT NULL,
+                    universe_version_id TEXT,
+                    universe_size INTEGER
                 )
                 """
+            )
+            self._ensure_column(
+                connection,
+                table="opportunity_ranking_snapshots",
+                column="universe_version_id",
+                definition="TEXT",
+            )
+            self._ensure_column(
+                connection,
+                table="opportunity_ranking_snapshots",
+                column="universe_size",
+                definition="INTEGER",
             )
             connection.execute(
                 """
@@ -70,6 +92,12 @@ class OpportunityRankingHistoryRepository:
                 ON opportunity_ranking_snapshots(captured_at DESC)
                 """
             )
+            connection.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opportunity_history_universe
+                ON opportunity_ranking_snapshots(universe_version_id, captured_at DESC)
+                """
+            )
 
     def record_report(
         self,
@@ -81,6 +109,10 @@ class OpportunityRankingHistoryRepository:
         observed = len(report.items)
         inserted = 0
         unchanged = 0
+        universe_version_id: str | None = None
+        universe_size: int | None = None
+        if self._universe_context_provider is not None:
+            universe_version_id, universe_size = self._universe_context_provider()
 
         connection = self._connect()
         try:
@@ -97,15 +129,30 @@ class OpportunityRankingHistoryRepository:
                     (item.symbol,),
                 ).fetchone()
 
-                if latest_row is None or self._meaningfully_changed(
-                    previous=self._row_to_snapshot(latest_row),
-                    current=item,
+                previous = (
+                    None
+                    if latest_row is None
+                    else self._row_to_snapshot(latest_row)
+                )
+                universe_changed = (
+                    previous is not None
+                    and previous.universe_version_id != universe_version_id
+                )
+                if (
+                    latest_row is None
+                    or universe_changed
+                    or self._meaningfully_changed(
+                        previous=previous,
+                        current=item,
+                    )
                 ):
                     self._insert(
                         connection=connection,
                         report=report,
                         item=item,
                         source=source_clean,
+                        universe_version_id=universe_version_id,
+                        universe_size=universe_size,
                     )
                     inserted += 1
                 else:
@@ -182,6 +229,8 @@ class OpportunityRankingHistoryRepository:
         report: OpportunityRankingReport,
         item: RankedOpportunity,
         source: str,
+        universe_version_id: str | None,
+        universe_size: int | None,
     ) -> None:
         captured_at = report.generated_at.astimezone(timezone.utc).isoformat()
         component_values = {
@@ -214,8 +263,12 @@ class OpportunityRankingHistoryRepository:
                 headline,
                 component_values_json,
                 component_labels_json,
-                blockers_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                blockers_json,
+                universe_version_id,
+                universe_size
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
             """,
             (
                 captured_at,
@@ -240,6 +293,8 @@ class OpportunityRankingHistoryRepository:
                 json.dumps(component_values, sort_keys=True),
                 json.dumps(component_labels, sort_keys=True),
                 json.dumps(list(item.blockers), sort_keys=True),
+                universe_version_id,
+                universe_size,
             ),
         )
 
@@ -276,10 +331,28 @@ class OpportunityRankingHistoryRepository:
         return connection
 
     @staticmethod
+    def _ensure_column(
+        connection: sqlite3.Connection,
+        *,
+        table: str,
+        column: str,
+        definition: str,
+    ) -> None:
+        columns = {
+            str(row[1])
+            for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        if column not in columns:
+            connection.execute(
+                f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
+            )
+
+    @staticmethod
     def _row_to_snapshot(row: sqlite3.Row) -> OpportunityRankingSnapshot:
         component_values_payload = json.loads(str(row["component_values_json"]))
         component_labels_payload = json.loads(str(row["component_labels_json"]))
         blockers_payload = json.loads(str(row["blockers_json"]))
+        keys = set(row.keys())
         return OpportunityRankingSnapshot(
             snapshot_id=int(row["snapshot_id"]),
             captured_at=datetime.fromisoformat(str(row["captured_at"])).astimezone(timezone.utc),
@@ -314,4 +387,16 @@ class OpportunityRankingHistoryRepository:
                 for key, value in component_labels_payload.items()
             },
             blockers=tuple(str(value) for value in blockers_payload),
+            universe_version_id=(
+                None
+                if "universe_version_id" not in keys
+                or row["universe_version_id"] is None
+                else str(row["universe_version_id"])
+            ),
+            universe_size=(
+                None
+                if "universe_size" not in keys
+                or row["universe_size"] is None
+                else int(row["universe_size"])
+            ),
         )

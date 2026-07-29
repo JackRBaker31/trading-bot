@@ -44,9 +44,23 @@ class OpportunityRankingValidationRepository:
                     sector TEXT NOT NULL,
                     historical_match_count INTEGER NOT NULL,
                     measured_case_count INTEGER NOT NULL,
+                    universe_version_id TEXT,
+                    universe_size INTEGER,
                     UNIQUE(snapshot_id, horizon_days)
                 )
                 """
+            )
+            self._ensure_column(
+                connection,
+                table="opportunity_ranking_forward_outcomes",
+                column="universe_version_id",
+                definition="TEXT",
+            )
+            self._ensure_column(
+                connection,
+                table="opportunity_ranking_forward_outcomes",
+                column="universe_size",
+                definition="INTEGER",
             )
             connection.execute(
                 """
@@ -100,10 +114,12 @@ class OpportunityRankingValidationRepository:
                     category,
                     sector,
                     historical_match_count,
-                    measured_case_count
+                    measured_case_count,
+                    universe_version_id,
+                    universe_size
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 """,
                 (
@@ -135,6 +151,8 @@ class OpportunityRankingValidationRepository:
                     outcome.sector,
                     outcome.historical_match_count,
                     outcome.measured_case_count,
+                    outcome.universe_version_id,
+                    outcome.universe_size,
                 ),
             )
             connection.commit()
@@ -181,6 +199,25 @@ class OpportunityRankingValidationRepository:
         with self._connect() as connection:
             rows = connection.execute(query, parameters).fetchall()
         return tuple(self._row_to_outcome(row) for row in rows)
+
+    @staticmethod
+    def _ensure_column(
+        connection: sqlite3.Connection,
+        *,
+        table: str,
+        column: str,
+        definition: str,
+    ) -> None:
+        columns = {
+            str(row[1])
+            for row in connection.execute(
+                f"PRAGMA table_info({table})"
+            ).fetchall()
+        }
+        if column not in columns:
+            connection.execute(
+                f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
+            )
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self._database_path, timeout=10.0)
@@ -231,4 +268,16 @@ class OpportunityRankingValidationRepository:
             sector=str(row["sector"]),
             historical_match_count=int(row["historical_match_count"]),
             measured_case_count=int(row["measured_case_count"]),
+            universe_version_id=(
+                None
+                if "universe_version_id" not in set(row.keys())
+                or row["universe_version_id"] is None
+                else str(row["universe_version_id"])
+            ),
+            universe_size=(
+                None
+                if "universe_size" not in set(row.keys())
+                or row["universe_size"] is None
+                else int(row["universe_size"])
+            ),
         )

@@ -27,6 +27,8 @@ class OpportunityRankingSnapshot:
     component_values: dict[str, float]
     component_labels: dict[str, str]
     blockers: tuple[str, ...]
+    universe_version_id: str | None = None
+    universe_size: int | None = None
 
     def to_dictionary(self) -> dict[str, object]:
         return {
@@ -53,6 +55,8 @@ class OpportunityRankingSnapshot:
             "component_values": dict(self.component_values),
             "component_labels": dict(self.component_labels),
             "blockers": list(self.blockers),
+            "universe_version_id": self.universe_version_id,
+            "universe_size": self.universe_size,
         }
 
 
@@ -117,6 +121,8 @@ class OpportunitySymbolHistoryReport:
     streak_direction: str
     snapshots: tuple[OpportunityRankingSnapshot, ...]
     changes: tuple[OpportunityRankingChange, ...]
+    universe_versions: tuple[str, ...] = ()
+    rank_comparability_warning: str | None = None
 
     def to_dictionary(self) -> dict[str, object]:
         return {
@@ -139,6 +145,8 @@ class OpportunitySymbolHistoryReport:
             "streak_direction": self.streak_direction,
             "snapshots": [snapshot.to_dictionary() for snapshot in self.snapshots],
             "changes": [change.to_dictionary() for change in self.changes],
+            "universe_versions": list(self.universe_versions),
+            "rank_comparability_warning": self.rank_comparability_warning,
         }
 
 
@@ -176,6 +184,8 @@ class OpportunityHistoryOverviewReport:
     largest_risers: tuple[OpportunityHistoryOverviewItem, ...]
     largest_fallers: tuple[OpportunityHistoryOverviewItem, ...]
     items: tuple[OpportunityHistoryOverviewItem, ...]
+    universe_versions: tuple[str, ...] = ()
+    rank_comparability_warning: str | None = None
 
     def to_dictionary(self) -> dict[str, object]:
         return {
@@ -191,4 +201,6 @@ class OpportunityHistoryOverviewReport:
             "largest_risers": [item.to_dictionary() for item in self.largest_risers],
             "largest_fallers": [item.to_dictionary() for item in self.largest_fallers],
             "items": [item.to_dictionary() for item in self.items],
+            "universe_versions": list(self.universe_versions),
+            "rank_comparability_warning": self.rank_comparability_warning,
         }

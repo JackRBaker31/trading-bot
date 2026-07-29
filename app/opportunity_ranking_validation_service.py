@@ -474,6 +474,8 @@ class OpportunityRankingValidationService:
             sector=snapshot.sector,
             historical_match_count=snapshot.historical_match_count,
             measured_case_count=snapshot.measured_case_count,
+            universe_version_id=snapshot.universe_version_id,
+            universe_size=snapshot.universe_size,
         )
 
     def _horizon_report(

@@ -23,6 +23,7 @@ import PerformanceIntelligencePage from "@/pages/PerformanceIntelligencePage";
 import DecisionExplainabilityPage from "@/pages/DecisionExplainabilityPage";
 import OpportunityRankingPage from "@/pages/OpportunityRankingPage";
 import RankingValidationPage from "@/pages/RankingValidationPage";
+import UniverseGovernancePage from "@/pages/UniverseGovernancePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,6 +105,14 @@ function Router() {
           <ProtectedRoute
             component={RankingValidationPage}
             title="Ranking Validation"
+          />
+        )}
+      </Route>
+      <Route path="/universe-governance">
+        {() => (
+          <ProtectedRoute
+            component={UniverseGovernancePage}
+            title="Universe Governance"
           />
         )}
       </Route>

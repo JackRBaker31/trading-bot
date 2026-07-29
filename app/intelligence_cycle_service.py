@@ -71,6 +71,9 @@ class IntelligenceCycleService:
         daily_briefing_runner: Callable[[], object],
         opportunity_ranking_runner: Callable[[], object] | None = None,
         opportunity_validation_runner: Callable[[], object] | None = None,
+        universe_coverage_runner: (
+            Callable[[tuple[str, ...], tuple[str, ...]], object] | None
+        ) = None,
         now_provider: Callable[[], datetime] | None = None,
         stage_observer: Callable[[str], None] | None = None,
     ) -> None:
@@ -82,6 +85,7 @@ class IntelligenceCycleService:
         self._daily_briefing_runner = daily_briefing_runner
         self._opportunity_ranking_runner = opportunity_ranking_runner
         self._opportunity_validation_runner = opportunity_validation_runner
+        self._universe_coverage_runner = universe_coverage_runner
         self._now_provider = now_provider or (
             lambda: datetime.now(timezone.utc)
         )
@@ -146,6 +150,51 @@ class IntelligenceCycleService:
                 warnings=tuple(outcome_warnings),
             )
         )
+
+        if self._universe_coverage_runner is not None:
+            self._stage_observer("UNIVERSE_COVERAGE")
+            try:
+                coverage = self._universe_coverage_runner(
+                    tuple(news_result.symbols),
+                    tuple(observation.symbols),
+                )
+                coverage_warnings = tuple(
+                    getattr(coverage, "warnings", ())
+                )
+                stages.append(
+                    IntelligenceCycleStageResult(
+                        stage="UNIVERSE_COVERAGE",
+                        status=(
+                            IntelligenceCycleStageStatus.SUCCEEDED_WITH_WARNINGS
+                            if coverage_warnings
+                            or getattr(coverage, "skipped_count", 0)
+                            else IntelligenceCycleStageStatus.SUCCEEDED
+                        ),
+                        detail={
+                            "version_id": coverage.version_id,
+                            "requested_count": coverage.requested_count,
+                            "processed_count": coverage.processed_count,
+                            "skipped_count": coverage.skipped_count,
+                            "coverage_percent": coverage.coverage_percent,
+                        },
+                        warnings=coverage_warnings,
+                    )
+                )
+            except Exception as error:
+                stages.append(
+                    IntelligenceCycleStageResult(
+                        stage="UNIVERSE_COVERAGE",
+                        status=(
+                            IntelligenceCycleStageStatus
+                            .SUCCEEDED_WITH_WARNINGS
+                        ),
+                        detail={"coverage_percent": 0.0},
+                        warnings=(
+                            "Universe coverage was not captured: "
+                            f"{type(error).__name__}: {error}",
+                        ),
+                    )
+                )
 
         self._stage_observer("SHADOW_ANALYSIS")
         shadow = self._shadow_analysis_runner()

@@ -343,6 +343,15 @@ function RankDriftPanel({
           </div>
         ) : (
           <div className="space-y-5">
+            {data.rank_comparability_warning && (
+              <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                <div>
+                  <p className="font-semibold text-amber-300">Universe changed during this history window</p>
+                  <p className="mt-1 text-muted-foreground">{data.rank_comparability_warning}</p>
+                </div>
+              </div>
+            )}
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-lg border p-3">
                 <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Score movement</p>
@@ -609,13 +618,18 @@ export default function OpportunityRankingPage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">Opportunity Ranking</h1>
-              <span className="rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D4AF37]">v0.10</span>
+              <span className="rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D4AF37]">v0.12</span>
               <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-400">Advisory only</span>
             </div>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{data.methodology_summary} Rankings never weaken existing risk, execution or graduation controls.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/universe-governance">
+            <Button variant="outline">
+              <ListOrdered className="mr-2 h-4 w-4" />Universe governance
+            </Button>
+          </Link>
           <Link href="/ranking-validation">
             <Button variant="outline">
               <TrendingUp className="mr-2 h-4 w-4" />Validate rankings

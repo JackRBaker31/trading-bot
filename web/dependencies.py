@@ -151,11 +151,30 @@ from app.opportunity_ranking_validation_repository import (
 from app.opportunity_ranking_validation_service import (
     OpportunityRankingValidationService,
 )
+from app.universe_governance_repository import (
+    UniverseGovernanceRepository,
+)
+from app.universe_governance_service import UniverseGovernanceService
 
 DEFAULT_APPLICATION_DATABASE_PATH = (
     "data/application.db"
 )
 
+
+
+def create_universe_governance_service(
+    *,
+    database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+    watchlist_path: str = "data/watchlists/core_universe.txt",
+) -> UniverseGovernanceService:
+    service = UniverseGovernanceService(
+        repository=UniverseGovernanceRepository(
+            database_path=database_path
+        ),
+        watchlist_path=watchlist_path,
+    )
+    service.initialize()
+    return service
 
 
 def create_performance_review_service(
@@ -220,9 +239,13 @@ def create_opportunity_ranking_service(
     performance_service = create_performance_review_service(
         database_path=database_path
     )
+    universe_service = create_universe_governance_service(
+        database_path=database_path
+    )
     history_service = OpportunityRankingHistoryService(
         repository=OpportunityRankingHistoryRepository(
-            database_path=database_path
+            database_path=database_path,
+            universe_context_provider=universe_service.current_context,
         )
     )
     history_service.initialize()

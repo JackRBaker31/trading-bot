@@ -108,6 +108,7 @@ from web.dependencies import (
     create_historical_similarity_service,
     create_opportunity_ranking_service,
     create_opportunity_ranking_validation_service,
+    create_universe_governance_service,
     )
 
 
@@ -582,6 +583,9 @@ def create_app(
     opportunity_ranking_validation_service_factory: (
         Callable[[], object] | None
     ) = None,
+    universe_governance_service_factory: (
+        Callable[[], object] | None
+    ) = None,
 ) -> FastAPI:
     infrastructure_factory = (
         infrastructure_status_service_factory
@@ -663,10 +667,14 @@ def create_app(
         opportunity_ranking_validation_service_factory
         or create_opportunity_ranking_validation_service
     )
+    universe_governance_factory = (
+        universe_governance_service_factory
+        or create_universe_governance_service
+    )
 
     app = FastAPI(
         title="Trading Bot Platform",
-        version="0.11.0",
+        version="0.12.0",
         docs_url="/docs",
         redoc_url=None,
     )
@@ -1385,6 +1393,25 @@ def create_app(
             )
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+    @app.get(
+        "/api/universe-governance",
+        tags=["operations"],
+    )
+    def universe_governance(
+        user: Annotated[
+            AuthenticatedUser,
+            Depends(require_authenticated_user),
+        ],
+    ) -> dict[str, object]:
+        del user
+        return (
+            universe_governance_factory()
+            .get_report()
+            .to_dictionary()
+        )
+
 
 
 

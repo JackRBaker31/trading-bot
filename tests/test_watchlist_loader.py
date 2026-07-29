@@ -46,3 +46,10 @@ def test_rejects_empty_watchlist(
         load_watchlist(
             file_path=str(path)
         )
+
+def test_rejects_malformed_symbols(tmp_path) -> None:
+    path = tmp_path / "watchlist.txt"
+    path.write_text("AAPL\nBAD SYMBOL\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="invalid symbol"):
+        load_watchlist(file_path=str(path))
