@@ -139,6 +139,7 @@ from app.symbol_decision_service import (
 from app.performance_review_service import PerformanceReviewService
 from app.research_lab_service import ResearchLabService
 from app.confidence_calibration_service import ConfidenceCalibrationService
+from app.feature_contribution_service import FeatureContributionService
 from app.historical_similarity_service import HistoricalSimilarityService
 from app.opportunity_ranking_history_repository import (
     OpportunityRankingHistoryRepository,
@@ -206,6 +207,13 @@ def create_confidence_calibration_service(
             database_path=database_path
         )
     )
+
+
+def create_feature_contribution_service(
+    *,
+    database_path: str = DEFAULT_APPLICATION_DATABASE_PATH,
+) -> FeatureContributionService:
+    return FeatureContributionService(database_path=database_path)
 
 
 def create_historical_similarity_service(

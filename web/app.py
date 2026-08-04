@@ -107,6 +107,7 @@ from web.dependencies import (
     create_performance_review_service,
     create_research_lab_service,
     create_confidence_calibration_service,
+    create_feature_contribution_service,
     create_historical_similarity_service,
     create_opportunity_ranking_service,
     create_opportunity_ranking_validation_service,
@@ -665,6 +666,7 @@ def create_app(
         or create_research_lab_service
     )
     confidence_calibration_factory = create_confidence_calibration_service
+    feature_contribution_factory = create_feature_contribution_service
     historical_similarity_factory = (
         historical_similarity_service_factory
         or create_historical_similarity_service
@@ -2250,6 +2252,21 @@ def create_app(
     )
     def confidence_calibration_report(days: int = 7) -> dict[str, object]:
         return confidence_calibration_factory().generate(days=days)
+
+
+    @app.get(
+        "/api/feature-contributions/report",
+        tags=["feature-contributions"],
+        dependencies=[Depends(require_authenticated_user)],
+    )
+    def feature_contribution_report(
+        days: int = 90,
+        horizon_days: int = 1,
+    ) -> dict[str, object]:
+        return feature_contribution_factory().generate(
+            days=days,
+            horizon_days=horizon_days,
+        )
 
     @app.get(
         "/api/portfolio",

@@ -664,3 +664,60 @@ export interface ConfidenceCalibrationReport {
     external_language_model: boolean;
   };
 }
+
+export interface FeatureContributionMetric {
+  code: string;
+  label: string;
+  snapshot_count: number;
+  measured_count: number;
+  average_contribution: number | null;
+  median_contribution: number | null;
+  directional_success_percent: number | null;
+  average_return_percent: number | null;
+  average_alpha_percent: number | null;
+  average_drawdown_percent: number | null;
+  contribution_return_correlation: number | null;
+  evidence: "LIMITED" | "MODERATE" | "STRONG";
+}
+
+export interface FeatureVectorComponent {
+  code: string;
+  label: string;
+  value: number;
+}
+
+export interface FeatureVector {
+  snapshot_id: number;
+  captured_at: string;
+  symbol: string;
+  rank: number;
+  opportunity_score: number;
+  components: FeatureVectorComponent[];
+}
+
+export interface FeatureContributionReport {
+  generated_at: string;
+  period: { days: number; start: string; end: string };
+  horizon_days: number;
+  status: "EVIDENCE_BUILDING" | "REVIEW_READY";
+  trading_impact: "NONE";
+  automatic_weight_changes: false;
+  summary: {
+    tracked_snapshot_count: number;
+    measured_outcome_count: number;
+    feature_count: number;
+    positive_feature_count: number;
+    strongest_feature: string | null;
+    weakest_feature: string | null;
+  };
+  features: FeatureContributionMetric[];
+  latest_vectors: FeatureVector[];
+  recommendations: Array<{
+    code: string;
+    title: string;
+    reason: string;
+    automatic_change: false;
+    risk: string;
+  }>;
+  methodology: Record<string, unknown>;
+}

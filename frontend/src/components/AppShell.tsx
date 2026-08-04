@@ -27,6 +27,7 @@ import {
   Network,
   BrainCircuit,
   Gauge,
+  Sigma,
 } from "lucide-react";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { useInfrastructureStatus } from "@/hooks/useInfrastructureStatus";
@@ -46,6 +47,7 @@ const navItems = [
   { icon: Bot,                     label: "KAIRO Copilot",         path: "/copilot",},
   { icon: BrainCircuit,            label: "AI Research Lab",       path: "/research-lab" },
   { icon: Gauge,                   label: "Confidence Calibration", path: "/confidence-calibration" },
+  { icon: Sigma,                   label: "Feature Contributions", path: "/feature-contributions" },
   { icon: BarChart3,               label: "Performance Intelligence", path: "/performance" },
   { icon: SearchCheck,              label: "Decision Explainability", path: "/decision-explainability" },
   { icon: ListOrdered,             label: "Opportunity Ranking",    path: "/opportunity-ranking" },

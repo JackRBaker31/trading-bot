@@ -26,6 +26,7 @@ import RankingValidationPage from "@/pages/RankingValidationPage";
 import UniverseGovernancePage from "@/pages/UniverseGovernancePage";
 import ResearchLabPage from "@/pages/ResearchLabPage";
 import ConfidenceCalibrationPage from "@/pages/ConfidenceCalibrationPage";
+import FeatureContributionsPage from "@/pages/FeatureContributionsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,11 @@ function Router() {
       <Route path="/confidence-calibration">
         {() => (
           <ProtectedRoute component={ConfidenceCalibrationPage} title="Confidence Calibration" />
+        )}
+      </Route>
+      <Route path="/feature-contributions">
+        {() => (
+          <ProtectedRoute component={FeatureContributionsPage} title="Feature Contributions" />
         )}
       </Route>
       <Route path="/performance">
