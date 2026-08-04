@@ -19,9 +19,6 @@ PLTR
 ANET
 AMAT
 KLAC
-IBM
-NOW
-ACN
 
 # Communication Services
 GOOGL
@@ -32,10 +29,6 @@ TMUS
 VZ
 T
 ROKU
-CMCSA
-EA
-LYV
-PINS
 
 # Consumer Discretionary
 AMZN
@@ -48,10 +41,6 @@ BKNG
 ABNB
 NKE
 TJX
-ORLY
-MAR
-GM
-ROST
 
 # Consumer Staples
 WMT
@@ -64,9 +53,6 @@ MO
 CL
 MDLZ
 KMB
-TGT
-KR
-GIS
 
 # Financials
 JPM
@@ -79,11 +65,6 @@ SCHW
 AXP
 V
 MA
-C
-COF
-PGR
-CB
-CME
 
 # Healthcare
 UNH
@@ -96,11 +77,6 @@ TMO
 ABT
 DHR
 ISRG
-AMGN
-GILD
-MDT
-SYK
-BMY
 
 # Industrials
 CAT
@@ -113,11 +89,6 @@ ETN
 PH
 UPS
 FDX
-UNP
-CSX
-WM
-MMM
-GD
 
 # Energy
 XOM
@@ -128,9 +99,6 @@ EOG
 MPC
 PSX
 OXY
-KMI
-WMB
-HAL
 
 # Materials
 LIN
@@ -138,29 +106,17 @@ APD
 NEM
 FCX
 SHW
-NUE
-DOW
-DD
-MLM
 
 # Utilities
 NEE
 SO
 DUK
 AEP
-D
-SRE
-EXC
-XEL
 
 # Real Estate
 PLD
 AMT
 EQIX
-O
-SPG
-WELL
-PSA
 
 # ETFs
 SPY
