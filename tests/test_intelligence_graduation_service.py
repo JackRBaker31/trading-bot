@@ -154,3 +154,32 @@ def test_graduation_explains_failures() -> None:
         "250" in reason
         for reason in status.failed_checks
     )
+
+
+def test_graduation_dictionary_includes_frontend_compatibility_fields() -> None:
+    report = ShadowPerformanceReport(
+        model_version="KAIRO_SHADOW_V1",
+        total_decision_count=12,
+        execution_cost_percent=0.2,
+        horizons=(
+            horizon("1H"),
+            horizon("1D", measured=3),
+            horizon("5D"),
+        ),
+    )
+
+    payload = IntelligenceGraduationService(
+        performance_service=FakePerformanceService(report),
+        intelligence_service=FakeIntelligenceService(
+            stale=True,
+            readiness="NOT_READY",
+        ),
+    ).get_status().to_dictionary()
+
+    assert payload["stage"] == "RESEARCH_ONLY"
+    assert payload["checks_remaining"] == (
+        payload["total_checks"] - payload["checks_passed"]
+    )
+    assert payload["checks"][0]["description"] == (
+        payload["checks"][0]["reason"]
+    )

@@ -24,6 +24,8 @@ import DecisionExplainabilityPage from "@/pages/DecisionExplainabilityPage";
 import OpportunityRankingPage from "@/pages/OpportunityRankingPage";
 import RankingValidationPage from "@/pages/RankingValidationPage";
 import UniverseGovernancePage from "@/pages/UniverseGovernancePage";
+import ResearchLabPage from "@/pages/ResearchLabPage";
+import ConfidenceCalibrationPage from "@/pages/ConfidenceCalibrationPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,6 +76,16 @@ function Router() {
             component={CopilotPage}
             title="KAIRO Copilot"
           />
+        )}
+      </Route>
+      <Route path="/research-lab">
+        {() => (
+          <ProtectedRoute component={ResearchLabPage} title="AI Research Lab" />
+        )}
+      </Route>
+      <Route path="/confidence-calibration">
+        {() => (
+          <ProtectedRoute component={ConfidenceCalibrationPage} title="Confidence Calibration" />
         )}
       </Route>
       <Route path="/performance">

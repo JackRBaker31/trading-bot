@@ -24,4 +24,23 @@ class IntelligenceGraduationStatus:
     trading_impact: str = "NONE"
 
     def to_dictionary(self) -> dict[str, object]:
-        return asdict(self)
+        return {
+            "eligible": self.eligible,
+            "checks_passed": self.checks_passed,
+            "total_checks": self.total_checks,
+            "checks_remaining": max(
+                0,
+                self.total_checks - self.checks_passed,
+            ),
+            "checks": [
+                {
+                    **check.to_dictionary(),
+                    "description": check.reason,
+                }
+                for check in self.checks
+            ],
+            "failed_checks": list(self.failed_checks),
+            "status": self.status,
+            "stage": self.status,
+            "trading_impact": self.trading_impact,
+        }

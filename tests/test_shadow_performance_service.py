@@ -148,3 +148,52 @@ def test_empty_report_is_safe(
         item.measured_count == 0
         for item in report.horizons
     )
+
+
+def test_report_dictionary_includes_frontend_compatibility_fields(
+    tmp_path,
+) -> None:
+    repository = ShadowDecisionRepository(
+        database_path=str(tmp_path / "application.db")
+    )
+    repository.initialize()
+    outcome_store = NewsSignalOutcomeStore(
+        file_path=str(tmp_path / "outcomes.jsonl")
+    )
+
+    add_decision(
+        repository,
+        index=1,
+        score=85.0,
+        confidence=0.88,
+    )
+    outcome_store.append(
+        outcome=NewsSignalOutcome(
+            article_id="article-1",
+            symbol="AAPL",
+            horizon_name="1D",
+            signal_published_at=datetime(
+                2026, 7, 20, 9, 0,
+                tzinfo=timezone.utc,
+            ),
+            observed_at=datetime(
+                2026, 7, 21, 10, 0,
+                tzinfo=timezone.utc,
+            ),
+            reference_price=100.0,
+            observed_price=101.0,
+            return_percent=1.0,
+        )
+    )
+
+    payload = ShadowPerformanceService(
+        repository=repository,
+        outcome_store=outcome_store,
+    ).get_report().to_dictionary()
+
+    assert payload["available"] is True
+    assert payload["generated_at"] is None
+    assert payload["periods"]["1d"]["sample_count"] == 1
+    assert payload["periods"]["1d"]["coverage"] == 1.0
+    assert payload["periods"]["1d"]["average_return"] == 0.01
+    assert payload["horizons"][1]["average_return_percent"] == 1.0

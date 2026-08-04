@@ -54,4 +54,36 @@ class ShadowPerformanceReport:
     trading_impact: str = "NONE"
 
     def to_dictionary(self) -> dict[str, object]:
-        return asdict(self)
+        payload = asdict(self)
+        payload.update(
+            {
+                "available": self.total_decision_count > 0,
+                "generated_at": None,
+                "periods": {
+                    horizon.horizon.lower(): {
+                        "directional_success": (
+                            horizon.directional_success_percent / 100
+                        ),
+                        "profitable_after_costs": (
+                            horizon.profitable_after_cost_percent / 100
+                        ),
+                        "average_return": (
+                            horizon.average_return_percent / 100
+                        ),
+                        "average_net_return": (
+                            horizon.average_net_return_percent / 100
+                        ),
+                        "maximum_drawdown": (
+                            horizon.maximum_drawdown_percent / 100
+                        ),
+                        "rolling_stability": (
+                            horizon.positive_rolling_window_percent / 100
+                        ),
+                        "coverage": horizon.coverage_percent / 100,
+                        "sample_count": horizon.measured_count,
+                    }
+                    for horizon in self.horizons
+                },
+            }
+        )
+        return payload

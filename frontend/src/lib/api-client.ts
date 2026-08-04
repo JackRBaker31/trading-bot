@@ -174,7 +174,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (contentType && contentType.includes("application/json")) {
     return response.json();
   }
-  return null as T;
+
+  throw new ApiError(
+    response.status,
+    "The API returned a non-JSON response. Check the configured API base URL.",
+    { contentType },
+  );
 }
 
 export const apiClient = {

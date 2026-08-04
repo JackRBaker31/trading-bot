@@ -25,6 +25,8 @@ import {
   ListOrdered,
   TrendingUp,
   Network,
+  BrainCircuit,
+  Gauge,
 } from "lucide-react";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { useInfrastructureStatus } from "@/hooks/useInfrastructureStatus";
@@ -42,6 +44,8 @@ interface AppShellProps {
 const navItems = [
   { icon: Command,                 label: "Operations Centre",     path: "/operations" },
   { icon: Bot,                     label: "KAIRO Copilot",         path: "/copilot",},
+  { icon: BrainCircuit,            label: "AI Research Lab",       path: "/research-lab" },
+  { icon: Gauge,                   label: "Confidence Calibration", path: "/confidence-calibration" },
   { icon: BarChart3,               label: "Performance Intelligence", path: "/performance" },
   { icon: SearchCheck,              label: "Decision Explainability", path: "/decision-explainability" },
   { icon: ListOrdered,             label: "Opportunity Ranking",    path: "/opportunity-ranking" },

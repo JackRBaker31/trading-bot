@@ -172,8 +172,33 @@ class ShadowTradingService:
             action.value: sum(1 for item in decisions if item.action is action)
             for action in ShadowAction
         }
+        one_day_measured = sum(
+            1
+            for decision in decisions
+            if (decision.article_id, "1D") in outcome_map
+        )
+        eligible_decisions = sum(
+            1
+            for decision in decisions
+            if decision.eligible_for_trade
+        )
+        latest_decision_at = (
+            None
+            if not decisions
+            else max(
+                decision.created_at
+                for decision in decisions
+            ).isoformat()
+        )
         return {
             "decision_count": len(decisions),
+            "total_decisions": len(decisions),
+            "measured_decisions": one_day_measured,
+            "eligible_decisions": eligible_decisions,
+            "blocked_decisions": (
+                len(decisions) - eligible_decisions
+            ),
+            "latest_decision_at": latest_decision_at,
             "model_version": self.MODEL_VERSION,
             "action_counts": action_counts,
             "performance_by_horizon": by_horizon,

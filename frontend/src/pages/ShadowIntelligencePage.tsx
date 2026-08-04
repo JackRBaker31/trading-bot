@@ -396,7 +396,12 @@ function GraduationSection() {
 
 // ─── Decision History ─────────────────────────────────────────────────────────
 
-type ActionFilter = "ALL" | "BUY" | "SELL" | "HOLD";
+type ActionFilter =
+  | "ALL"
+  | "MONITOR"
+  | "WATCH"
+  | "CONSIDER_LONG"
+  | "BLOCKED";
 type EligibilityFilter = "ALL" | "ELIGIBLE" | "BLOCKED";
 type MaterialityFilter = "ALL" | "MATERIAL" | "NON_MATERIAL";
 
@@ -481,9 +486,10 @@ function DecisionHistorySection() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All Actions</SelectItem>
-              <SelectItem value="BUY">Buy</SelectItem>
-              <SelectItem value="SELL">Sell</SelectItem>
-              <SelectItem value="HOLD">Hold</SelectItem>
+              <SelectItem value="MONITOR">Monitor</SelectItem>
+              <SelectItem value="WATCH">Watch</SelectItem>
+              <SelectItem value="CONSIDER_LONG">Consider Long</SelectItem>
+              <SelectItem value="BLOCKED">Blocked</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -589,11 +595,13 @@ function DecisionHistorySection() {
                       <span
                         className={cn(
                           "text-[11px] font-bold uppercase",
-                          d.action?.toUpperCase() === "BUY"
+                          d.action?.toUpperCase() === "CONSIDER_LONG"
                             ? "text-emerald-400"
-                            : d.action?.toUpperCase() === "SELL"
+                            : d.action?.toUpperCase() === "BLOCKED"
                               ? "text-destructive"
-                              : "text-muted-foreground",
+                              : d.action?.toUpperCase() === "WATCH"
+                                ? "text-amber-400"
+                                : "text-muted-foreground",
                         )}
                       >
                         {d.action ?? "—"}

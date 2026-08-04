@@ -105,6 +105,8 @@ from web.dependencies import (
     create_decision_intelligence_service,
     create_copilot_change_service,
     create_performance_review_service,
+    create_research_lab_service,
+    create_confidence_calibration_service,
     create_historical_similarity_service,
     create_opportunity_ranking_service,
     create_opportunity_ranking_validation_service,
@@ -574,6 +576,9 @@ def create_app(
     performance_review_service_factory: (
         Callable[[], object] | None
     ) = None,
+    research_lab_service_factory: (
+        Callable[[], object] | None
+    ) = None,
     historical_similarity_service_factory: (
         Callable[[], object] | None
     ) = None,
@@ -655,6 +660,11 @@ def create_app(
         performance_review_service_factory
         or create_performance_review_service
     )
+    research_lab_factory = (
+        research_lab_service_factory
+        or create_research_lab_service
+    )
+    confidence_calibration_factory = create_confidence_calibration_service
     historical_similarity_factory = (
         historical_similarity_service_factory
         or create_historical_similarity_service
@@ -2222,6 +2232,24 @@ def create_app(
             start=start,
             end=end,
         )
+
+
+    @app.get(
+        "/api/research-lab/brief",
+        tags=["research-lab"],
+        dependencies=[Depends(require_authenticated_user)],
+    )
+    def research_lab_brief(days: int = 7) -> dict[str, object]:
+        return research_lab_factory().generate(days=days)
+
+
+    @app.get(
+        "/api/confidence-calibration/report",
+        tags=["confidence-calibration"],
+        dependencies=[Depends(require_authenticated_user)],
+    )
+    def confidence_calibration_report(days: int = 7) -> dict[str, object]:
+        return confidence_calibration_factory().generate(days=days)
 
     @app.get(
         "/api/portfolio",

@@ -596,3 +596,71 @@ export interface PerformanceReview {
   insights: string[];
   markdown: string;
 }
+
+
+export interface ResearchLabBrief {
+  generated_at: string;
+  period: { start: string; end: string; hours: number };
+  status: "EVIDENCE_BUILDING" | "REVIEW_READY";
+  trading_impact: "NONE";
+  headline: string;
+  summary: string;
+  evidence: {
+    shadow_decisions: number; measured_1d_decisions: number;
+    directional_success_percent: number; profitable_after_cost_percent: number;
+    calibration_sample_size: number; healthy_completion_percent: number;
+  };
+  findings: Array<{ kind: string; title: string; statement: string; sample_size: number; confidence: string }>;
+  suggested_experiments: Array<{
+    experiment_id: string; title: string; hypothesis: string; status: string; risk: string;
+    required_sample: number; current_sample: number; automatic_change: boolean;
+  }>;
+  sector_leaders: Array<{ sector: string; decision_count: number; measured_count: number; average_confidence_percent: number; directional_accuracy_percent: number; average_return_percent: number; eligible_count: number }>;
+  confidence_buckets: Array<{ label: string; decision_count: number; measured_count: number; expected_accuracy_percent: number; actual_accuracy_percent: number; calibration_gap_points: number; average_return_percent: number }>;
+  timeline: Array<{ date: string; decisions: number; measured_outcomes: number; healthy_cycles: number; failed_cycles: number }>;
+  methodology: { deterministic: boolean; external_language_model: boolean; automatic_model_changes: boolean; minimum_serious_review_sample: number; source: string };
+}
+
+export interface ConfidenceCalibrationBucket {
+  name: string;
+  label: string;
+  measured_count: number;
+  expected_accuracy_percent: number;
+  observed_accuracy_percent: number;
+  calibration_gap_points: number;
+  absolute_gap_points: number;
+  assessment: string;
+}
+
+export interface ConfidenceCalibrationReport {
+  generated_at: string;
+  period_days: 1 | 7 | 30;
+  status: string;
+  trading_impact: "NONE";
+  automatic_model_changes: false;
+  summary: {
+    sample_size: number;
+    mean_absolute_error_points: number;
+    previous_error_points: number;
+    drift_points: number;
+    drift_status: string;
+    best_band: string | null;
+    weakest_band: string | null;
+  };
+  buckets: ConfidenceCalibrationBucket[];
+  recommendations: Array<{
+    code: string;
+    title: string;
+    reason: string;
+    automatic_change: false;
+  }>;
+  methodology: {
+    outcome_horizon: string;
+    expected_measure: string;
+    observed_measure: string;
+    minimum_review_sample: number;
+    minimum_band_sample: number;
+    deterministic: boolean;
+    external_language_model: boolean;
+  };
+}

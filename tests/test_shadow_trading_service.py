@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from app.intelligence_snapshot import OpportunityClassification
+from app.news_signal_outcome import NewsSignalOutcome
 from app.shadow_decision import ShadowAction
 from app.shadow_decision_repository import ShadowDecisionRepository
 from app.shadow_trading_service import ShadowTradingService
@@ -82,3 +83,53 @@ def test_summary_is_research_only(tmp_path) -> None:
     assert summary["performance_by_horizon"][0][
         "measured_count"
     ] == 0
+
+
+class OneDayOutcomeStore:
+    def load_all(self):
+        return [
+            NewsSignalOutcome(
+                article_id="article-1",
+                symbol="AAPL",
+                horizon_name="1D",
+                signal_published_at=datetime(
+                    2026, 7, 20, 9,
+                    tzinfo=timezone.utc,
+                ),
+                observed_at=datetime(
+                    2026, 7, 21, 10,
+                    tzinfo=timezone.utc,
+                ),
+                reference_price=100.0,
+                observed_price=101.0,
+                return_percent=1.0,
+            )
+        ]
+
+
+def test_summary_includes_dashboard_contract_fields(tmp_path) -> None:
+    repository = ShadowDecisionRepository(
+        database_path=str(tmp_path / "application.db")
+    )
+    service = ShadowTradingService(
+        intelligence_service=FakeIntelligenceService(),
+        repository=repository,
+        snapshot_store=EmptySnapshotStore(),
+        outcome_store=OneDayOutcomeStore(),
+        now_provider=lambda: datetime(
+            2026, 7, 20, 10, tzinfo=timezone.utc
+        ),
+    )
+    service.initialize()
+    service.run_analysis()
+
+    summary = service.get_summary()
+
+    assert summary["decision_count"] == 1
+    assert summary["total_decisions"] == 1
+    assert summary["measured_decisions"] == 1
+    assert summary["eligible_decisions"] == 1
+    assert summary["blocked_decisions"] == 0
+    assert summary["latest_decision_at"] == (
+        "2026-07-20T10:00:00+00:00"
+    )

@@ -163,3 +163,24 @@ describe("429 rate-limit errors", () => {
     });
   });
 });
+
+// ── Successful non-JSON responses ────────────────────────────────────────────
+
+describe("successful non-JSON responses", () => {
+  it("raises a clear API configuration error instead of returning null", async () => {
+    server.use(
+      http.get(`${BASE}/api/html-fallback`, () =>
+        new HttpResponse("<!doctype html><html></html>", {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        })
+      ),
+    );
+
+    await expect(apiClient.get("/html-fallback")).rejects.toMatchObject({
+      status: 200,
+      message:
+        "The API returned a non-JSON response. Check the configured API base URL.",
+    });
+  });
+});
